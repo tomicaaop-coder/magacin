@@ -446,6 +446,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button class="btn" data-print>Štampaj</button>
       <button class="btn dl" id="xPrijem">Preuzmi Excel</button>
       <button class="btn primary dl" id="etPrijem">Etikete sa bar kodom</button>
+      <button class="btn dl" id="qpPrijem" title="Identifikaciona etiketa QP18, 100 × 70 mm">Identifikaciona etiketa (QP18)</button>
     </div>
     <div class="sheet">
       <div class="sh-head"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABPCAIAAADeCG9iAAAYhElEQVR42u1daXRcxZWuW/Ver1q7ZUmWLGu3ZNl4lXcwBmMIBkMCgUBimMCETIDMyUASSGBOmCEhZhJOdgZOEsIEhjAkLNnAgPcF2xivsi15kWXJlq1dra0l9Xuv6s4Pt9VauqVW9+u2cer7Zau761XVq6/uWrcAEUksoHnR2yY6Tov6/aLlGPH1YOdZ7G1HXzfh+vAvg0kPhTE/BXMahOhagGB/gkhaAxj5AY7xLBi9xTC6GvgnhjctMPzT0E+BQaMarbMQ+pGhHgTB+wfhNDt4pBCq38H+DGNNMhDFTOIhoq8bm6v4uQpRs12015C+DtS8JEY8l5C4LGASCbkmmo/zExv4yS3YWo2+bjmzEhLxIqHh46d384Nv8VPbsddDiJBzKiERLxJyXZw9oO95VdRsxb5Ok607CQlJwlFtPyHaTxm7f88r38Vez3BPgISERGxJqHmNw38xdr0k2msJSuVTQiK+JMTOs/qWnxqV7xK9X86dhER8SYhCnD2grV8j6vdJASghEXcSct2oek/f9Bx21Mspk5CIOwkNn7H3NX3bL7GvQ86XhETcScg1fff/GNt+iZpXTpaERCxAR/tQGMaBN43tz0sGSkhcDBKi4Ec/0Df/ROagSUhcHHVUnP5E2/As9rbJOZKQCAlmhaRcYkkiBElvE3obCHJzSIieOm3dM9IXKiEREkBpxjxadBuxuYi3gTAL2NNFx3Fx9DX01kdNQr1X3/68aDwi51lCIiQDc5bT4ttFzd+xaQ/6PIQQcGbS3BtY+WP8wM+x82QUJERhVK01jvxdRuQlJEJyMLmQFt/OK35NJ11Nc1cQRMI19FSJE29Cfzub9hXjkx8QPVx35nDHjGivNT56keh9cqIlJEJQEOjkFXh2G3qO0Yy5ROsRZzai5ygtvoMW3CJq1xIC1H1F+O0NJaEwjD2virYaOc8SEiGhJkDaDNG87/z5IdFaIWr+xqtewbYjkFJMeD+27of08gjVUXGugktFVEJidEGoOIBZiK/DL8cyygkhkJAN7jJ+4BcEBfq6qGs6ARomlQZJQr1X//h36JUxCQmJUcF9BA2iJvo5aXNRdxkruk1UvyPObCKEENWJvvbwhVlAEvIze0XN1nic0KUMVAexOAll/r/4uuKXEgAUrAnEkhCq9lYYLZyfLw172/wTDQycaYQO9XIJHXvbCRrjaJlZwJ5KqAJUDd69QX9DrmNPJFEpQoBYHGBNCp6qEX61NRTY10qEHuFbUJ1EdRJK/U1yHfvaotHCwOYiim20/o9RbQ2J4UO9m4gxXhlqXaK9CtKmY089IYTXfSiq32a9zTTnGnF6HfY2Ufd0cWbD+NVRbvBDf8b+7hgu/cRMmpoDE0pY9mxw5YLDNbBqjY9f0j95+YLCbSeEmO8ZAgpJE+mEEpa/hGbPAWdaWKU4Qn9FNFVpf3/kfEIf2FOsq34CKZOHfMPw8bqdxpF3RNNhwrUxLP3ETDapnBVdTzPKCLMSysbsHnbU+f72MOkLX3MBcLjAXcwmLaA5CyFhYmATjAjY36F/8G/CUzOODtiSISWPphTQrHmQWgh298AaQM9Jbf0j6Ov0vyxbCvZ3jmOLoQqb9w2aszSaARHdi1112LhHtFWSzlPY3x5cJqEQZzaxGQ9iS4XwHCN9LUQY4tj/gTOLTlyIfa3Emopth8ZNQtF6nNdsiwn7rIk0exYrvZHmzqdJWUSxEhixAdsSA8Igp1yZdx+v2caPf4hdDSYYqIqNZpQp026h+Utocg5RrOaMy9saGAhlkJABSdnDn+zKZ6UredVf9V0vYE9zCCvfrpTerMz5MnUXEaaOowdaT5CZDLFAaUoeK72F5i2lrkKi2s2pBaTYCA2vw1SlqQWseCWdtIi6iolqJzCC/1pXYDjMoix+gghDVL8nGveG6esHmwsSsqJ9ralTyOTlzOjHzlOiYZc4tRY7qgn3Dadh22Gs38JmPSyOvi7aKwkh6PPwAz+DrCtp8Z3iyK/xgsUYNgkRefVm861B1c7yr1TmrmaT5hBrQrizoNpZ/pWs4Cox54v8wBvG4T+jtzVi6UczypS597DiFeBIuRhVqADsqcqs1ZCQoa17Cr0tI3codfE3lJl3EdURo+dDco4y/U429VZIyAyXtKYqINRdwqbfzfKXgyM9bBMAICGLTixn+deLcx/zw6+Kc7vH1BJN7DNRHZA2jaWVsaLPivqt4sRbovXgEMVbGPzEm9TXQaeuptyHnuOEWcE9jfja+cFfoadyfLsZIQS1Hn5io6lOUaDuPGXJw0rpZ4jFOcKu1VHvBWviaGuCKjStiF77OJuyQv/oeV67Y7zvAGzJyozPK/Pug+Tsi2zHU8aKV6jdjdrmZ4fopUxV5vyTMns1YZYLM6OJtpNE99KM6USxRftcZmVFK5SFD1NX0UWgHyHEkqBM/bwy88uQNGmERsexvxMU2xi7jyWB5i2HzDni2Nv80CvobYjzFkLsblr8OZqzjJ/8q6h8Gb2Ng3ioidq12LCTJOWDNYkIQ9RvxM5ThPePd7dXCCHYWIXNx03cfVnuQvX679EJJcN3PsF5zVaj4i3i67Gs+hEkpI+tR02eb0krMnb/Tt/9MtF7w+1CymTL8idY0TWB9X1xAYxN+yyrXs/rdgQGlzZFmX3PQA+xp0nf9d/8+FqwJlnveAWSotKswJaiLHhImX4nsSZenBE70tSFj7KSWwkbrv9jZ51R8Xtxbrcy519Y8aowxpLKZtwHGbP5zh+K5kMh7DSM0EUUDmyprGw1TZ/F9/xoIDzof6yvg7TsRxKVmkUJIaLxkHnOSWD5V1pW/pCml45goGEcfkf722O88l3RWh3kRoqQr9OlLvm6Zdm3wJYc1pDchZaVa9iUFZcKAy+wghWtGCyRWNF14Ei78C679M1rjIOvY28bci1KHzU4J6jXfE+Zfe9FY6AzU136FCu9PQgDPTXahseNw/8r2o5h2IldBCjNnKNcvYZmLQiu0yIXrUdiGOIGBhNmssXP0KwlpqsVlOi9vOYj02Rg/hLLyh+AKy+IO7GtRt/80wgNPNWmzF2tXv0ojGVbUle+5cZnWN6ii6OAjd63yQvAnhLw1ibnBLzjbdW8ZuP44g1MCereBLtLvfoJVnpzuF4T05er3aVe9QQrvCFI97hmHHhJNOyL7HoScBUrS5+mmcGTUcSZ7djbHNuhJeexxd+nk5aZu7oo9rSK1mpz2korVFc8OdxTPzBHDRXY3RiFhaMqs76glN87igsRHG712u/SnHmXZiVwsCYGLD2gcD4Yc0FRx/Hu4sCC+BgVq7LwYTZlZZCP4gPFqsx+gBVcH3SZYr+Hn9sdjZyH5Dxl8ZOQUhCkcU81P/wKMWKb9gzOiaz8MXBNM5OEovMsMaWCk2pXFn+NTigJvWaskcfHAyvsq6x4eXCOMVWZfz8ruvYSlIFDbP3g/zbHHcaKrlem3TE8bSCOYJOXKtPvDtkBUCBq+QzuqcqCb4M1eaRGyo/8gR98iWg9sX2FSXls5oPEkmgeCc/uN6WEDCtcqpR+ZjSaMSX6ZQe2ZHXR1yAxiEeH5cxTZt0VZQD6Uw1IyVUXfj2IOzp+iqhbmXU/sSSMYrCYsEUC0JyraOHNQZaT0Wcc/LW+9Uls2jcyuGem7MpaTCdda9Y2qojGqujNWbAmKuX3xuf108xpyhW36TteHKLVMAubupJwHXuaQrjOeEQDG/ry7SkBlzqKS+zeRWBF1xHVGSIrAAlyf4chClGsOsCWEmhziGIJLH85zZwVF4FrYWV3i9ObsGdE0MLwiVPv642fQMZcVvAZSMwmNldUqoHQiTDAmUHUQZsLs7Epd4r6zUTrMoGERDPBL0pz57NJs+Pl31BY2Srj0NvY3TRYFdF3vGjsfinoLxCFP8wYjT5MmeX6/2AFy/xt9rbjGMlo8Qav/AuvXhd8KxmYgfHtO8O3IWX6F5R5D/n/p/cO1qHA4mQlt8bNGwQpBTRnKa96I/gb72vD2g/F6Y1EsYHF6beQI7upVxgEBaQW0oJVNO/GgV0Y3NNo+hxRv9kEEmJXY9TzwVjBVWSwmyHWNHQX0IwyPpiEgmNnPcbyumxIzR2cmCYaD5FLi4SI3mbiJbG7LhtsKTRrbmAGWo8PrgMGaWU0rSx+w6UKzb+Bn/gLMUJfiyIMoveg3hOMbaPb6TDCpdQimg+w7no280F/6EuxQfpsUr8l+jMPFHtaouWgI5XmLYrrelOsrHBZ/BwwAJCaa7n2Seou9L8SX5eo3/OPZXDaXcq8B2nm7IH1LWo3Eh4gAE0riXNYEpLzwJERR02jnx97HdsCKWk0Y95oBvA4JKEvaleSaoe4B4XphClEsfgvh7I4leLriMURhpyLRBKCw8WmrqJpF5K/EHn1Rn523yVEEcpY/jJwTrhgqoU5B2GfI1EdrGAFzZw1EB8STYf4qU1DNqrUwnjvC44JkFqIXXWh7EawuyE5D5wZ/pwBCPONQ3Cj2i9LB02vIx3UBIzaoFNM0KmoclEygwOqgzNNXf4dSMyMz5NF0xFj5/OjaUHxcsQAZXhhwSnlX6HZ8+Kk+HafM3b9DL2tgeUKAJa4Z+dQBdRgvkBmo1nz2ZTbwT0VnOmEWWO1Pqk6MiUoIhJKjGP1cVG/V9vwA9F28uJ3BuhFiMijwI5T+kfP8fpdl+YNzWB3s1kPsJI7TFEUx9oGJQkHYPTHuDwcEs0r2mr48Q+Nw29hd9NIu/3y34CMfuyo42e2G4ffwI7aSyw8c4EV1mRl0RO08MZ4bU8Qbf7J5UNCzYt9HRBQFyuN/a+HyMOMyDuKHD11ovko+rqDx1QNHbXeeGfK6V4cSNESnGiBIybY127s+S05f0rdFJuQIHY3ipZK7Gu/hOqAoRhycgIoK/siLbhhgIHY144Nu0TTfn/gfphbmFnPf3MEjyDchcP7ibcpep32ciAhch37B8VMBefH1gY5oxxdiGK0DmjdoqWKZk6P66h7mkj/BZpxXbRU0vyrA3NQt000VwYfQqQhigg3sljOAQ7KwYCkybTk9oFAJXpOGDufEU17A16PyOKE/j9ghLvYmFAT6GVAQmJo4szuAQWJppcqM79gVhmL8Hw1XNTvjauIQOT1n2DAOYTi7B5i+BO1wJaizLoXrEn/UAY7TZ8ZKG+hdRsf/1ic23WJxXKDqtCpl4djBnndbkXr8UdKmKoufggcLuPQ28JTF+BGxJIQkXDf6FaQOPMxdp6BlNw4Dbi/g9dsIogDAxLtNdjT6O8AUDb1VqJYjYo/YMtRHK3iG4wh5AYqkXE9ospucVvLFDLLBzKH0XMS2yoJs4VTbY3A+SMpMD5JiEiMPhN2XufEy8Q7ii1HxbmDLP9K//8tTmX+/axsFXacGbR0IlQeUBjYeIjXbBGNR9AXPFdQdNbzE+uV8vviE63hpzaJlqohnew6y2u3KrNW+4fJLKz0Fpp3NXbURiUNLiw49NTwmvWi+fAlelseVcAZSOuHlHxl+c/DdJgBEALqGC9uxNpBzzFj9xpi9Ea7e6iJlwsJfT384J/YpDmDapYAJKSPXUEjTOQuVGav5uf2G5+8zGu3BamkILhx8A1WvCLUcUpzrUHjwGvDqYWCH3mLFd0weMhgS4bMmeY8NXs+K/2saDvOD73Oq9/HGB8XikwYBv5tTaaZc2O5C2rixFuER+2TB4DUUkouF/DqTfzklpi5zoFYHCxvieXm59T5DwRNlBXtNcb+10YTO4KboL1w3dj3smg6HKT5lqP88B8jPC8SDhQbzZihLntKvfLxQWcp/hEhGnby2rUmLDbVCWkz40jCGAeW0Netb/2paD0R293WnqIuflidc0+Q0zEojIo/8hPrQr4brkVbjAi5cexdo+KN4EcihGEceFWc3h7bIJ5iY2WfVxZ/04QyjfipjK9iVy0/+CuidZqwnCzJxJkVPxKitzVgnhn9Q07BONNMMaVEa7W+6dkhR5xiAdWulN8fNCCB/Z361ufE2b3Bl5cjjboKophBwWs269ufC2WXEkKwt03fskY0HYrtDFBFKb2V5V8TgRaHg9P9egcdHrAkEmvyp4CB3ga+57+wzaQrdJMKweaOFwkFF+cODixN7OvE5mMDH7LCq2mWKaYL8pNbtXX/iZ1nYysPE9JZ4TVBPT3CU6d98OTgkMkQKbrkEeoujMRFJDivXqdt+A/sHqP2pmg7oa//d9FwILa6h2JXSm4lyvjOr2HnadLXHqBkQ6C6NiRMVKbeMb4GY1rmMLgMPM13PiXqN5sVjqITFxHFEScSirZqXrtzsOLEqzcN5JpBymTLyjWs9EawJRNmiSoEipwf+0B79zHRdCSmgTuaeUWoklOi9YT2/nf4iXUjlwjNmW9Z9Qtl5t1s4oxxHD3RvEbF69r672H3ubBmu/mI/uF3Rd1HMa1aDe4pYHePSwzyY+8MPnOArVWitWrAraJccY+68NvgmgKKPTzNCGNoAI9kvOc43/mUOLvNNC1aTTxfMCou3lHNa+z8zbBSa/zYh0bBVcr0W89PN00vsa56TrRVE9VOILpeoeC1O8TbD6sLHmBlN4dZrXTcS1B1EspIiDUgPHXa+99V5tyrzLp7iIcWgKZPtax4mmg9Ye36iKL9pPHxC8bx94kxjtLOou24tvZRdsVdyswvQkJszpcwdTyXZyA/vY2fWjdUe/cYe36lLv8xOCb4pev01Sz/OvQ20tSiS0gHNfrE6fX84AvYeYoQNCtlCFKKILU0LiTU+/SPf2tUvjtMLqHm1Tf9GFQHm7Lc7+SwOOjEGaZtXJ46bd3T7Pg6Ze6X6OSF8T/xiH0efefz/NQWZeZdrPAacKQFgsVAyZjpLCiwu8Go+qtx6E/YeTqC3Rd724zdL4q6bcqMu2nBcnC4LlrGGQpxbo++41nsH+7M4PW7yI416sJv+ZNdACBhIiRMvFToxzVsq+RVr4n6DeEXgA+PgpRmLyOqM9YkRPSc0Xf9xqh4M+jpO+xq0N57Qmm4S5l9FyRPMiUhfbj+U7NF1O+h2bPZ1JtY7iJImRTX4z/CEA0HtOZKuq+Ild7EchbQCaXE4hj7V+f2i/Y3+dF3RUddVColctFUoW08Riv+wEpuppOXUNc4734yQw/i1Wv1vS9g1+ng5kP1e9h9Vpn5zyznylhdjBOJ8PCKlgOiZi2e2Yz9bUMyZkyBzQVZV53fFhVTlhp2Nw5bK9jbzqs38qr3RcuxUXZx7G3Xd7zIT2xg+Uto/hLqLgyzMBZ6W8MUDqh5+antvHYnpOaw7Lk0awbNmhWuWIBR5ExLuNKJa6K5UjRXGbZkmlEGqfk0rYi6i8E5gaj281sP9gaGg72t2gffRRP3Xe4TTYdE82FwTKDZc2n6dJpVDonRXtKEva2DXzr2e4abrLpXNOzjpzbw+h3E8IWcTMFF4z6t7SjLmk8zy2nWPHCmh9U3rg2ur0H0vrFqn8EYFz8a/Wj0ku6zomEntlSIloNE98aI4zRzEST7axGA9+m8qNtTwJnmT9uDwP6H/Z3hLtPzv1JsYE8Jt3Co4cPetuHth1PoCShYE4nFGfVNvcE6ECaNKRDFBqqTKBb/N7iGfZG0BkFyHccs9ARgcRJrohk39bYM8BBsqcRiH67L9XuI4BfKhITxFABQE8CaGCSJM8hPEPs8F44pASTl+k/3h3oQAKEh0tOAEESi9xCtC7UuoveNmMaxTlGEeCgEzVi2JipX/QwyF5lHwvBpYO6vxtuOiUeZILoWgq5siKS1iEg4eothk3DY0hxtWsImof8twdidhdCPHIWEQTtnylGmcZAQaN6NbOH3Bzxzl0/amoTEpwN2Ny29Z7BvXJJQQiKOAEpzVw67T0aSUEIijhxMKqAlwy/MkSSUkIgXFAed/gAkDD/sJkkoIREvRTT/JpqzYqR/SJJQQiIuHHRPp9O+GrglVpJQQiKuDEyczOY+BgnZQT+VJJSQiDFsbjr7m5AW8u5ASUIJiVjCksxmP0Jzrh0lQ0uSUEIiZlqoJYHNeIjmrxr92IC8EEZCIkZaqIvN/FdadNuYtxdLEkpIxEAGJuayOY/SSdeGcypIklBCwlz+UUifo5Q/Dq5pYZ7UkSSUkDAPip3m38yu+CokTBrHj+S8SUiYIwCTC9m0+2jujUEj8pKEEhIx5B/Y3bTgJlryJUiIpEqLJKGERBT8s7kgeykrvRtcZWFWZpEklJAwhXwM7GmQdSUr+hykzSDMEpUhKedTQiJ88hFbMqQU0ZxraPZSSMqPWPpJEkpIhM87SiyJYE0CVwlkLqBpV0BKEVEdJhZxVUyuiisLPYXzzXgWeiKj126CiEY3UMU47EJPo/QhWD244J8E/9WotarGKvQEI74P1EIUO7G7wD6BWBLBPY2mTSOODLC7CbPFgub/Dyn+4PBU7CszAAAAAElFTkSuQmCC" alt="Nevena"><span style="font-size:13px;color:#5B6875">Magacin ambalaže</span></div>
@@ -13729,7 +13730,7 @@ function renderArtikli() {
   const l = S.art.filter(a => (izb ? a.izbacen : !a.izbacen)).filter(a => !q.length || q.every(x => (a._n || (a._n = norm(a.sifra + " " + a.naziv + " " + a.grupa))).includes(x)));
   $("#tArt").innerHTML = l.length ? l.map(a => '<tr class="' + (a.aktivan ? "" : "neakt") + '"><td class="sif">' + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="muted">' + esc(a.grupa) + "</td><td>" + (a.izbacen ? "izbačen " + esc(dtxt(a.izbacen)) : a.aktivan ? "aktivan" : "neaktivan") + '</td><td class="num" style="white-space:nowrap">' +
     (a.izbacen ? '<button class="btn" data-vrati="' + a.id + '" style="padding:4px 10px">Vrati u praćenje</button>'
-      : '<button class="btn" data-et="' + a.id + '" style="padding:4px 10px" title="Etiketa sa bar kodom">Etiketa</button> <button class="btn" data-edit="' + a.id + '" style="padding:4px 10px">Izmeni</button> <button class="btn danger" data-izbaci="' + a.id + '" style="padding:4px 10px">Izbaci</button>') + "</td></tr>").join("") : '<tr class="empty-row"><td colspan="5">' + (izb ? "Nema izbačenih artikala." : "Nema artikala.") + "</td></tr>";
+      : '<button class="btn" data-et="' + a.id + '" style="padding:4px 10px" title="Etiketa sa bar kodom">Etiketa</button> <button class="btn" data-qp="' + a.id + '" style="padding:4px 10px" title="Identifikaciona etiketa QP18">QP18</button> <button class="btn" data-edit="' + a.id + '" style="padding:4px 10px">Izmeni</button> <button class="btn danger" data-izbaci="' + a.id + '" style="padding:4px 10px">Izbaci</button>') + "</td></tr>").join("") : '<tr class="empty-row"><td colspan="5">' + (izb ? "Nema izbačenih artikala." : "Nema artikala.") + "</td></tr>";
 }
 async function sacuvajSifarnik(items, grupe) {
   try {
@@ -14012,7 +14013,8 @@ $("#dPrijem").addEventListener("input", renderPrijem);
 ["#pOd", "#pDo", "#pVrsta", "#pQ", "#pStorno"].forEach(s => $(s).addEventListener("input", renderPromet));
 $("#aQ").addEventListener("input", renderArtikli);
 $("#tArt").addEventListener("click", e => {
-  const b = e.target.closest("[data-edit],[data-izbaci],[data-vrati],[data-et]"); if (!b) return;
+  const b = e.target.closest("[data-edit],[data-izbaci],[data-vrati],[data-et],[data-qp]"); if (!b) return;
+  if (b.dataset.qp) { const a = S.byId[b.dataset.qp]; qp18Dlg([{ art: a.id, kol: "", dob: a.dob ? dobNaziv(a.dob) : "" }], null); return; }
   if (b.dataset.et) { etiketeDlg([{ art: b.dataset.et, n: 1 }], "Etiketa – " + artName(b.dataset.et), null); return; }
   if (b.dataset.edit) izmeni(b.dataset.edit); else if (b.dataset.izbaci) izbaciArtikal(b.dataset.izbaci, true); else vratiArtikal(b.dataset.vrati);
 });
@@ -14643,6 +14645,124 @@ $("#etPrijem").addEventListener("click", () => {
   if (!l.length) { toast("Tog dana nije bilo ulaza."); return; }
   etiketeDlg(l.map(([id, k]) => ({ art: id, n: 1, kol: k })), "Etikete za prijem " + dtxt(X), X);
 });
+
+/* ---------- identifikaciona etiketa QP18 (100 × 70 mm) ---------- */
+let logoCrni = null;
+function crniLogo() {
+  if (logoCrni) return logoCrni;
+  const img = document.querySelector(".brand img"); if (!img || !img.naturalWidth) return null;
+  const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const svetlo = (p[i] + p[i + 1] + p[i + 2]) / 3;
+    if (p[i + 3] < 40 || svetlo > 215) { p[i] = p[i + 1] = p[i + 2] = 255; } else { p[i] = p[i + 1] = p[i + 2] = 0; }
+    p[i + 3] = 255;
+  }
+  x.putImageData(d, 0, 0); return (logoCrni = c);
+}
+function tekstUSirinu(x, t, maxW, fMax, fMin, tezina) {
+  let f = fMax; x.font = tezina + " " + f + "px Arial, sans-serif";
+  while (x.measureText(t).width > maxW && f > fMin) { f -= 2; x.font = tezina + " " + f + "px Arial, sans-serif"; }
+  if (x.measureText(t).width > maxW) { while (t.length && x.measureText(t + "…").width > maxW) t = t.slice(0, -1); t += "…"; }
+  return t;
+}
+function crtajQP18(a, d) {
+  const W = 100 * PX, H = 70 * PX, m = v => v * PX;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.fillStyle = "#000"; x.strokeStyle = "#000"; x.textBaseline = "alphabetic";
+  // zaglavlje
+  x.font = "bold " + m(6.2) + "px Arial, sans-serif"; x.fillText("IDENTIFIKOVANO", m(4), m(8.2));
+  const iw = x.measureText("IDENTIFIKOVANO").width;
+  x.font = m(3.6) + "px Arial, sans-serif"; const mw = x.measureText("MAGACIN").width; x.fillText("MAGACIN", m(4) + (iw - mw) / 2, m(12.4));
+  const L = crniLogo();
+  if (L) { const lh = m(7), lw = lh * L.width / L.height; x.drawImage(L, W - m(4) - lw, m(2.2), lw, lh); x.font = m(2.8) + "px Arial, sans-serif"; x.textAlign = "center"; x.fillText("L E S K O V A C", W - m(4) - lw / 2, m(12.6)); x.textAlign = "left"; }
+  // okvir
+  const X0 = m(3), X1 = W - m(3), Y0 = m(14), Y1 = H - m(2.5);
+  x.lineWidth = m(0.45); x.strokeRect(X0, Y0, X1 - X0, Y1 - Y0);
+  x.lineWidth = m(0.3);
+  // QP18 i evidencioni broj
+  x.strokeRect(X0 + m(1.5), Y0 + m(1.2), m(15), m(6.8)); x.font = m(4.4) + "px Arial, sans-serif"; x.fillText("QP18", X0 + m(3), Y0 + m(6.4));
+  const ebX = X1 - m(32), ebY = Y0 + m(1.2);
+  x.strokeRect(ebX, ebY, m(30.5), m(8.3));
+  x.font = m(2.4) + "px Arial, sans-serif"; x.textAlign = "center"; x.fillText("EVIDENCIONI BROJ", ebX + m(15.25), ebY + m(2.8));
+  x.font = "bold " + m(4.6) + "px Arial, sans-serif"; x.fillText(String(d.ev || ""), ebX + m(15.25), ebY + m(7.4)); x.textAlign = "left";
+  // redovi
+  const redovi = [
+    ["ŠIFRA", a.sifra || "", null, null],
+    ["Naziv materijala", a.naziv || "", null, null],
+    ["Serija / LOT", d.lot || "", null, null],
+    ["Dobavljač", d.dob || "", null, null],
+    ["Količina", d.kol ? fmt(parseQty(d.kol) || d.kol, false) + (a.mera ? " " + a.mera : "") : "", "Br. pakovanja", d.pak || ""],
+    ["Datum prijema", d.datum ? dtxt(d.datum) : "", "Rok trajanja", d.rok ? (/-/.test(d.rok) ? dtxt(d.rok) : d.rok) : ""]
+  ];
+  const rh = m(4.9); let y = Y0 + m(10.2);
+  x.beginPath(); x.moveTo(X0, y); x.lineTo(X1, y); x.stroke();
+  const labX = X0 + m(1.5), valX = X0 + m(24), sred = X0 + (X1 - X0) * 0.54;
+  for (const [l1, v1, l2, v2] of redovi) {
+    const by = y + rh - m(1.3);
+    x.font = m(2.5) + "px Arial, sans-serif"; x.fillText(l1, labX, by);
+    const kraj1 = l2 ? sred - m(1) : X1 - m(1.5);
+    const t1 = tekstUSirinu(x, String(v1), kraj1 - valX, m(3.6), m(2.4), "bold"); x.fillText(t1, valX, by);
+    if (l2) {
+      x.font = m(2.5) + "px Arial, sans-serif"; x.fillText(l2, sred, by);
+      const lw2 = x.measureText(l2).width + m(2);
+      const t2 = tekstUSirinu(x, String(v2), X1 - m(1.5) - (sred + lw2), m(3.6), m(2.4), "bold"); x.fillText(t2, sred + lw2, by);
+    }
+    y += rh; x.beginPath(); x.moveTo(X0, y); x.lineTo(X1, y); x.stroke();
+  }
+  // donji red: QR + bar kod (umesto potpisa šefa magacina)
+  const kod = kodArtikla(a), qs = Y1 - y - m(1.4), qx = X0 + m(1.5), qy = y + m(0.7);
+  const qr = qrcode(0, "M"); qr.addData(kod); qr.make();
+  const n = qr.getModuleCount(), cell = qs / (n + 2);
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) x.fillRect(qx + (k + 1) * cell, qy + (r + 1) * cell, Math.ceil(cell), Math.ceil(cell));
+  const bits = code128(kod), bx0 = qx + qs + m(3), bw = X1 - m(2) - bx0, mod = Math.min(bw / (bits.length + 12), 0.5 * PX), bwr = bits.length * mod, bx = bx0 + (bw - bwr) / 2, bh = qs - m(3.4);
+  for (let i = 0; i < bits.length; i++) if (bits[i] === "1") x.fillRect(bx + i * mod, qy + m(0.4), Math.ceil(mod), bh);
+  x.font = m(2.6) + "px Arial, sans-serif"; x.textAlign = "center"; x.fillText(kod, bx + bwr / 2, qy + qs - m(0.3)); x.textAlign = "left";
+  return c;
+}
+function predlogLota(datum, ev) { if (!ev) return ""; const d = (datum || today()).split("-"); return d[2] + d[1] + d[0].slice(2) + "/" + ev; }
+async function qp18Dlg(lista, datum) {
+  let sledeci = 0; try { sledeci = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
+  const red = (it, i) => { const a = S.byId[it.art] || {};
+    return '<tr><td style="max-width:190px"><b style="font-size:12px">' + esc(a.naziv || "") + '</b><div class="muted" style="font-size:11px">' + esc(a.sifra || "") + "</div></td>" +
+      '<td><input class="inp" data-q="ev" data-i="' + i + '" style="width:70px" inputmode="numeric" value="' + (sledeci ? sledeci + 1 + i : "") + '"></td>' +
+      '<td><input class="inp" data-q="lot" data-i="' + i + '" style="width:110px" placeholder="auto"></td>' +
+      '<td><input class="inp" data-q="kol" data-i="' + i + '" style="width:80px" inputmode="decimal" value="' + esc(it.kol ? String(r3(it.kol)).replace(".", ",") : "") + '"></td>' +
+      '<td><input class="inp" data-q="pak" data-i="' + i + '" style="width:60px"></td>' +
+      '<td><input class="inp" data-q="dob" data-i="' + i + '" style="width:140px" value="' + esc(it.dob || "") + '"></td>' +
+      '<td><input class="inp" data-q="rok" data-i="' + i + '" style="width:92px" placeholder="dd.mm.gg"></td>' +
+      '<td><input class="inp" data-q="n" data-i="' + i + '" style="width:48px" inputmode="numeric" value="1"></td></tr>'; };
+  const html = '<div class="form"><label class="fld">Datum prijema<input class="inp" type="date" id="qpD" value="' + esc(datum || today()) + '"></label>' +
+    '<div class="etl" style="max-height:340px"><table><thead><tr><th>Artikal</th><th>Ev. broj</th><th>Serija / LOT</th><th>Količina</th><th>Br. pak.</th><th>Dobavljač</th><th>Rok traj.</th><th>Kom.</th></tr></thead><tbody>' + lista.map(red).join("") + "</tbody></table></div>" +
+    '<p class="muted" style="font-size:12px;margin:0">Evidencioni broj i LOT se unose ručno. Ako LOT ostane prazan, upisuje se datum prijema/evidencioni broj (npr. 170926/508). Dole na etiketi su QR kod i bar kod šifre – skeniraju se za izlaz. Format: 100 × 70 mm, jedna etiketa po strani.</p></div>';
+  const d = $("#dlg"); d.style.width = "min(980px, 96vw)";
+  const v = await izbor("Identifikaciona etiketa QP18", html, [{ v: "no", l: "Odustani" }, { v: "pdf", l: "Preuzmi PDF za štampu", primary: true }]);
+  d.style.width = "";
+  if (v !== "pdf") return;
+  const dat = $("#qpD").value || today(), polja = {};
+  $$("#dlg [data-q]").forEach(el => { (polja[el.dataset.i] = polja[el.dataset.i] || {})[el.dataset.q] = el.value.trim(); });
+  const out = lista.map((it, i) => { const p = polja[i] || {}; return { a: S.byId[it.art], d: { ev: p.ev, lot: p.lot || predlogLota(dat, p.ev), kol: p.kol, pak: p.pak, dob: p.dob, rok: p.rok, datum: dat }, n: Math.max(0, Math.min(200, parseInt(p.n || "1", 10) || 0)) }; }).filter(x => x.a && x.n > 0);
+  if (!out.length) return;
+  if (!window.jspdf || !window.qrcode) { toast("Biblioteka za etikete nije učitana."); return; }
+  const doc = new jspdf.jsPDF({ unit: "mm", format: [100, 70], orientation: "landscape", compress: true });
+  let prvi = true, maxEv = sledeci;
+  for (const o of out) {
+    const img = crtajQP18(o.a, o.d).toDataURL("image/png");
+    for (let k = 0; k < o.n; k++) { if (!prvi) doc.addPage([100, 70], "landscape"); prvi = false; doc.addImage(img, "PNG", 0, 0, 100, 70, o.a.id + o.d.ev, "FAST"); }
+    const e = parseInt(o.d.ev, 10); if (e > maxEv) maxEv = e;
+  }
+  try { localStorage.setItem("qpEv", String(maxEv)); } catch (e) {}
+  if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return; }
+  try { await S.downloads.save({ filename: "QP18 etikete " + dat + ".pdf", data: doc.output("arraybuffer") }); } catch (e) { if (e && e.code !== "declined") toast("PDF nije sačuvan."); }
+}
+$("#qpPrijem").addEventListener("click", () => {
+  const X = $("#dPrijem").value || today(); const l = prijemList(X);
+  if (!l.length) { toast("Tog dana nije bilo ulaza."); return; }
+  const dobDana = {}; for (const e of S.entries) if (!e.storno && e.datum === X && e.vrsta === "U" && e.dob) dobDana[e.art] = e.dob;
+  qp18Dlg(l.map(([id, k]) => ({ art: id, kol: k, dob: dobDana[id] ? dobNaziv(dobDana[id]) : (S.byId[id] && S.byId[id].dob ? dobNaziv(S.byId[id].dob) : "") })), X);
+});
+
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
 async function skeniraj() {
