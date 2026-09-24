@@ -13388,7 +13388,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "24.09.b";
+const APP_VERZIJA = "24.09.c";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14923,6 +14923,7 @@ function renderIzdavanje() {
       }).join("") + "</tbody></table></div>" +
       '<div class="toolbar" style="margin-top:12px"><button class="btn primary dl" id="izdPdf">Preuzmi PDF – ' + et.reduce((s, o) => s + o.n, 0) + " etiketa</button><button class=\"btn\" id=\"izdPrev\">Pregled prve etikete</button><button class=\"btn\" id=\"izdOcisti\">Novo trebovanje</button></div><div id=\"izdPv\"></div></div>";
   }
+  html += identKartica();
   box.innerHTML = html;
   if (!S.downloads) $$("#izdBox .dl").forEach(b => b.hidden = true);
 }
@@ -14954,6 +14955,88 @@ $("#izdBox").addEventListener("click", async e => {
     for (const o of et) { const img = crtajIzdavanje(T, o.st, o.lot).toDataURL("image/png"); for (let k = 0; k < o.n; k++) { if (!prvi) doc.addPage([100, 70], "landscape"); prvi = false; doc.addImage(img, "PNG", 0, 0, 100, 70, o.st.sifra + (o.lot ? o.lot.lot : ""), "FAST"); } }
     if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return; }
     try { await S.downloads.save({ filename: "Izdavanje " + T.broj + ".pdf", data: doc.output("arraybuffer") }); } catch (err) { if (err && err.code !== "declined") toast("PDF nije sačuvan."); }
+  }
+});
+
+
+/* ---------- etiketa ИДЕНТИФИКОВАНО (poluproizvod/proizvod), ručno popunjavanje, 70 × 120 mm ---------- */
+S.ident = { pr: "", ser: "", kol: "", proc: "", dat: today(), pot: "", n: 1, orij: "rot" };
+const PROCESI = [["kuvanje", "кување"], ["odlezavanje", "одлежавање"], ["cekanje", "чекање"], ["konfekcioniranje", "конфекционир."]];
+function identKartica() {
+  const I = S.ident;
+  const dl = '<datalist id="identDL">' + (S.norm.proizvodi || []).map(p => '<option value="' + esc(p.s + " " + p.n) + '"></option>').join("") + "</datalist>";
+  return '<div class="card" style="margin-top:18px"><h2>Etiketa ИДЕНТИФИКОВАНО – poluproizvod / proizvod (70 × 120 mm)</h2>' +
+    '<p>Sva polja se popunjavaju ručno. Polja koja ostaviš prazna štampaju se kao linija za pisanje olovkom – tako možeš odštampati i prazne etikete.</p>' +
+    '<div class="form" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));display:grid;gap:10px 14px">' +
+    '<label class="fld" style="grid-column:1/-1">Полупроизвод / производ<input class="inp" data-id="pr" list="identDL" value="' + esc(I.pr) + '" placeholder="npr. 300067 EGO KREMA SILKY TOUCH PP"></label>' + dl +
+    '<label class="fld">Серија<input class="inp" data-id="ser" value="' + esc(I.ser) + '"></label>' +
+    '<label class="fld">Количина<input class="inp" data-id="kol" value="' + esc(I.kol) + '" placeholder="npr. 250 kg"></label>' +
+    '<label class="fld">Датум<input class="inp" type="date" data-id="dat" value="' + esc(I.dat) + '"></label>' +
+    '<label class="fld">Потпис (ime, nije obavezno)<input class="inp" data-id="pot" value="' + esc(I.pot) + '"></label>' +
+    '<div class="fld" style="grid-column:1/-1">Процес<div style="display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink);font-size:14px;margin-top:4px">' +
+    '<label class="chk"><input type="radio" name="identP" data-idp="" ' + (I.proc ? "" : "checked") + "> ne označavaj (zaokružuje se olovkom)</label>" +
+    PROCESI.map(([k, c]) => '<label class="chk"><input type="radio" name="identP" data-idp="' + k + '"' + (I.proc === k ? " checked" : "") + "> " + c + "</label>").join("") + "</div></div>" +
+    '<label class="fld">Broj etiketa<input class="inp" data-id="n" inputmode="numeric" value="' + esc(String(I.n)) + '"></label>' +
+    '<label class="fld">Položaj pri štampi<select class="inp" data-id="orij"><option value="rot"' + (I.orij === "rot" ? " selected" : "") + '>termo rolna širine 70 mm (tekst rotiran)</option><option value="lez"' + (I.orij === "lez" ? " selected" : "") + ">položeno 120 × 70 mm</option></select></label></div>" +
+    '<div class="toolbar" style="margin-top:12px"><button class="btn primary dl" id="identPdf">Preuzmi PDF</button><button class="btn" id="identPrev">Pregled</button><button class="btn" id="identOc">Očisti polja</button></div><div id="identPv"></div></div>';
+}
+function crtajIdent(I) {
+  const W = 120 * PX, H = 70 * PX, m = v => v * PX;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.fillStyle = "#000"; x.strokeStyle = "#000";
+  const L = crniLogo(); if (L) { const lh = m(7.5), lw = lh * L.width / L.height; x.drawImage(L, m(7), m(3.5), lw, lh); }
+  x.font = "bold " + m(7.4) + "px Arial, sans-serif"; x.textAlign = "center"; x.fillText("ИДЕНТИФИКОВАНО", W / 2 + m(8), m(20)); x.textAlign = "left";
+  x.lineWidth = m(0.35);
+  const L0 = m(7), R0 = W - m(7);
+  const red = (lab, val, y, desno) => {
+    x.font = "bold " + m(3.4) + "px Arial, sans-serif"; x.fillText(lab, L0, y);
+    const lx = L0 + x.measureText(lab).width + m(1.5), rx = desno || R0;
+    x.beginPath(); x.moveTo(lx, y + m(0.6)); x.lineTo(rx, y + m(0.6)); x.stroke();
+    if (val) { const t = tekstUSirinu(x, String(val), rx - lx - m(2), m(4.6), m(2.6), "bold"); x.fillText(t, lx + m(1.5), y - m(0.3)); }
+  };
+  red("Полупроизвод/производ", I.pr, m(29.5));
+  red("Серија", I.ser, m(37.5));
+  red("Количина", I.kol, m(45.5));
+  // proces
+  let y = m(53.5); x.font = "bold " + m(3.4) + "px Arial, sans-serif"; x.fillText("Процес:", L0, y);
+  let px_ = L0 + x.measureText("Процес:").width + m(4);
+  PROCESI.forEach(([k, c], i) => {
+    const izabr = I.proc === k, t = c + (i < PROCESI.length - 1 ? "," : "");
+    x.font = (izabr ? "bold " : "") + m(3.3) + "px Arial, sans-serif";
+    const w = x.measureText(c).width;
+    if (izabr) { x.lineWidth = m(0.5); x.beginPath(); x.ellipse(px_ + w / 2, y - m(1.1), w / 2 + m(1.4), m(2.6), 0, 0, Math.PI * 2); x.stroke(); x.lineWidth = m(0.35); }
+    x.fillText(t, px_, y); x.beginPath(); x.moveTo(px_, y + m(0.7)); x.lineTo(px_ + w, y + m(0.7)); x.stroke();
+    px_ += x.measureText(t).width + m(2.4);
+  });
+  red("Датум", I.dat ? dtxt(I.dat) : "", m(62.5), m(66));
+  x.font = "bold " + m(3.4) + "px Arial, sans-serif"; x.fillText("Потпис,", m(88), m(58.5));
+  x.beginPath(); x.moveTo(m(74), m(65.5)); x.lineTo(R0, m(65.5)); x.stroke();
+  if (I.pot) { x.font = "bold " + m(3.8) + "px Arial, sans-serif"; x.textAlign = "center"; x.fillText(tekstUSirinu(x, I.pot, R0 - m(74), m(3.8), m(2.4), "bold"), (m(74) + R0) / 2, m(64.6)); x.textAlign = "left"; }
+  if (I.orij !== "rot") return c;
+  const r = document.createElement("canvas"); r.width = H; r.height = W; const rx = r.getContext("2d");
+  rx.translate(H, 0); rx.rotate(Math.PI / 2); rx.drawImage(c, 0, 0); return r;
+}
+$("#izdBox").addEventListener("input", e => {
+  const k = e.target.dataset && e.target.dataset.id; if (!k) return;
+  S.ident[k] = k === "n" ? Math.max(1, Math.min(200, parseInt(e.target.value, 10) || 1)) : e.target.value;
+});
+$("#izdBox").addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.idp !== undefined) S.ident.proc = t.dataset.idp;
+  if (t.dataset && t.dataset.id === "orij") S.ident.orij = t.value;
+});
+$("#izdBox").addEventListener("click", async e => {
+  const I = S.ident;
+  if (e.target.id === "identOc") { S.ident = { pr: "", ser: "", kol: "", proc: "", dat: today(), pot: "", n: 1, orij: I.orij }; renderIzdavanje(); return; }
+  if (e.target.id === "identPrev") { const c = crtajIdent(Object.assign({}, I, { orij: "lez" })); c.style.cssText = "width:min(560px,100%);border:1px solid var(--line);border-radius:6px;margin-top:12px;background:#fff"; const pv = $("#identPv"); pv.innerHTML = ""; pv.appendChild(c); return; }
+  if (e.target.id === "identPdf") {
+    if (!window.jspdf) { toast("Biblioteka za PDF nije učitana."); return; }
+    const rot = I.orij === "rot", fmt_ = rot ? [70, 120] : [120, 70], or = rot ? "portrait" : "landscape";
+    const doc = new jspdf.jsPDF({ unit: "mm", format: fmt_, orientation: or, compress: true });
+    const img = crtajIdent(I).toDataURL("image/png");
+    for (let k = 0; k < (I.n || 1); k++) { if (k) doc.addPage(fmt_, or); doc.addImage(img, "PNG", 0, 0, fmt_[0], fmt_[1], "ident", "FAST"); }
+    if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return; }
+    try { await S.downloads.save({ filename: "Identifikovano " + (I.ser || I.dat || today()) + ".pdf", data: doc.output("arraybuffer") }); } catch (err) { if (err && err.code !== "declined") toast("PDF nije sačuvan."); }
   }
 });
 
