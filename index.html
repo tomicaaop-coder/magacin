@@ -13388,6 +13388,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
+const APP_VERZIJA = "24.09.b";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14773,12 +14774,33 @@ function trebLinije(items) {
   red.sort((a, b) => b.y - a.y); for (const r of red) r.it.sort((a, b) => a.x - b.x);
   return red;
 }
-function trebDatum(t, kljuc) {
-  const m = String(t).match(new RegExp(kljuc + "\\s*\\.?\\s*:?\\s*(\\d{1,2})\\.\\s*(\\d{1,2})\\.\\s*(\\d{4})", "i"));
-  return m ? m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0") : "";
+/* ERP izveštaji mogu biti u srpskom (1.234,5000 · 13. 7. 2026.) ili engleskom formatu (1,234.5000 · 7/13/2026) */
+function formatBrojeva(tekst) {
+  const t = String(tekst);
+  const en = (t.match(/\d\.\d{4}(?!\d)/g) || []).length + (t.match(/\d{1,2}\/\d{1,2}\/\d{4}/g) || []).length * 2;
+  const sr = (t.match(/\d,\d{4}(?!\d)/g) || []).length + (t.match(/\d{1,2}\.\s?\d{1,2}\.\s?\d{4}/g) || []).length;
+  return en > sr ? "en" : "sr";
 }
-function trebBroj(s) { s = String(s).trim(); return Number(s.replace(/\./g, "").replace(",", ".")); }
+function brojPoFormatu(v, f) {
+  let t = String(v).trim().replace(/\s/g, "");
+  if (!/^-?[\d.,]+$/.test(t)) return NaN;
+  if (t.includes(",") && t.includes(".")) f = t.lastIndexOf(".") > t.lastIndexOf(",") ? "en" : "sr";
+  t = f === "en" ? t.replace(/,/g, "") : t.replace(/\./g, "").replace(",", ".");
+  return Number(t);
+}
+function trebDatum(t, kljuc) {
+  let m = String(t).match(new RegExp(kljuc + "\\s*\\.?\\s*:?\\s*(\\d{1,2})\\.\\s*(\\d{1,2})\\.\\s*(\\d{4})", "i"));
+  if (m) return m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+  m = String(t).match(new RegExp(kljuc + "\\s*\\.?\\s*:?\\s*(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})", "i"));   // engleski: mesec/dan/godina
+  if (m) return m[3] + "-" + String(m[1]).padStart(2, "0") + "-" + String(m[2]).padStart(2, "0");
+  m = String(t).match(new RegExp(kljuc + "\\s*\\.?\\s*:?\\s*(\\d{4})-(\\d{1,2})-(\\d{1,2})", "i"));
+  if (m) return m[1] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[3]).padStart(2, "0");
+  return "";
+}
+let TREB_FORMAT = "sr";
+function trebBroj(v) { return brojPoFormatu(v, TREB_FORMAT); }
 function parseTrebovanje(strane) {
+  TREB_FORMAT = formatBrojeva(strane.map(p => p.map(i => i.s).join(" ")).join(" "));
   const r = { broj: "", datum: "", proizvod: { sifra: "", naziv: "" }, serija: "", mesto: "", stavke: [] };
   let cur = null;
   for (const items of strane) {
@@ -14786,7 +14808,7 @@ function parseTrebovanje(strane) {
     for (const L of trebLinije(items)) {
       const txt = L.it.map(i => i.s).join(" ").replace(/\s+/g, " ").trim();
       let m;
-      if ((m = txt.match(/TREBOVANJE\s+br\.?\s*(\S+)\s+od\s+(\d{1,2}\.\d{1,2}\.\d{4})/i))) { if (!r.broj) { r.broj = m[1]; r.datum = m[2]; } continue; }
+      if ((m = txt.match(/TREBOVANJE\s+br\.?\s*(\S+)\s+od\s+(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/i))) { if (!r.broj) { r.broj = m[1]; r.datum = m[2]; } continue; }
       for (const i of L.it) {
         const mm = i.s.trim().match(/^(\d{6})\s*\/\s*(.+)$/); if (mm && !r.proizvod.sifra) r.proizvod = { sifra: mm[1], naziv: mm[2].trim() };
         const ms = i.s.trim().match(/^Serija:\s*(\S+)/i); if (ms && !r.serija) r.serija = ms[1];
@@ -15600,8 +15622,10 @@ $("#anaBox").addEventListener("click", e => {
 
 /* parser lager liste (ERP) – zajednički za PDF tekst i Excel redove */
 const MERE = /^(KOM|KG|SET|GR|M2|M|L|PAR|KUT|PAK|ROL|LIT)$/i;
-function brojERP(t) { t = String(t).trim(); if (!/^-?[\d.]+(,\d+)?$/.test(t)) return NaN; return Number(t.replace(/\./g, "").replace(",", ".")); }
+let ERP_FORMAT = "sr";
+function brojERP(t) { return brojPoFormatu(t, ERP_FORMAT); }
 function parseLagerLinije(linije) {
+  ERP_FORMAT = formatBrojeva(linije.join(" "));
   const out = {}; let mag = null, magNaziv = "";
   for (const ln of linije) {
     const s = ln.replace(/\s+/g, " ").trim(); if (!s) continue;
@@ -16052,7 +16076,7 @@ document.addEventListener("keydown", e => { if (e.ctrlKey && (e.key === "m" || e
 
 /* ---------- start ---------- */
 const d0 = today();
-$("#danas").textContent = new Date().toLocaleDateString("sr-Latn-RS", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+$("#danas").textContent = new Date().toLocaleDateString("sr-Latn-RS", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + " · v" + APP_VERZIJA;
 $("#dUnos").value = d0; $("#dStanje").value = d0; $("#dPrijem").value = d0; $("#pOd").value = addDays(d0, -6); $("#pDo").value = d0; $("#xd").value = d0;
 show(smeVideti("unos") ? "unos" : prviDozvoljen()); q.focus();
 
@@ -16119,6 +16143,6 @@ async function start() {
 start();
 })();
 </script>
-<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>
+<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").then(r => r.update()).catch(() => {}));</script>
 </body>
 </html>
