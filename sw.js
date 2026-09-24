@@ -1,5 +1,5 @@
 /* Keš za rad aplikacije i kad je veza slaba. Podaci idu direktno u Firebase. */
-const KES = "magacin-v4";
+const KES = "magacin-v5";
 const OSNOVA = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./firebase-config.js", "./fb-adapter.js"];
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(KES).then(c => c.addAll(OSNOVA)).catch(() => {})); });
 self.addEventListener("activate", e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== KES).map(x => caches.delete(x)))).then(() => self.clients.claim())));

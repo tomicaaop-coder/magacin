@@ -14,10 +14,10 @@
     ["pregled", "Pregled", "sve samo za čitanje"]
   ];
   const PRAVA = {
-    magacin: ["unos", "stanje", "prijem", "promet", "popis", "artikli", "zalihe", "plan"],
-    proizvodnja: ["proizvodnja", "plan", "zalihe", "stanje", "promet"],
+    magacin: ["unos", "stanje", "prijem", "izdavanje", "promet", "popis", "artikli", "zalihe", "plan"],
+    proizvodnja: ["izdavanje", "proizvodnja", "plan", "zalihe", "stanje", "promet"],
     nabavka: ["plan", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "zalihe", "stanje", "promet", "artikli"],
-    pregled: ["plan", "unos", "stanje", "prijem", "promet", "proizvodnja", "zalihe", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "popis", "artikli"]
+    pregled: ["izdavanje", "plan", "unos", "stanje", "prijem", "promet", "proizvodnja", "zalihe", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "popis", "artikli"]
   };
 
   if (!CFG.apiKey || /UPISI/.test(CFG.apiKey)) {

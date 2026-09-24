@@ -423,6 +423,9 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   <!-- POPIS -->
   <section class="view" id="v-popis"><div id="popisBox"></div></section>
 
+  <!-- IZDAVANJE -->
+  <section class="view" id="v-izdavanje"><div id="izdBox"></div></section>
+
   <!-- PLAN -->
   <section class="view" id="v-plan"><div id="planBox"></div></section>
 
@@ -13915,6 +13918,7 @@ function renderAll() {
   else if (v === "v-prijem") renderPrijem();
   else if (v === "v-proizvodnja") renderProizvodnja();
   else if (v === "v-zalihe") renderZalihe();
+  else if (v === "v-izdavanje") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#izdBox") && /INPUT|SELECT/.test(ae.tagName))) renderIzdavanje(); }
   else if (v === "v-plan") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#planBox") && /INPUT|SELECT/.test(ae.tagName))) renderPlan(); }
   else if (v === "v-zahtevi") { if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest("#zahBox") || document.activeElement.tagName === "BUTTON") renderZahtevi(); }
   else if (v === "v-porudzbenice") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#porBox") && /INPUT|SELECT/.test(ae.tagName))) renderPorudzbenice(); }
@@ -13926,7 +13930,7 @@ function renderAll() {
   else if (v === "v-artikli") { renderArtikli(); renderNeprac(); }
 }
 const GRUPE = {
-  magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"]],
+  magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["izdavanje", "Etikete izdavanje materijala"], ["promet", "Promet"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan proizvodnje"], ["zalihe", "Zalihe"]],
   nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["ngrupe", "Grupe nabavke"], ["analitika", "Analitika"]],
   popis: [["popis", "Popis"]],
@@ -14761,6 +14765,174 @@ $("#qpPrijem").addEventListener("click", () => {
   if (!l.length) { toast("Tog dana nije bilo ulaza."); return; }
   const dobDana = {}; for (const e of S.entries) if (!e.storno && e.datum === X && e.vrsta === "U" && e.dob) dobDana[e.art] = e.dob;
   qp18Dlg(l.map(([id, k]) => ({ art: id, kol: k, dob: dobDana[id] ? dobNaziv(dobDana[id]) : (S.byId[id] && S.byId[id].dob ? dobNaziv(S.byId[id].dob) : "") })), X);
+});
+
+function trebLinije(items) {
+  const red = [];
+  for (const it of items) { let r = red.find(r => Math.abs(r.y - it.y) < 2.5); if (!r) { r = { y: it.y, it: [] }; red.push(r); } r.it.push(it); }
+  red.sort((a, b) => b.y - a.y); for (const r of red) r.it.sort((a, b) => a.x - b.x);
+  return red;
+}
+function trebDatum(t, kljuc) {
+  const m = String(t).match(new RegExp(kljuc + "\\s*\\.?\\s*:?\\s*(\\d{1,2})\\.\\s*(\\d{1,2})\\.\\s*(\\d{4})", "i"));
+  return m ? m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0") : "";
+}
+function trebBroj(s) { s = String(s).trim(); return Number(s.replace(/\./g, "").replace(",", ".")); }
+function parseTrebovanje(strane) {
+  const r = { broj: "", datum: "", proizvod: { sifra: "", naziv: "" }, serija: "", mesto: "", stavke: [] };
+  let cur = null;
+  for (const items of strane) {
+    let hdr = null, mestoSledi = false;
+    for (const L of trebLinije(items)) {
+      const txt = L.it.map(i => i.s).join(" ").replace(/\s+/g, " ").trim();
+      let m;
+      if ((m = txt.match(/TREBOVANJE\s+br\.?\s*(\S+)\s+od\s+(\d{1,2}\.\d{1,2}\.\d{4})/i))) { if (!r.broj) { r.broj = m[1]; r.datum = m[2]; } continue; }
+      for (const i of L.it) {
+        const mm = i.s.trim().match(/^(\d{6})\s*\/\s*(.+)$/); if (mm && !r.proizvod.sifra) r.proizvod = { sifra: mm[1], naziv: mm[2].trim() };
+        const ms = i.s.trim().match(/^Serija:\s*(\S+)/i); if (ms && !r.serija) r.serija = ms[1];
+      }
+      if (/Mesto\s+Tro/i.test(txt)) { mestoSledi = true; continue; }
+      if (L.it.some(i => /^RBr$/i.test(i.s.trim())) && L.it.some(i => /^Artikal$/i.test(i.s.trim()))) {
+        const f = re => (L.it.find(i => re.test(i.s.trim())) || {}).x;
+        hdr = { art: f(/^Artikal$/i), mera: f(/^Mera$/i), kol: f(/^Koli/i), cena: f(/^Cena$/i) };
+        if (!hdr.mera || !hdr.kol) hdr = null; continue;
+      }
+      if (!hdr) continue;
+      const col = (a, b) => L.it.filter(i => i.x >= a && i.x < b);
+      const rbr = L.it.find(i => i.x < hdr.art - 3 && /^\d+$/.test(i.s.trim()));
+      const sif = col(hdr.art - 3, hdr.art + 30).find(i => /^\d{6}$/.test(i.s.trim()));
+      const meraI = col(hdr.mera - 8, hdr.kol - 25).find(i => i.s.trim());
+      const kolI = col(hdr.kol - 35, (hdr.cena || hdr.kol + 70) - 10).find(i => /^[\d.,]+$/.test(i.s.trim()));
+      if (rbr && sif) {
+        const naziv = col(hdr.art + 30, hdr.mera - 8).map(i => i.s).join(" ").replace(/\s+,/g, ",").replace(/\s+/g, " ").trim();
+        cur = { sifra: sif.s.trim(), naziv, mera: meraI ? meraI.s.trim() : "", kol: kolI ? trebBroj(kolI.s) : 0, lotovi: [] };
+        r.stavke.push(cur); continue;
+      }
+      if (cur && /Va[zž]nost|Dat\s*\.?\s*proiz/i.test(txt)) {
+        const datI = L.it.find(i => /^Dat/i.test(i.s.trim()) || /Va[zž]nost/i.test(i.s));
+        const lot = L.it.filter(i => i.x >= hdr.art - 3 && (!datI || i.x < datI.x)).map(i => i.s).join(" ").replace(/\s+/g, " ").trim();
+        cur.lotovi.push({ lot, kol: kolI ? trebBroj(kolI.s) : 0, mera: meraI ? meraI.s.trim() : cur.mera, rok: trebDatum(txt, "Va[zž]nost"), proiz: trebDatum(txt, "proiz") });
+        continue;
+      }
+      if (cur && !meraI && !kolI && !cur.lotovi.length) {
+        const t = col(hdr.art + 30, hdr.mera - 8).map(i => i.s).join(" ").trim(); if (t) cur.naziv = (cur.naziv + " " + t).replace(/\s+,/g, ",").replace(/\s+/g, " ");
+      }
+    }
+  }
+  return r;
+}
+
+
+/* ---------- etikete izdavanje materijala (iz trebovanja) ---------- */
+S.treb = null;
+async function pdfStavke(buf) {
+  await ucitajPdfjs();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise, strane = [];
+  for (let p = 1; p <= pdf.numPages; p++) { const tc = await (await pdf.getPage(p)).getTextContent(); strane.push(tc.items.filter(i => i.str && i.str.trim()).map(i => ({ x: i.transform[4], y: i.transform[5], s: i.str }))); }
+  return strane;
+}
+function tekstURedove(x, t, maxW, maxL) {
+  const w = String(t).split(" "), l = []; let c = "";
+  for (const r of w) { const tt = c ? c + " " + r : r; if (x.measureText(tt).width <= maxW || !c) c = tt; else { l.push(c); c = r; } }
+  if (c) l.push(c); return l.length <= maxL ? l : null;
+}
+function crtajIzdavanje(t, st, lot) {
+  const W = 100 * PX, H = 70 * PX, m = v => v * PX;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.fillStyle = "#000"; x.strokeStyle = "#000";
+  const L = crniLogo(); let lw = 0;
+  if (L) { const lh = m(7); lw = lh * L.width / L.height; x.drawImage(L, W - m(4) - lw, m(2.2), lw, lh); x.font = m(2.8) + "px Arial, sans-serif"; x.textAlign = "center"; x.fillText("L E S K O V A C", W - m(4) - lw / 2, m(12.6)); x.textAlign = "left"; }
+  const nasl = tekstUSirinu(x, "IZDAVANJE MATERIJALA", W - m(10) - lw, m(6.2), m(4), "bold"); x.fillText(nasl, m(4), m(8.6));
+  x.font = m(2.8) + "px Arial, sans-serif"; x.fillText("Trebovanje " + (t.broj || "") + (t.datum ? " od " + t.datum : ""), m(4), m(12.6));
+  const X0 = m(3), X1 = W - m(3), Y0 = m(14), Y1 = H - m(2.5), lab = X0 + m(1.5), val = X0 + m(23);
+  x.lineWidth = m(0.45); x.strokeRect(X0, Y0, X1 - X0, Y1 - Y0); x.lineWidth = m(0.3);
+  const crta = y => { x.beginPath(); x.moveTo(X0, y); x.lineTo(X1, y); x.stroke(); };
+  let y = Y0;
+  // Proizvod (do 2 reda)
+  const pTxt = ((t.proizvod.sifra || "") + " " + (t.proizvod.naziv || "")).trim(), pw = X1 - m(1.5) - val;
+  let fp = m(3.8), pl; do { x.font = "bold " + fp + "px Arial, sans-serif"; pl = tekstURedove(x, pTxt, pw, 2); if (pl) break; fp -= 2; } while (fp > m(2.4));
+  if (!pl) pl = [tekstUSirinu(x, pTxt, pw, fp, fp, "bold")];
+  const ph = pl.length > 1 ? m(9) : m(6.2);
+  x.font = m(2.6) + "px Arial, sans-serif"; x.fillText("Proizvod:", lab, y + (pl.length > 1 ? m(4) : m(4.3)));
+  x.font = "bold " + fp + "px Arial, sans-serif"; pl.forEach((l, i) => x.fillText(l, val, y + m(4.3) + i * fp * 1.08));
+  y += ph; crta(y);
+  if (t.serija) { x.font = m(2.4) + "px Arial, sans-serif"; x.fillText("Serija proizvoda: " + t.serija, lab, y + m(3.1)); y += m(4.2); crta(y); }
+  // Šifra
+  x.font = m(2.6) + "px Arial, sans-serif"; x.fillText("Šifra materijala:", lab, y + m(4.3)); x.font = "bold " + m(4.4) + "px Arial, sans-serif"; x.fillText(st.sifra, val, y + m(4.6)); y += m(6); crta(y);
+  // Naziv – krupno, više redova
+  const ostatak = Y1 - y - m(6) * 3, nw = X1 - m(1.5) - lab; let fn = m(6), nl;
+  x.font = m(2.6) + "px Arial, sans-serif"; x.fillText("Naziv materijala:", lab, y + m(3.2));
+  const nY = y + m(4), nH = ostatak - m(4.6);
+  while (fn > m(2.6)) { x.font = "bold " + fn + "px Arial, sans-serif"; const maxL = Math.max(1, Math.floor(nH / (fn * 1.12))); nl = tekstURedove(x, st.naziv, nw, maxL); if (nl) break; fn -= 2; }
+  if (!nl) nl = [tekstUSirinu(x, st.naziv, nw, fn, fn, "bold")];
+  x.font = "bold " + fn + "px Arial, sans-serif"; nl.forEach((l, i) => x.fillText(l, lab, nY + fn * 0.95 + i * fn * 1.12));
+  y += ostatak; crta(y);
+  const polje = (l, v) => { x.font = m(2.6) + "px Arial, sans-serif"; x.fillText(l, lab, y + m(4.2)); x.font = "bold " + m(4.6) + "px Arial, sans-serif"; x.fillText(tekstUSirinu(x, v, X1 - m(1.5) - val, m(4.6), m(2.6), "bold"), val, y + m(4.6)); y += m(6); if (y < Y1 - 1) crta(y); };
+  polje("Količina:", lot ? fmt(lot.kol, false) + " " + (lot.mera || st.mera) : fmt(st.kol, false) + " " + st.mera);
+  polje("Lot:", lot ? lot.lot : st.lotovi.map(l => l.lot).join(", "));
+  polje("Rok trajanja:", lot ? (lot.rok ? dtxt(lot.rok) : "") : st.lotovi.map(l => l.rok ? dtxt(l.rok) : "").filter(Boolean).join(", "));
+  return c;
+}
+function izdEtikete() {
+  const T = S.treb, out = [];
+  T.stavke.forEach((st, i) => {
+    if (!T.izb[i]) return;
+    if (T.poLotu && st.lotovi.length) st.lotovi.forEach((l, j) => out.push({ st, lot: l, n: T.kom[i + "_" + j] ?? 1 }));
+    else out.push({ st, lot: st.lotovi.length === 1 ? st.lotovi[0] : null, n: T.kom[i + "_x"] ?? 1 });
+  });
+  return out.filter(o => o.n > 0);
+}
+function renderIzdavanje() {
+  const box = $("#izdBox"), T = S.treb;
+  let html = '<div class="toolbar"><h1>Etikete izdavanje materijala</h1></div>' +
+    '<div class="card" style="margin-bottom:16px"><div class="toolbar" style="margin:0"><label class="fld grow">Trebovanje (PDF iz UPIS.Net-a)<input class="inp" type="file" id="izdF" accept=".pdf,application/pdf"></label>' +
+    '<div id="izdM" class="muted" style="font-size:13px"></div></div><p class="muted" style="font-size:12px;margin:8px 0 0">Učitaj trebovanje – program pravi etiketu 100 × 70 mm za svaki materijal sa dokumenta: proizvod, šifra, naziv, količina, lot i rok trajanja. Za svako novo trebovanje učitaj novi PDF.</p></div>';
+  if (T) {
+    const et = izdEtikete();
+    html += '<div class="card"><div style="display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;margin-bottom:10px"><h2 style="margin:0;font-size:20px">' + esc(T.proizvod.sifra + " " + T.proizvod.naziv) + '</h2><span class="muted">Trebovanje <b>' + esc(T.broj) + "</b> od " + esc(T.datum) + (T.serija ? " · serija " + esc(T.serija) : "") + " · " + T.stavke.length + " materijala</span></div>" +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:13px"><label class="chk"><input type="checkbox" id="izdLot"' + (T.poLotu ? " checked" : "") + "> posebna etiketa za svaki lot (kad materijal ima više lotova)</label><label class=\"chk\"><input type=\"checkbox\" id=\"izdSve\" checked> svi materijali</label></div>" +
+      '<div class="tbl-wrap" style="max-height:520px"><table><thead><tr><th></th><th>Šifra</th><th>Naziv materijala</th><th class="num">Količina</th><th>Lot</th><th>Rok trajanja</th><th class="num">Kom.</th></tr></thead><tbody>' +
+      T.stavke.map((st, i) => {
+        const redovi = T.poLotu && st.lotovi.length > 1 ? st.lotovi.map((l, j) => ({ l, k: i + "_" + j })) : [{ l: st.lotovi.length === 1 ? st.lotovi[0] : null, k: T.poLotu && st.lotovi.length === 1 ? i + "_0" : i + "_x" }];
+        return redovi.map((r, j) => "<tr>" + (j ? '<td></td><td></td><td class="muted" style="font-size:12px">↳ lot ' + (j + 1) + "</td>" :
+          '<td><input type="checkbox" data-izi="' + i + '"' + (T.izb[i] ? " checked" : "") + '></td><td class="sif">' + esc(st.sifra) + "</td><td><b>" + esc(st.naziv) + "</b>" + (st.lotovi.length > 1 && !T.poLotu ? '<div class="muted" style="font-size:11px">' + st.lotovi.length + " lota na jednoj etiketi</div>" : "") + "</td>") +
+          '<td class="num">' + esc(fmt(r.l ? r.l.kol : st.kol, false)) + " " + esc((r.l && r.l.mera) || st.mera) + "</td><td>" + esc(r.l ? r.l.lot : st.lotovi.map(l => l.lot).join(", ")) + "</td><td>" + esc(r.l ? (r.l.rok ? dtxt(r.l.rok) : "") : st.lotovi.map(l => l.rok ? dtxt(l.rok) : "").join(", ")) + "</td>" +
+          '<td class="num"><input class="inp minin" style="width:56px" data-izk="' + r.k + '" inputmode="numeric" value="' + (T.kom[r.k] ?? 1) + '"></td></tr>').join("");
+      }).join("") + "</tbody></table></div>" +
+      '<div class="toolbar" style="margin-top:12px"><button class="btn primary dl" id="izdPdf">Preuzmi PDF – ' + et.reduce((s, o) => s + o.n, 0) + " etiketa</button><button class=\"btn\" id=\"izdPrev\">Pregled prve etikete</button><button class=\"btn\" id=\"izdOcisti\">Novo trebovanje</button></div><div id=\"izdPv\"></div></div>";
+  }
+  box.innerHTML = html;
+  if (!S.downloads) $$("#izdBox .dl").forEach(b => b.hidden = true);
+}
+$("#izdBox").addEventListener("change", async e => {
+  const t = e.target, T = S.treb;
+  if (t.id === "izdF" && t.files[0]) {
+    const f = t.files[0]; $("#izdM").textContent = "Čitam trebovanje…";
+    try {
+      const r = parseTrebovanje(await pdfStavke(await f.arrayBuffer()));
+      if (!r.stavke.length) { $("#izdM").textContent = "U PDF-u nisu pronađeni materijali. Da li je to trebovanje iz UPIS.Net-a?"; return; }
+      r.ime = f.name; r.izb = r.stavke.map(() => true); r.poLotu = true; r.kom = {}; S.treb = r; renderIzdavanje();
+    } catch (err) { console.error(err); $("#izdM").textContent = "PDF nije moguće pročitati: " + (err.message || err); }
+    return;
+  }
+  if (!T) return;
+  if (t.id === "izdLot") { T.poLotu = t.checked; renderIzdavanje(); return; }
+  if (t.id === "izdSve") { T.izb = T.stavke.map(() => t.checked); renderIzdavanje(); return; }
+  if (t.dataset.izi !== undefined) { T.izb[+t.dataset.izi] = t.checked; renderIzdavanje(); return; }
+  if (t.dataset.izk) { T.kom[t.dataset.izk] = Math.max(0, Math.min(50, parseInt(t.value, 10) || 0)); renderIzdavanje(); }
+});
+$("#izdBox").addEventListener("click", async e => {
+  const T = S.treb; if (!T) return;
+  if (e.target.id === "izdOcisti") { S.treb = null; renderIzdavanje(); return; }
+  if (e.target.id === "izdPrev") { const o = izdEtikete()[0]; if (!o) return; const c = crtajIzdavanje(T, o.st, o.lot); c.style.cssText = "width:min(500px,100%);border:1px solid var(--line);border-radius:6px;margin-top:12px;background:#fff"; const pv = $("#izdPv"); pv.innerHTML = ""; pv.appendChild(c); return; }
+  if (e.target.id === "izdPdf") {
+    const et = izdEtikete(); if (!et.length) { toast("Nije izabran nijedan materijal."); return; }
+    if (!window.jspdf) { toast("Biblioteka za PDF nije učitana."); return; }
+    const doc = new jspdf.jsPDF({ unit: "mm", format: [100, 70], orientation: "landscape", compress: true }); let prvi = true;
+    for (const o of et) { const img = crtajIzdavanje(T, o.st, o.lot).toDataURL("image/png"); for (let k = 0; k < o.n; k++) { if (!prvi) doc.addPage([100, 70], "landscape"); prvi = false; doc.addImage(img, "PNG", 0, 0, 100, 70, o.st.sifra + (o.lot ? o.lot.lot : ""), "FAST"); } }
+    if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return; }
+    try { await S.downloads.save({ filename: "Izdavanje " + T.broj + ".pdf", data: doc.output("arraybuffer") }); } catch (err) { if (err && err.code !== "declined") toast("PDF nije sačuvan."); }
+  }
 });
 
 /* skeniranje kamerom */
