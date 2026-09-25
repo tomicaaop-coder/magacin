@@ -337,6 +337,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button role="tab" data-grp="magacin" aria-selected="true">Magacin</button>
       <button role="tab" data-grp="proizvodnja" aria-selected="false">Proizvodnja</button>
       <button role="tab" data-grp="nabavka" aria-selected="false">Nabavka</button>
+      <button role="tab" data-grp="sirovine" aria-selected="false">Sirovine</button>
       <button role="tab" data-grp="popis" aria-selected="false">Popis</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
@@ -422,6 +423,12 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
 
   <!-- POPIS -->
   <section class="view" id="v-popis"><div id="popisBox"></div></section>
+
+  <!-- SIROVINE -->
+  <section class="view" id="v-sunos"><div id="sunosBox"></div></section>
+  <section class="view" id="v-sstanje"><div id="sstanjeBox"></div></section>
+  <section class="view" id="v-spromet"><div id="spromBox"></div></section>
+  <section class="view" id="v-srokovi"><div id="srokBox"></div></section>
 
   <!-- IZDAVANJE -->
   <section class="view" id="v-izdavanje"><div id="izdBox"></div></section>
@@ -13388,7 +13395,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "24.09.d";
+const APP_VERZIJA = "24.09.e";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13923,6 +13930,8 @@ function renderAll() {
   else if (v === "v-prijem") renderPrijem();
   else if (v === "v-proizvodnja") renderProizvodnja();
   else if (v === "v-zalihe") renderZalihe();
+  else if (/^v-s(unos|stanje|promet|rokovi)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
+    if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi })[v](); }
   else if (v === "v-izdavanje") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#izdBox") && /INPUT|SELECT/.test(ae.tagName))) renderIzdavanje(); }
   else if (v === "v-plan") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#planBox") && /INPUT|SELECT/.test(ae.tagName))) renderPlan(); }
   else if (v === "v-zahtevi") { if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest("#zahBox") || document.activeElement.tagName === "BUTTON") renderZahtevi(); }
@@ -13938,10 +13947,11 @@ const GRUPE = {
   magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["izdavanje", "Etikete izdavanje materijala"], ["promet", "Promet"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan proizvodnje"], ["zalihe", "Zalihe"]],
   nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["ngrupe", "Grupe nabavke"], ["analitika", "Analitika"]],
+  sirovine: [["sunos", "Ulaz / izlaz"], ["sstanje", "Stanje po lotovima"], ["spromet", "Promet"], ["srokovi", "Rokovi trajanja"]],
   popis: [["popis", "Popis"]],
   artikli: [["artikli", "Artikli"]]
 };
-const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", popis: "popis", artikli: "artikli" };
+const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", sirovine: "sunos", popis: "popis", artikli: "artikli" };
 function grupaOd(view) { for (const g in GRUPE) if (GRUPE[g].some(x => x[0] === view)) return g; return "magacin"; }
 const smeVideti = v => !window.DOZVOLE || window.DOZVOLE(v);
 const MOB = [["unos", "Ulaz / izlaz", "M4 12h16M12 4v16"], ["proizvodnja", "Proizvodnja", "M3 20h18M6 20V9l5 3V9l5 3V5h3v15"], ["stanje", "Zalihe", "M4 6h16M4 12h16M4 18h10"], ["prijem", "Dnevni ulaz", "M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"]];
@@ -15045,6 +15055,347 @@ $("#izdBox").addEventListener("click", async e => {
   }
 });
 
+function sirDatum(t) {
+  t = String(t || "").trim(); let m;
+  if ((m = t.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/))) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return m[3] + "-" + m[1].padStart(2, "0") + "-" + m[2].padStart(2, "0");
+  return "";
+}
+const SIR_DAT = "(\\d{1,2}\\.\\s*\\d{1,2}\\.\\s*\\d{4}\\.?|\\d{1,2}\\/\\d{1,2}\\/\\d{4})";
+const SIR_RED = new RegExp("^(.+?)\\s+" + SIR_DAT + "\\s*" + SIR_DAT + "\\s+(\\S+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)$");
+function parseLagerSerije(linije) {
+  const f = formatBrojeva(linije.join(" "));
+  const out = {}; let mag = null, art = null;
+  for (const ln of linije) {
+    const s = ln.replace(/\s+/g, " ").trim(); if (!s) continue;
+    let m;
+    if ((m = s.match(/^(\d{4})\s+(Magacin.*|.*Mag\b.*)$/i)) && !/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/.test(s)) { mag = m[1]; out[mag] = out[mag] || { naziv: m[2].trim(), art: {} }; art = null; continue; }
+    if (!mag) continue;
+    if (/Va[zž]\.\s*:/.test(s)) { art = null; continue; }            // zbirni red artikla
+    if ((m = s.match(SIR_RED))) {
+      if (!art) continue;
+      const st = brojPoFormatu(m[7], f);
+      art.lotovi.push({ lot: m[1].trim(), proiz: sirDatum(m[2]), vaz: sirDatum(m[3]), st: isNaN(st) ? 0 : st });
+      if (!art.mera) art.mera = m[4];
+      continue;
+    }
+    if ((m = s.match(/^(\d{6})\s+(.+)$/)) && !/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/.test(s)) {
+      const o = out[mag].art[m[1]] || (out[mag].art[m[1]] = { n: m[2].trim(), mera: "", lotovi: [] });
+      if (m[2].trim().length > o.n.length) o.n = m[2].trim();
+      art = o; continue;
+    }
+  }
+  return out;
+}
+
+/* =====================================================================
+   MAGACIN SIROVINA (4210) – praćenje po lotovima (serijama)
+   Ne ulazi u proizvodnju, zalihe ni zahteve – samo stanje, promet, rokovi i analitika.
+   ===================================================================== */
+S.sir = { art: [], byId: {}, bySif: {}, poc: { datum: null, lotovi: [] }, docs: {}, entries: [], sel: null, vrsta: "U", lotSel: null, treb: null, uvoz: null };
+const SVR = { U: "Ulaz", I: "Izlaz", K: "Korekcija" };
+function sirKljuc(art, lot) { return art + "|" + String(lot || "").trim().toUpperCase(); }
+function sirRebuild() {
+  const l = [];
+  for (const [docId, d] of Object.entries(S.sir.docs)) for (const s of (d.stavke || [])) l.push(Object.assign({}, s, { datum: d.datum, docId }));
+  l.sort((a, b) => a.t < b.t ? -1 : a.t > b.t ? 1 : 0); S.sir.entries = l; S.sir.cache = null;
+}
+// stanje po lotovima (do datuma X uključivo; bez X – trenutno)
+function sirStanje(X) {
+  if (!X && S.sir.cache) return S.sir.cache;
+  const m = new Map(), P = S.sir.poc || {};
+  const dodaj = (art, lot, kol, meta) => {
+    const k = sirKljuc(art, lot); let o = m.get(k);
+    if (!o) { o = { art, lot: String(lot || "").trim(), proiz: "", vaz: "", kol: 0 }; m.set(k, o); }
+    o.kol = r3(o.kol + kol);
+    if (meta) { if (meta.proiz && !o.proiz) o.proiz = meta.proiz; if (meta.vaz && !o.vaz) o.vaz = meta.vaz; }
+  };
+  if (!X || !P.datum || P.datum <= X) for (const l of (P.lotovi || [])) dodaj(l.art, l.lot, l.kol || 0, l);
+  for (const e of S.sir.entries) {
+    if (e.storno || (P.datum && e.datum <= P.datum) || (X && e.datum > X)) continue;
+    dodaj(e.art, e.lot, e.vrsta === "I" ? -e.kol : e.kol, e);
+  }
+  if (!X) S.sir.cache = m;
+  return m;
+}
+function sirLotovi(artId, X) {
+  return [...sirStanje(X).values()].filter(o => o.art === artId).sort((a, b) => (a.vaz || "9999") < (b.vaz || "9999") ? -1 : (a.vaz || "9999") > (b.vaz || "9999") ? 1 : a.lot.localeCompare(b.lot));
+}
+function sirUkupno(artId) { return r3(sirLotovi(artId).reduce((s, o) => s + o.kol, 0)); }
+function rokKlasa(vaz) { if (!vaz) return ""; const t = today(); if (vaz < t) return "raz-m"; if (vaz <= addDays(t, 90)) return "warn"; return ""; }
+function rokTxt(vaz) { if (!vaz) return "–"; const t = today(); return dtxt(vaz) + (vaz < t ? " · istekao" : vaz <= addDays(t, 90) ? " · ističe" : ""); }
+
+async function sirSacuvajSifarnik(items) {
+  try { await write(() => S.db.doc("sirovine/sifarnik").set({ items })); return true; } catch (e) { dbErr(e); return false; }
+}
+async function sirDodajUnose(datum, lista) {
+  if (!S.db) { toast("Baza nije dostupna – unos nije sačuvan."); return false; }
+  const docId = datum + "__" + safeSeg(S.uid), t0 = new Date().toISOString();
+  const nove = lista.map(x => { const o = { id: rid(), t: t0, art: x.art, lot: String(x.lot || "").trim(), vrsta: x.vrsta, kol: r3(x.kol), uid: S.uid || "anon" };
+    for (const k of ["proiz", "vaz", "dob", "nap", "grp"]) if (x[k]) o[k] = x[k]; if (x.cena > 0) o.cena = r3(x.cena); return o; });
+  try {
+    await write(async () => {
+      const cur = S.sir.docs[docId];
+      const body = { datum, uid: S.uid || "anon", stavke: (cur ? cur.stavke : []).concat(nove) };
+      S.sir.docs[docId] = body; sirRebuild(); renderAll();
+      await S.db.collection("sirunosi").doc(docId).set(body);
+    });
+    return true;
+  } catch (e) { dbErr(e); return false; }
+}
+async function sirStorniraj(docId, id) {
+  const cur = S.sir.docs[docId]; if (!cur) return; const e = cur.stavke.find(x => x.id === id); if (!e) return;
+  const a = S.sir.byId[e.art] || {};
+  const grp = e.grp ? cur.stavke.filter(x => x.grp === e.grp && !x.storno) : [];
+  let ids = [id];
+  if (grp.length > 1) {
+    const v = await izbor("Stornirati unos?", "<p>" + esc(SVR[e.vrsta]) + " <b>" + esc(fmt(e.kol, false)) + "</b> – " + esc(a.naziv || "") + ", lot " + esc(e.lot) + "</p><p>Deo je grupnog knjiženja od <b>" + grp.length + "</b> stavki.</p>",
+      [{ v: "no", l: "Odustani" }, { v: "one", l: "Samo ovu stavku" }, { v: "all", l: "Storniraj svih " + grp.length, danger: true }]);
+    if (v === "no") return; if (v === "all") ids = grp.map(x => x.id);
+  } else if (!await ask("Stornirati unos?", "<p>" + esc(SVR[e.vrsta]) + " <b>" + esc(fmt(e.kol, false)) + "</b> – " + esc(a.naziv || "") + ", lot " + esc(e.lot) + "</p><p class='muted'>Storniran unos ostaje zabeležen u prometu.</p>", "Storniraj", "Odustani", true)) return;
+  const st = { t: new Date().toISOString(), uid: S.uid || "anon" };
+  const body = Object.assign({}, cur, { stavke: cur.stavke.map(x => ids.includes(x.id) ? Object.assign({}, x, { storno: st }) : x) });
+  try { await write(async () => { S.sir.docs[docId] = body; sirRebuild(); renderAll(); await S.db.collection("sirunosi").doc(docId).set(body); }); toast("Stornirano."); } catch (err) { dbErr(err); }
+}
+
+/* ---------- Ulaz / izlaz ---------- */
+function sirPretraga(q) {
+  const w = norm(q).split(" ").filter(Boolean); if (!w.length) return [];
+  return S.sir.art.filter(a => a.aktivan !== false && w.every(x => norm(a.sifra + " " + a.naziv).includes(x))).slice(0, 40);
+}
+function renderSirUnos() {
+  const box = $("#sunosBox"), a = S.sir.byId[S.sir.sel], X = S.sir.vrsta;
+  const lot = a ? sirLotovi(a.id) : [], saSt = lot.filter(o => o.kol > 1e-9);
+  if (a && X === "I" && (!S.sir.lotSel || !saSt.some(o => o.lot === S.sir.lotSel))) { const p = saSt.find(o => !o.vaz || o.vaz >= today()) || saSt[0]; S.sir.lotSel = p ? p.lot : null; }
+  const rez = sirPretraga(S.sir.q || "");
+  const danas = S.sir.entries.filter(e => e.datum === today()).slice(-25).reverse();
+  box.innerHTML = '<div class="toolbar"><h1>Magacin sirovina – ulaz / izlaz</h1><label class="btn" style="margin-left:auto;cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="sTrebF" accept=".pdf,application/pdf" hidden></label></div>' +
+    (S.sir.treb ? sirTrebHtml() : "") +
+    '<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)"><div><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sQ" type="search" placeholder="Šifra ili naziv sirovine" value="' + esc(S.sir.q || "") + '" autocomplete="off"></div>' +
+    '<ul class="results" style="list-style:none;padding:0;margin:10px 0">' + (rez.length ? rez.map(r => '<li><button type="button" class="res' + (a && a.id === r.id ? " on" : "") + '" data-sa="' + r.id + '" style="display:grid;grid-template-columns:70px 1fr auto;gap:10px;width:100%;text-align:left;border:1px solid var(--line-2);background:' + (a && a.id === r.id ? "var(--brand-soft)" : "var(--surface)") + ';border-radius:8px;padding:8px 12px;margin-bottom:4px;cursor:pointer"><span class="sif">' + esc(r.sifra) + "</span><span>" + esc(r.naziv) + '</span><span class="num" style="font-weight:600">' + esc(fmt(sirUkupno(r.id), false)) + " " + esc(r.mera || "") + "</span></button></li>").join("") : (S.sir.q ? '<li class="muted">Nema sirovine za taj upit.</li>' : '<li class="muted">Upiši šifru ili deo naziva.</li>')) + "</ul></div>" +
+    "<div>" + (a ? '<div class="card"><h2 style="margin-bottom:2px">' + esc(a.naziv) + '</h2><div class="muted" style="font-size:13px">Šifra ' + esc(a.sifra) + " · ukupno <b>" + esc(fmt(sirUkupno(a.id), false)) + " " + esc(a.mera || "") + "</b> · " + saSt.length + " lotova na stanju</div>" +
+      '<div class="tbl-wrap" style="max-height:220px;margin:10px 0"><table><thead><tr><th>Lot</th><th>Proizvedeno</th><th>Važi do</th><th class="num">Stanje</th></tr></thead><tbody>' +
+      (lot.length ? lot.filter(o => Math.abs(o.kol) > 1e-9 || X !== "I").map(o => '<tr data-slot="' + esc(o.lot) + '" style="cursor:pointer' + (S.sir.lotSel === o.lot ? ";background:var(--brand-soft)" : "") + '"><td><b>' + esc(o.lot) + "</b></td><td>" + (o.proiz ? esc(dtxt(o.proiz)) : "–") + '</td><td class="' + rokKlasa(o.vaz) + '">' + esc(rokTxt(o.vaz)) + '</td><td class="num">' + esc(fmt(o.kol, false)) + "</td></tr>").join("") : '<tr class="empty-row"><td colspan="4">Nema lotova.</td></tr>') + "</tbody></table></div>" +
+      '<div class="seg" role="radiogroup" style="display:flex;gap:6px;margin-bottom:10px">' + ["U", "I", "K"].map(v => '<button type="button" class="btn' + (X === v ? " primary" : "") + '" data-sv="' + v + '" style="flex:1">' + SVR[v] + "</button>").join("") + "</div>" +
+      '<div class="form">' +
+      (X === "U" ? '<div class="row2"><label class="fld">Lot / serija<input class="inp" id="sLot" value="' + esc(S.sir.lotSel && !lot.some(o => o.lot === S.sir.lotSel && o.kol > 0) ? S.sir.lotSel : "") + '"></label><label class="fld">Količina (' + esc(a.mera || "") + ')<input class="inp" id="sKol" inputmode="decimal"></label></div>' +
+        '<div class="row2"><label class="fld">Datum proizvodnje<input class="inp" type="date" id="sPro"></label><label class="fld">Važi do<input class="inp" type="date" id="sVaz"></label></div>' +
+        '<div class="row2"><label class="fld">Dobavljač<select class="inp" id="sDob"><option value="">–</option>' + (S.dob.items || []).slice().sort((x, y) => x.naziv.localeCompare(y.naziv)).map(d => '<option value="' + esc(d.id) + '"' + (a.dob === d.id ? " selected" : "") + ">" + esc(d.naziv) + "</option>").join("") + '</select></label><label class="fld">Nabavna cena po ' + esc(a.mera || "JM") + ' (RSD)<input class="inp" id="sCena" inputmode="decimal"></label></div>'
+        : '<div class="row2"><label class="fld">Lot<select class="inp" id="sLotS">' + (X === "I" ? saSt : lot).map(o => '<option value="' + esc(o.lot) + '"' + (S.sir.lotSel === o.lot ? " selected" : "") + ">" + esc(o.lot) + " · " + esc(fmt(o.kol, false)) + (o.vaz ? " · do " + esc(dtxt(o.vaz)) : "") + "</option>").join("") + '</select></label><label class="fld">' + (X === "K" ? "Korekcija (+ / −)" : "Količina (" + esc(a.mera || "") + ")") + '<input class="inp" id="sKol" inputmode="decimal"></label></div>') +
+      '<div class="row2"><label class="fld">Datum<input class="inp" type="date" id="sDat" value="' + today() + '"></label><label class="fld">Napomena<input class="inp" id="sNap" placeholder="' + (X === "I" ? "npr. broj trebovanja" : "npr. broj otpremnice") + '"></label></div>' +
+      '<button class="btn primary big" id="sKnjizi" style="width:100%">Proknjiži ' + SVR[X].toLowerCase() + "</button></div></div>"
+      : '<div class="ticket empty">Izaberi sirovinu. Ulaz se knjiži sa lotom, datumom proizvodnje i rokom važenja; izlaz sa lota (predlaže se lot kome rok prvi ističe).</div>') +
+    '<div class="card" style="margin-top:14px"><h2 style="font-size:16px">Današnji unosi</h2><div class="tbl-wrap" style="max-height:260px"><table><tbody>' +
+    (danas.length ? danas.map(e => { const s = S.sir.byId[e.art] || {}; return '<tr class="' + (e.storno ? "storno" : "") + '"><td><span class="tag ' + e.vrsta + '">' + SVR[e.vrsta] + "</span></td><td>" + esc(s.naziv || "?") + '<div class="muted" style="font-size:11px">lot ' + esc(e.lot) + (e.nap ? " · " + esc(e.nap) : "") + " · " + esc(who(e.uid)) + '</div></td><td class="num">' + esc(fmt(e.kol, false)) + '</td><td class="num">' + (e.storno ? '<span class="muted">storno</span>' : '<button class="x" data-sst="' + esc(e.docId) + "|" + esc(e.id) + '" title="Storniraj" aria-label="Storniraj">↺</button>') + "</td></tr>"; }).join("") : '<tr class="empty-row"><td>Danas još nema unosa.</td></tr>') +
+    "</tbody></table></div></div></div></div>";
+  if (S.sir.fokus) { const q = $("#sQ"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); S.sir.fokus = false; }
+}
+function sirTrebHtml() {
+  const T = S.sir.treb;
+  return '<div class="card" style="margin-bottom:16px;border-left:4px solid var(--brand)"><h2>Izlaz po trebovanju ' + esc(T.broj) + ' <span class="muted" style="font-size:13px;font-weight:400">' + esc(T.datum) + " · " + esc(T.proizvod.sifra + " " + T.proizvod.naziv) + "</span></h2>" +
+    '<div class="tbl-wrap" style="max-height:360px"><table><thead><tr><th>Šifra</th><th>Sirovina</th><th>Lot</th><th class="num">Izlaz</th><th class="num">Na stanju (lot)</th><th>Status</th></tr></thead><tbody>' +
+    T.redovi.map(r => '<tr><td class="sif">' + esc(r.sifra) + "</td><td>" + esc(r.naziv) + "</td><td>" + esc(r.lot) + '</td><td class="num">' + esc(fmt(r.kol, false)) + " " + esc(r.mera) + '</td><td class="num">' + (r.art ? esc(fmt(r.st, false)) : "–") + '</td><td class="' + (r.status === "ok" ? "" : "warn") + '">' + (r.status === "ok" ? "✓" : r.status === "lot" ? "lot nije na stanju – knjiži se u minus" : r.status === "malo" ? "lot ima manje od izlaza" : "nije u šifarniku sirovina – preskače se") + "</td></tr>").join("") +
+    '</tbody></table></div><div class="toolbar" style="margin-top:10px"><label class="fld">Datum izlaza<input class="inp" type="date" id="sTrebD" value="' + today() + '"></label><button class="btn primary" id="sTrebOk">Proknjiži izlaz (' + T.redovi.filter(r => r.art).length + " stavki)</button><button class=\"btn\" id=\"sTrebX\">Odustani</button></div></div>";
+}
+async function sirKnjizi() {
+  const a = S.sir.byId[S.sir.sel]; if (!a) return;
+  const X = S.sir.vrsta, kol = parseQty($("#sKol").value), dat = $("#sDat").value || today(), nap = $("#sNap").value.trim();
+  if (!(X === "K" ? kol && !isNaN(kol) : kol > 0)) { toast("Upiši količinu."); $("#sKol").focus(); return; }
+  if (X === "U") {
+    const lot = $("#sLot").value.trim(); if (!lot) { toast("Upiši lot / seriju."); $("#sLot").focus(); return; }
+    const vaz = $("#sVaz").value, pro = $("#sPro").value;
+    if (!vaz && !await ask("Bez roka važenja?", "<p>Za lot <b>" + esc(lot) + "</b> nije upisan rok važenja. Proknjižiti ipak?</p>", "Proknjiži", "Vrati se")) return;
+    const cena = parseQty($("#sCena").value), dob = $("#sDob").value;
+    if (await sirDodajUnose(dat, [{ art: a.id, lot, vrsta: "U", kol, proiz: pro, vaz, dob, cena: cena > 0 ? cena : 0, nap }])) { toast("Ulaz: " + a.naziv + " +" + fmt(kol, false) + ", lot " + lot); S.sir.lotSel = lot; renderSirUnos(); }
+    return;
+  }
+  const lot = $("#sLotS") ? $("#sLotS").value : ""; if (!lot) { toast("Izaberi lot."); return; }
+  const o = sirLotovi(a.id).find(x => x.lot === lot);
+  if (X === "I" && o && kol > o.kol + 1e-9 && !await ask("Više od stanja lota?", "<p>Lot <b>" + esc(lot) + "</b> ima " + esc(fmt(o.kol, false)) + " " + esc(a.mera || "") + ", a izlaz je " + esc(fmt(kol, false)) + ". Stanje lota će biti negativno.</p>", "Proknjiži ipak", "Vrati se")) return;
+  if (X === "I" && o && o.vaz && o.vaz < today() && !await ask("Lot je istekao", "<p>Lotu <b>" + esc(lot) + "</b> je rok važenja istekao " + esc(dtxt(o.vaz)) + ". Proknjižiti izlaz?</p>", "Proknjiži", "Vrati se")) return;
+  if (await sirDodajUnose(dat, [{ art: a.id, lot, vrsta: X, kol, nap }])) { toast(SVR[X] + ": " + a.naziv + " " + fmt(kol, false) + ", lot " + lot); renderSirUnos(); }
+}
+async function sirUcitajTreb(f) {
+  try {
+    const r = parseTrebovanje(await pdfStavke(await f.arrayBuffer()));
+    if (!r.stavke.length) { toast("U PDF-u nisu pronađeni materijali."); return; }
+    const redovi = [];
+    for (const st of r.stavke) {
+      const a = S.sir.bySif[st.sifra];
+      const lots = st.lotovi.length ? st.lotovi : [{ lot: "", kol: st.kol, mera: st.mera }];
+      for (const l of lots) {
+        const o = a ? sirLotovi(a.id).find(x => sirKljuc(a.id, x.lot) === sirKljuc(a.id, l.lot)) : null;
+        redovi.push({ sifra: st.sifra, naziv: st.naziv, lot: l.lot, kol: l.kol, mera: l.mera || st.mera, art: a ? a.id : null, st: o ? o.kol : 0, vaz: l.rok, status: !a ? "art" : !o ? "lot" : o.kol + 1e-9 < l.kol ? "malo" : "ok" });
+      }
+    }
+    S.sir.treb = Object.assign({ redovi }, r); renderSirUnos();
+  } catch (e) { console.error(e); toast("PDF nije moguće pročitati."); }
+}
+$("#sunosBox").addEventListener("input", e => { if (e.target.id === "sQ") { S.sir.q = e.target.value; const r = sirPretraga(S.sir.q); if (r.length === 1 && r[0].id !== S.sir.sel) { S.sir.sel = r[0].id; S.sir.lotSel = null; } S.sir.fokus = true; renderSirUnos(); } });
+$("#sunosBox").addEventListener("change", e => {
+  if (e.target.id === "sTrebF" && e.target.files[0]) { sirUcitajTreb(e.target.files[0]); e.target.value = ""; }
+  if (e.target.id === "sLotS") S.sir.lotSel = e.target.value;
+});
+$("#sunosBox").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "sKol") { e.preventDefault(); sirKnjizi(); } });
+$("#sunosBox").addEventListener("click", async e => {
+  const t = e.target, b = t.closest("[data-sa]"); if (b) { S.sir.sel = b.dataset.sa; S.sir.lotSel = null; renderSirUnos(); return; }
+  const v = t.closest("[data-sv]"); if (v) { S.sir.vrsta = v.dataset.sv; renderSirUnos(); return; }
+  const lr = t.closest("[data-slot]"); if (lr) { S.sir.lotSel = lr.dataset.slot; if (S.sir.vrsta === "U") S.sir.vrsta = "I"; renderSirUnos(); return; }
+  const s = t.closest("[data-sst]"); if (s) { const [d, id] = s.dataset.sst.split("|"); sirStorniraj(d, id); return; }
+  if (t.id === "sKnjizi") { sirKnjizi(); return; }
+  if (t.id === "sTrebX") { S.sir.treb = null; renderSirUnos(); return; }
+  if (t.id === "sTrebOk") {
+    const T = S.sir.treb, grp = "tr" + rid(), dat = $("#sTrebD").value || today();
+    const l = T.redovi.filter(r => r.art && r.kol > 0).map(r => ({ art: r.art, lot: r.lot, vrsta: "I", kol: r.kol, nap: "Trebovanje " + T.broj + " – " + T.proizvod.sifra + " " + T.proizvod.naziv, grp }));
+    if (!l.length) { toast("Nema sirovina za knjiženje."); return; }
+    if (await sirDodajUnose(dat, l)) { toast("Proknjižen izlaz po trebovanju " + T.broj + ": " + l.length + " stavki"); S.sir.treb = null; renderSirUnos(); }
+  }
+});
+
+/* ---------- Stanje po lotovima ---------- */
+function sirStanjeRedovi() {
+  const P = S.sir.prikaz || "stanje", q = norm(S.sir.sq || "").split(" ").filter(Boolean), t = today(), d90 = addDays(t, 90);
+  const out = [];
+  for (const a of S.sir.art) {
+    if (q.length && !q.every(x => norm(a.sifra + " " + a.naziv).includes(x))) continue;
+    let lots = sirLotovi(a.id);
+    if (P !== "svi") lots = lots.filter(o => Math.abs(o.kol) > 1e-9);
+    if (P === "istekli") lots = lots.filter(o => o.vaz && o.vaz < t);
+    if (P === "istice") lots = lots.filter(o => o.vaz && o.vaz >= t && o.vaz <= d90);
+    if (!lots.length && P !== "svi") continue;
+    out.push({ a, lots, uk: r3(lots.reduce((s, o) => s + o.kol, 0)) });
+  }
+  return out;
+}
+function renderSirStanje() {
+  const P = S.sir.prikaz || "stanje", R = sirStanjeRedovi();
+  const sve = [...sirStanje().values()].filter(o => o.kol > 1e-9), t = today();
+  const ist = sve.filter(o => o.vaz && o.vaz < t).length, uskoro = sve.filter(o => o.vaz && o.vaz >= t && o.vaz <= addDays(t, 90)).length;
+  $("#sstanjeBox").innerHTML = '<div class="toolbar"><h1>Magacin sirovina – stanje po lotovima</h1><button class="btn dl" id="sXls">Preuzmi Excel</button><label class="btn" style="cursor:pointer">Uvoz lager liste po serijama (PDF)<input type="file" id="sLagF" accept=".pdf,application/pdf" hidden></label></div>' +
+    (S.sir.uvoz ? sirUvozHtml() : "") +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">' +
+    [["Sirovina na stanju", new Set(sve.map(o => o.art)).size], ["Lotova na stanju", sve.length], ["Istekao rok", ist], ["Ističe u 90 dana", uskoro]].map(([l, v], i) => '<div class="card" style="padding:10px 14px' + (i === 2 && v ? ";border-left:4px solid var(--izlaz)" : i === 3 && v ? ";border-left:4px solid var(--brand)" : "") + '"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+    '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="sSQ" type="search" value="' + esc(S.sir.sq || "") + '" placeholder="šifra ili naziv"></label><label class="fld">Prikaz<select class="inp" id="sPrikaz">' +
+    [["stanje", "sa stanjem"], ["istekli", "istekao rok"], ["istice", "ističe u 90 dana"], ["svi", "svi lotovi"]].map(([v, l]) => '<option value="' + v + '"' + (P === v ? " selected" : "") + ">" + l + "</option>").join("") + "</select></label></div>" +
+    '<div class="tbl-wrap" style="max-height:640px"><table><thead><tr><th>Šifra / lot</th><th>Sirovina</th><th>Proizvedeno</th><th>Važi do</th><th class="num">Stanje</th><th>JM</th></tr></thead><tbody>' +
+    (R.length ? R.map(r => '<tr class="grp"><td class="sif"><b>' + esc(r.a.sifra) + "</b></td><td><b>" + esc(r.a.naziv) + '</b></td><td></td><td></td><td class="num"><b>' + esc(fmt(r.uk, false)) + "</b></td><td>" + esc(r.a.mera || "") + "</td></tr>" +
+      r.lots.map(o => '<tr><td style="padding-left:22px">' + esc(o.lot || "(bez lota)") + '</td><td></td><td>' + (o.proiz ? esc(dtxt(o.proiz)) : "–") + '</td><td class="' + rokKlasa(o.vaz) + '">' + esc(rokTxt(o.vaz)) + '</td><td class="num">' + esc(fmt(o.kol, false)) + "</td><td></td></tr>").join("")).join("")
+      : '<tr class="empty-row"><td colspan="6">' + (S.sir.art.length ? "Nema sirovina za ovaj prikaz." : "Šifarnik sirovina je prazan – uvezi lager listu po serijama.") + "</td></tr>") + "</tbody></table></div>";
+  if (!S.downloads) $$("#sstanjeBox .dl").forEach(b => b.hidden = true);
+  if (S.sir.sfokus) { const i = $("#sSQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); S.sir.sfokus = false; }
+}
+function sirUvozHtml() {
+  const U = S.sir.uvoz, magKeys = Object.keys(U.mag).sort();
+  const art = {}; for (const k of U.izabrani) for (const [s, o] of Object.entries(U.mag[k].art)) art[s] = o;
+  const nLot = Object.values(art).reduce((s, o) => s + o.lotovi.filter(l => Math.abs(l.st) > 1e-9).length, 0);
+  const imaPromet = S.sir.entries.length > 0;
+  return '<div class="card" style="margin-bottom:16px;border-left:4px solid var(--brand)"><h2>Uvoz lager liste po serijama</h2><p>Fajl <b>' + esc(U.ime) + "</b>: " + Object.keys(art).length + " sirovina, " + nLot + " lotova sa stanjem.</p>" +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;margin-bottom:10px">' + magKeys.map(k => '<label class="chk"><input type="checkbox" data-sum="' + k + '"' + (U.izabrani.has(k) ? " checked" : "") + "> <b>" + k + "</b> " + esc(U.mag[k].naziv) + " (" + Object.keys(U.mag[k].art).length + ")</label>").join("") + "</div>" +
+    '<div class="toolbar" style="margin:0"><button class="btn primary" id="sUvPoc">Postavi kao početno stanje' + (imaPromet ? " (briše promet sirovina)" : "") + "</button>" + (S.sir.poc && S.sir.poc.datum ? '<button class="btn" id="sUvUsk">Uskladi – proknjiži razlike po lotovima</button>' : "") + '<button class="btn" id="sUvX">Odustani</button></div>' +
+    '<p class="muted" style="font-size:12px;margin:8px 0 0">„Početno stanje“ briše sav promet sirovina i kreće od liste. „Uskladi“ čuva promet i knjiži korekcije po lotu tako da stanje bude jednako listi.</p></div>';
+}
+function sirUvozArtikli() { const U = S.sir.uvoz, art = {}; for (const k of U.izabrani) for (const [s, o] of Object.entries(U.mag[k].art)) { const x = art[s] || (art[s] = { n: o.n, mera: o.mera, lotovi: [] }); x.lotovi.push(...o.lotovi); } return art; }
+async function sirUvozSifarnik(art) {
+  const items = S.sir.art.map(x => Object.assign({}, x)), by = Object.fromEntries(items.map(x => [x.sifra, x]));
+  for (const [s, o] of Object.entries(art)) {
+    if (by[s]) { if (o.mera) by[s].mera = o.mera; if (o.n && o.n.length > by[s].naziv.length) by[s].naziv = o.n; continue; }
+    const it = { id: "s" + s, sifra: s, naziv: o.n, mera: o.mera || "KG", aktivan: true }; items.push(it); by[s] = it;
+  }
+  items.sort((a, b) => a.sifra.localeCompare(b.sifra));
+  return (await sirSacuvajSifarnik(items)) ? by : null;
+}
+$("#sstanjeBox").addEventListener("input", e => { if (e.target.id === "sSQ") { S.sir.sq = e.target.value; S.sir.sfokus = true; renderSirStanje(); } });
+$("#sstanjeBox").addEventListener("change", async e => {
+  const t = e.target;
+  if (t.id === "sPrikaz") { S.sir.prikaz = t.value; renderSirStanje(); return; }
+  if (t.dataset.sum) { if (t.checked) S.sir.uvoz.izabrani.add(t.dataset.sum); else S.sir.uvoz.izabrani.delete(t.dataset.sum); renderSirStanje(); return; }
+  if (t.id === "sLagF" && t.files[0]) {
+    const f = t.files[0]; t.value = "";
+    try {
+      const mag = parseLagerSerije(await linijeIzPdf(await f.arrayBuffer()));
+      const k = Object.keys(mag); if (!k.length) { toast("U fajlu nije pronađena lager lista po serijama."); return; }
+      S.sir.uvoz = { ime: f.name, mag, izabrani: new Set(k.filter(x => /sirovin/i.test(mag[x].naziv)).length ? k.filter(x => /sirovin/i.test(mag[x].naziv)) : k) };
+      renderSirStanje();
+    } catch (err) { console.error(err); toast("PDF nije moguće pročitati."); }
+  }
+});
+$("#sstanjeBox").addEventListener("click", async e => {
+  const t = e.target;
+  if (t.id === "sUvX") { S.sir.uvoz = null; renderSirStanje(); return; }
+  if (t.id === "sXls") {
+    const R = sirStanjeRedovi();
+    saveXlsx("Stanje sirovina po lotovima " + today() + ".xlsx", [["Sirovine", [["Stanje sirovina po lotovima – " + dtxt(today())], [], ["Šifra", "Sirovina", "Lot", "Proizvedeno", "Važi do", "Stanje", "JM", "Status roka"]]
+      .concat(R.flatMap(r => r.lots.map(o => [r.a.sifra, r.a.naziv, o.lot, o.proiz ? dtxt(o.proiz) : "", o.vaz ? dtxt(o.vaz) : "", o.kol, r.a.mera || "", o.vaz && o.vaz < today() ? "istekao" : o.vaz && o.vaz <= addDays(today(), 90) ? "ističe" : ""]))), [10, 55, 22, 13, 13, 14, 6, 12]]]);
+    return;
+  }
+  if (t.id === "sUvPoc") {
+    const art = sirUvozArtikli();
+    if (S.sir.entries.length && !await ask("Postaviti novo početno stanje?", "<p>Stanje sirovina biće postavljeno prema listi, a <b>sav dosadašnji promet sirovina (" + S.sir.entries.length + " stavki) biće obrisan</b>.</p>", "Postavi", "Odustani", true)) return;
+    const by = await sirUvozSifarnik(art); if (!by) return;
+    const lotovi = []; for (const [s, o] of Object.entries(art)) for (const l of o.lotovi) if (Math.abs(l.st) > 1e-9) lotovi.push({ art: by[s].id, lot: l.lot, proiz: l.proiz, vaz: l.vaz, kol: l.st });
+    try {
+      await write(async () => {
+        for (const id of Object.keys(S.sir.docs)) await S.db.collection("sirunosi").doc(id).delete();
+        await S.db.doc("sirovine/pocetno").set({ datum: addDays(today(), -1), lotovi, izvor: S.sir.uvoz.ime, t: new Date().toISOString() });
+      });
+      S.sir.uvoz = null; toast("Početno stanje sirovina: " + lotovi.length + " lotova."); renderSirStanje();
+    } catch (err) { dbErr(err); }
+    return;
+  }
+  if (t.id === "sUvUsk") {
+    const art = sirUvozArtikli(), by = await sirUvozSifarnik(art); if (!by) return;
+    const cilj = new Map(); for (const [s, o] of Object.entries(art)) for (const l of o.lotovi) cilj.set(sirKljuc(by[s].id, l.lot), Object.assign({ art: by[s].id }, l));
+    const sad = sirStanje(), l = [], grp = "us" + rid(), nap = "Usklađivanje sa ERP lager listom po serijama";
+    const artIzListe = new Set(Object.values(by).filter(x => art[x.sifra]).map(x => x.id));
+    for (const [k, c] of cilj) { const o = sad.get(k), raz = r3(c.st - (o ? o.kol : 0)); if (Math.abs(raz) > 1e-9) l.push({ art: c.art, lot: c.lot, vrsta: "K", kol: raz, proiz: c.proiz, vaz: c.vaz, nap, grp }); }
+    for (const [k, o] of sad) if (!cilj.has(k) && artIzListe.has(o.art) && Math.abs(o.kol) > 1e-9) l.push({ art: o.art, lot: o.lot, vrsta: "K", kol: -o.kol, nap, grp });
+    if (!l.length) { toast("Stanje se već slaže sa listom."); S.sir.uvoz = null; renderSirStanje(); return; }
+    if (!await ask("Proknjižiti razlike?", "<p>Korekcija za <b>" + l.length + "</b> lotova, tako da stanje sirovina bude jednako listi.</p>", "Proknjiži")) return;
+    if (await sirDodajUnose(today(), l)) { S.sir.uvoz = null; toast("Usklađeno: " + l.length + " korekcija po lotovima."); renderSirStanje(); }
+  }
+});
+
+/* ---------- Promet ---------- */
+function renderSirPromet() {
+  const od = S.sir.pOd || addDays(today(), -30), dO = S.sir.pDo || today(), V = S.sir.pV || "", q = norm(S.sir.pq || "").split(" ").filter(Boolean);
+  const l = S.sir.entries.filter(e => e.datum >= od && e.datum <= dO && (!V || e.vrsta === V) && (!q.length || q.every(x => norm(((S.sir.byId[e.art] || {}).sifra || "") + " " + ((S.sir.byId[e.art] || {}).naziv || "") + " " + e.lot + " " + (e.nap || "")).includes(x)))).reverse();
+  $("#spromBox").innerHTML = '<div class="toolbar"><h1>Magacin sirovina – promet</h1><label class="fld">Od<input class="inp" type="date" id="spOd" value="' + od + '"></label><label class="fld">Do<input class="inp" type="date" id="spDo" value="' + dO + '"></label>' +
+    '<label class="fld">Vrsta<select class="inp" id="spV"><option value="">sve</option>' + Object.entries(SVR).map(([k, v]) => '<option value="' + k + '"' + (V === k ? " selected" : "") + ">" + v + "</option>").join("") + '</select></label><label class="fld grow">Filter<input class="inp" id="spQ" type="search" value="' + esc(S.sir.pq || "") + '" placeholder="sirovina, lot, napomena"></label><button class="btn dl" id="spXls">Excel</button></div>' +
+    '<div class="tbl-wrap" style="max-height:640px"><table><thead><tr><th>Datum</th><th>Vrsta</th><th>Šifra</th><th>Sirovina</th><th>Lot</th><th class="num">Količina</th><th class="num">Cena</th><th>Napomena</th><th>Uneo</th><th></th></tr></thead><tbody>' +
+    (l.length ? l.slice(0, 1500).map(e => { const a = S.sir.byId[e.art] || {}; return '<tr class="' + (e.storno ? "storno" : "") + '"><td>' + esc(dtxt(e.datum)) + '</td><td><span class="tag ' + e.vrsta + '">' + SVR[e.vrsta] + '</span></td><td class="sif">' + esc(a.sifra || "") + "</td><td>" + esc(a.naziv || "?") + "</td><td>" + esc(e.lot) + '</td><td class="num">' + (e.vrsta === "I" ? "−" : "") + esc(fmt(e.kol, false)) + " " + esc(a.mera || "") + '</td><td class="num">' + (e.cena ? esc(fmt(e.cena, false)) : "") + '</td><td class="muted" style="font-size:12px">' + esc(e.nap || "") + (e.dob && typeof dobNaziv === "function" ? " " + esc(dobNaziv(e.dob)) : "") + "</td><td>" + esc(who(e.uid)) + '</td><td class="num">' + (e.storno ? '<span class="muted">storno</span>' : '<button class="x" data-sst="' + esc(e.docId) + "|" + esc(e.id) + '" title="Storniraj">↺</button>') + "</td></tr>"; }).join("") : '<tr class="empty-row"><td colspan="10">Nema prometa u izabranom periodu.</td></tr>') + "</tbody></table></div>";
+  if (!S.downloads) $$("#spromBox .dl").forEach(b => b.hidden = true);
+  if (S.sir.pfokus) { const i = $("#spQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); S.sir.pfokus = false; }
+}
+$("#spromBox").addEventListener("input", e => { if (e.target.id === "spQ") { S.sir.pq = e.target.value; S.sir.pfokus = true; renderSirPromet(); } });
+$("#spromBox").addEventListener("change", e => { const t = e.target; if (t.id === "spOd") S.sir.pOd = t.value; else if (t.id === "spDo") S.sir.pDo = t.value; else if (t.id === "spV") S.sir.pV = t.value; else return; renderSirPromet(); });
+$("#spromBox").addEventListener("click", e => {
+  const s = e.target.closest("[data-sst]"); if (s) { const [d, id] = s.dataset.sst.split("|"); sirStorniraj(d, id); return; }
+  if (e.target.id === "spXls") {
+    const od = S.sir.pOd || addDays(today(), -30), dO = S.sir.pDo || today();
+    const l = S.sir.entries.filter(x => x.datum >= od && x.datum <= dO);
+    saveXlsx("Promet sirovina " + od + " – " + dO + ".xlsx", [["Promet", [["Datum", "Vrsta", "Šifra", "Sirovina", "Lot", "Količina", "JM", "Cena", "Dobavljač", "Napomena", "Uneo", "Storno"]].concat(l.map(x => { const a = S.sir.byId[x.art] || {}; return [dtxt(x.datum), SVR[x.vrsta], a.sifra || "", a.naziv || "", x.lot, x.vrsta === "I" ? -x.kol : x.kol, a.mera || "", x.cena || "", x.dob && typeof dobNaziv === "function" ? dobNaziv(x.dob) : "", x.nap || "", who(x.uid), x.storno ? "da" : ""]; })), [11, 10, 10, 50, 20, 12, 6, 10, 30, 40, 16, 7]]]);
+  }
+});
+
+/* ---------- Rokovi trajanja ---------- */
+function renderSirRokovi() {
+  const N = S.sir.rN || 90, t = today(), gr = addDays(t, N);
+  const l = [...sirStanje().values()].filter(o => o.kol > 1e-9 && o.vaz && o.vaz <= gr).sort((a, b) => a.vaz < b.vaz ? -1 : 1);
+  $("#srokBox").innerHTML = '<div class="toolbar"><h1>Sirovine – rokovi trajanja</h1><label class="fld">Ističe u narednih (dana)<input class="inp" id="srN" inputmode="numeric" value="' + N + '" style="width:110px"></label><button class="btn dl" id="srXls">Excel</button></div>' +
+    '<p class="muted" style="font-size:13px">Lotovi sa stanjem kojima je rok važenja istekao (crveno) ili ističe u zadatom periodu – redom kako ističu. Njih treba trošiti prve ili izdvojiti.</p>' +
+    '<div class="tbl-wrap" style="max-height:640px"><table><thead><tr><th>Važi do</th><th class="num">Dana</th><th>Šifra</th><th>Sirovina</th><th>Lot</th><th class="num">Stanje</th></tr></thead><tbody>' +
+    (l.length ? l.map(o => { const a = S.sir.byId[o.art] || {}, d = Math.round((new Date(o.vaz) - new Date(t)) / 864e5); return "<tr><td class=\"" + rokKlasa(o.vaz) + "\"><b>" + esc(dtxt(o.vaz)) + '</b></td><td class="num ' + (d < 0 ? "raz-m" : "") + '">' + d + '</td><td class="sif">' + esc(a.sifra || "") + "</td><td>" + esc(a.naziv || "") + "</td><td>" + esc(o.lot) + '</td><td class="num">' + esc(fmt(o.kol, false)) + " " + esc(a.mera || "") + "</td></tr>"; }).join("") : '<tr class="empty-row"><td colspan="6">Nema lotova kojima rok ističe u ovom periodu.</td></tr>') + "</tbody></table></div>";
+  if (!S.downloads) $$("#srokBox .dl").forEach(b => b.hidden = true);
+}
+$("#srokBox").addEventListener("change", e => { if (e.target.id === "srN") { S.sir.rN = Math.max(0, parseInt(e.target.value, 10) || 0); renderSirRokovi(); } });
+$("#srokBox").addEventListener("click", e => {
+  if (e.target.id === "srXls") {
+    const N = S.sir.rN || 90, gr = addDays(today(), N);
+    const l = [...sirStanje().values()].filter(o => o.kol > 1e-9 && o.vaz && o.vaz <= gr).sort((a, b) => a.vaz < b.vaz ? -1 : 1);
+    saveXlsx("Rokovi sirovina " + today() + ".xlsx", [["Rokovi", [["Važi do", "Šifra", "Sirovina", "Lot", "Stanje", "JM"]].concat(l.map(o => { const a = S.sir.byId[o.art] || {}; return [dtxt(o.vaz), a.sifra || "", a.naziv || "", o.lot, o.kol, a.mera || ""]; })), [12, 10, 55, 22, 14, 6]]]);
+  }
+});
+
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
 async function skeniraj() {
@@ -15676,23 +16027,26 @@ function linija(tacke) {
   const leg = dobs.map(d => '<span class="legend" style="margin-right:14px"><i style="background:' + col(d) + '"></i>' + esc(dobNaziv(d)) + "</span>").join("");
   return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" style="font:12px var(--body);max-width:900px">' + g + '</svg><div style="font-size:12px;margin-top:4px">' + leg + "</div>";
 }
-function analitikaPodaci(samoMag) {
-  const zap = S.cene.zapisi.filter(z => !samoMag || artPoSifri(z[0]));
+function analitikaPodaci(mag) {
+  if (mag === true) mag = "amb"; if (mag === false) mag = "sve";
+  const jeSir = s => !!(S.sir && S.sir.bySif[s]);
+  const zap = S.cene.zapisi.filter(z => mag === "sve" || (mag === "sir" ? jeSir(z[0]) : artPoSifri(z[0])));
   const poArt = {};
   for (const z of zap) { const o = poArt[z[0]] = poArt[z[0]] || { sif: z[0], cene: [], dobs: new Set(), vr: 0, kol: 0 }; if (z[2] > 0 && z[3] > 0) o.cene.push({ c: z[2], dob: z[1], per: z[5] || null, kol: z[3] }); o.dobs.add(z[1]); o.vr += z[4] != null ? z[4] : z[2] * z[3]; o.kol += z[3]; }
   for (const e of S.entries) if (!e.storno && e.vrsta === "U" && e.cena > 0) { const a = S.byId[e.art]; if (!a || !a.sifra) continue; const o = poArt[a.sifra] = poArt[a.sifra] || { sif: a.sifra, cene: [], dobs: new Set(), vr: 0, kol: 0 }; o.cene.push({ c: e.cena, dob: e.dob || "", per: e.datum, kol: e.kol, app: true }); if (e.dob) o.dobs.add(e.dob); }
+  if (mag !== "amb" && S.sir) for (const e of S.sir.entries) if (!e.storno && e.vrsta === "U" && e.cena > 0) { const a = S.sir.byId[e.art]; if (!a) continue; const o = poArt[a.sifra] = poArt[a.sifra] || { sif: a.sifra, cene: [], dobs: new Set(), vr: 0, kol: 0 }; o.cene.push({ c: e.cena, dob: e.dob || "", per: e.datum, kol: e.kol, app: true }); if (e.dob) o.dobs.add(e.dob); o.vr += e.cena * e.kol; }
   const rows = Object.values(poArt).filter(o => o.cene.length).map(o => {
     const cs = o.cene.map(x => x.c), mn = Math.min(...cs), mx = Math.max(...cs), kolS = o.cene.reduce((s, x) => s + x.kol, 0);
     const pon = o.cene.reduce((s, x) => s + x.c * x.kol, 0) / (kolS || 1);
-    const a = artPoSifri(o.sif), naz = a ? a.naziv : ((S.cene.artikli[o.sif] || {}).n || o.sif);
+    const a = artPoSifri(o.sif) || (S.sir && S.sir.bySif[o.sif]), naz = a ? a.naziv : ((S.cene.artikli[o.sif] || {}).n || o.sif);
     const posl = o.cene.filter(x => x.per).sort((x, y) => x.per < y.per ? -1 : 1).pop() || o.cene[o.cene.length - 1];
     return { sif: o.sif, naz, mn, mx, pon, posl: posl.c, rast: mn > 0 ? (mx / mn - 1) * 100 : 0, br: o.cene.length, dobs: o.dobs.size, vr: o.vr, cene: o.cene };
   });
   return { zap, rows };
 }
 function renderAnalitika() {
-  const box = $("#anaBox"), samo = S.aSamo !== false;
-  const { zap, rows } = analitikaPodaci(samo);
+  const box = $("#anaBox"), mag = S.aMag || "amb";
+  const { zap, rows } = analitikaPodaci(mag);
   const vDob = {}; for (const z of zap) vDob[z[1]] = (vDob[z[1]] || 0) + (z[4] != null ? z[4] : z[2] * z[3]);
   const ukupno = Object.values(vDob).reduce((s, v) => s + v, 0);
   const vGr = {}; for (const z of zap) { const a = artPoSifri(z[0]); const g = a ? a.grupa : ((S.cene.artikli[z[0]] || {}).opsti || "Ostalo"); vGr[g] = (vGr[g] || 0) + (z[4] != null ? z[4] : z[2] * z[3]); }
@@ -15713,7 +16067,7 @@ function renderAnalitika() {
       '<p style="font-size:13px;margin-top:8px">Najniža <b>' + esc(fmtC(sel.mn)) + "</b> · najviša <b>" + esc(fmtC(sel.mx)) + "</b> · ponderisani prosek <b>" + esc(fmtC(sel.pon)) + "</b> · poslednja <b>" + esc(fmtC(sel.posl)) + "</b> RSD</p>" +
       (sel.cene.some(c => !c.per) ? '<p class="muted" style="font-size:12px">Tačke označene sa # potiču iz ERP izvoza bez datuma – redosled je kao u izvozu. Kad uvezeš izvoz sa kolonom PERIOD MESEC, os pokazuje mesece.</p>' : "") + "</div>";
   }
-  box.innerHTML = '<div class="toolbar"><h1>Analitika nabavke</h1><label class="chk"><input type="checkbox" id="aSamo"' + (samo ? " checked" : "") + '> samo artikli magacina ambalaže</label><button class="btn dl" id="aXls">Preuzmi izveštaje (Excel)</button></div>' +
+  box.innerHTML = '<div class="toolbar"><h1>Analitika nabavke</h1><label class="fld">Magacin<select class="inp" id="aMag"><option value="amb"' + (mag === "amb" ? " selected" : "") + '>ambalaža</option><option value="sir"' + (mag === "sir" ? " selected" : "") + '>sirovine</option><option value="sve"' + (mag === "sve" ? " selected" : "") + '>sve nabavke</option></select></label><button class="btn dl" id="aXls">Preuzmi izveštaje (Excel)</button></div>' +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">' +
     kpi("Vrednost nabavke", fmtD(ukupno) + " RSD", S.cene.izvor ? "izvor: " + esc(S.cene.izvor) : "") + kpi("Dobavljača", Object.keys(vDob).length, "sa bar jednom nabavkom") +
     kpi("Artikala", rows.length, rows.filter(r => r.dobs > 1).length + " sa više dobavljača") + kpi("Otvorene porudžbenice", otv.length, fmtD(otv.reduce((s, p) => s + iznosP(p), 0)) + " RSD") + "</div>" +
@@ -15733,14 +16087,14 @@ function renderAnalitika() {
   if (!S.downloads) $$("#anaBox .dl").forEach(b => b.hidden = true);
 }
 $("#anaBox").addEventListener("change", e => {
-  if (e.target.id === "aSamo") { S.aSamo = e.target.checked; renderAnalitika(); }
+  if (e.target.id === "aMag") { S.aMag = e.target.value; S.aArt = null; renderAnalitika(); }
   if (e.target.id === "aSort") { S.aSort = e.target.value; renderAnalitika(); }
 });
 $("#anaBox").addEventListener("input", e => { if (e.target.id === "aQ") { S.aQ = e.target.value; const p = e.target.selectionStart; renderAnalitika(); const n = $("#aQ"); n.focus(); n.setSelectionRange(p, p); } });
 $("#anaBox").addEventListener("click", e => {
   const r = e.target.closest("[data-aart]"); if (r) { S.aArt = r.dataset.aart; renderAnalitika(); $("#anaBox .card h2") && window.scrollTo({ top: 0, behavior: "smooth" }); return; }
   if (e.target.id === "aXls") {
-    const { zap, rows } = analitikaPodaci(S.aSamo !== false);
+    const { zap, rows } = analitikaPodaci(S.aMag || "amb");
     const vDob = {}; for (const z of zap) vDob[z[1]] = (vDob[z[1]] || 0) + (z[4] != null ? z[4] : z[2] * z[3]);
     saveXlsx("Analitika nabavke " + today() + ".xlsx", [
       ["Cene po artiklu", [["Šifra", "Artikal", "Najniža", "Najviša", "Raspon %", "Ponderisani prosek", "Poslednja", "Nabavki", "Dobavljača", "Vrednost"]].concat(rows.map(r => [r.sif, r.naz, r.mn, r.mx, Math.round(r.rast * 10) / 10, Math.round(r.pon * 100) / 100, r.posl, r.br, r.dobs, Math.round(r.vr)])), [10, 55, 12, 12, 10, 16, 12, 9, 10, 14]],
@@ -15799,7 +16153,7 @@ async function linijeIzPdf(buf) {
     }
     redovi.sort((a, b) => b.y - a.y);
     for (const r of redovi) linije.push(r.it.sort((a, b) => a.x - b.x).map(i => i.s).join(" "));
-    $("#erpM").textContent = "Čitam PDF… strana " + p + " od " + pdf.numPages;
+    { const mm = $("#erpM"); if (mm) mm.textContent = "Čitam PDF… strana " + p + " od " + pdf.numPages; }
   }
   return linije;
 }
@@ -16261,6 +16615,9 @@ async function start() {
   db.collection("porudzbenice").limit(1000).onSnapshot(s => { S.porudz = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).sort((a, b) => a.t < b.t ? 1 : -1); renderAll(); }, fail);
   db.collection("planovi").limit(500).onSnapshot(s => { S.planovi = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); if ($("#v-plan").classList.contains("on")) { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#planBox") && /INPUT|SELECT/.test(ae.tagName))) renderPlan(); } }, fail);
   db.doc("potrosnja/mesecna").onSnapshot(s => { S.real = s.exists ? s.data() : null; S.cache = {}; renderAll(); }, fail);
+  db.doc("sirovine/sifarnik").onSnapshot(s => { const it = s.exists ? (s.data().items || []) : []; S.sir.art = it; S.sir.byId = Object.fromEntries(it.map(x => [x.id, x])); S.sir.bySif = Object.fromEntries(it.map(x => [x.sifra, x])); S.sir.cache = null; renderAll(); }, fail);
+  db.doc("sirovine/pocetno").onSnapshot(s => { S.sir.poc = s.exists ? s.data() : { datum: null, lotovi: [] }; S.sir.cache = null; renderAll(); }, fail);
+  db.collection("sirunosi").limit(1000).onSnapshot(s => { const d = {}; for (const x of s.docs) d[x.id] = x.data(); S.sir.docs = d; sirRebuild(); renderAll(); }, fail);
   db.doc("stanje/pocetno").onSnapshot(s => {
     S.poc = s.exists ? s.data() : { datum: null, kolicine: {} }; S.cache = {}; S.ready.poc = true; ok(); renderAll();
   }, fail);

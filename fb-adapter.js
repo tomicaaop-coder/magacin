@@ -11,13 +11,15 @@
     ["magacin", "Magacin", "unos, stanje, prijem, promet, popis, artikli"],
     ["proizvodnja", "Proizvodnja", "proizvodnja, zalihe, knjiženje utroška"],
     ["nabavka", "Nabavka", "zahtevi, porudžbenice, dobavljači, analitika"],
+    ["sirovine", "Magacin sirovina", "ulaz/izlaz sirovina po lotovima, stanje, rokovi, etikete izdavanja"],
     ["pregled", "Pregled", "sve samo za čitanje"]
   ];
   const PRAVA = {
     magacin: ["unos", "stanje", "prijem", "izdavanje", "promet", "popis", "artikli", "zalihe", "plan"],
     proizvodnja: ["izdavanje", "proizvodnja", "plan", "zalihe", "stanje", "promet"],
-    nabavka: ["plan", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "zalihe", "stanje", "promet", "artikli"],
-    pregled: ["izdavanje", "plan", "unos", "stanje", "prijem", "promet", "proizvodnja", "zalihe", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "popis", "artikli"]
+    nabavka: ["sstanje", "srokovi", "plan", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "zalihe", "stanje", "promet", "artikli"],
+    sirovine: ["sunos", "sstanje", "spromet", "srokovi", "izdavanje"],
+    pregled: ["sunos", "sstanje", "spromet", "srokovi", "izdavanje", "plan", "unos", "stanje", "prijem", "promet", "proizvodnja", "zalihe", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "popis", "artikli"]
   };
 
   if (!CFG.apiKey || /UPISI/.test(CFG.apiKey)) {
