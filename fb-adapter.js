@@ -322,14 +322,26 @@
     const docs = p && p.docs ? p.docs : null; if (!docs) { msg.textContent = "Ovo nije fajl za prenos."; return; }
     const putanje = Object.keys(docs);
     if (!confirm("Uvesti " + putanje.length + " dokumenata u bazu?")) return;
-    let n = 0;
+    let n = 0, spojeno = 0;
+    // evidencija kontrole se SPAJA (redovi upisani u aplikaciji ostaju), ostalo se zamenjuje
+    for (const pt of putanje) {
+      if (!/^kontrola\//.test(pt)) continue;
+      try {
+        const cur = await fs.doc(pt).get();
+        if (!cur.exists) continue;
+        const stare = dec(cur.data()).stavke || [], nove = (docs[pt].stavke || []).slice();
+        const ids = new Set(nove.map(x => x.id));
+        for (const r of stare) if (!ids.has(r.id)) { nove.push(r); spojeno++; }
+        docs[pt] = { stavke: nove };
+      } catch (e) {}
+    }
     for (let i = 0; i < putanje.length; i += 400) {
       const b = fs.batch();
       for (const pt of putanje.slice(i, i + 400)) { b.set(fs.doc(pt), enc(docs[pt])); n++; }
       msg.textContent = "Upisujem… " + n + " / " + putanje.length;
       await b.commit();
     }
-    msg.textContent = "Uvezeno " + n + " dokumenata. Stranica se osvežava…";
+    msg.textContent = "Uvezeno " + n + " dokumenata" + (spojeno ? " (zadržano " + spojeno + " postojećih redova evidencije)" : "") + ". Stranica se osvežava…";
     setTimeout(() => location.reload(), 1500);
   }
 })();
