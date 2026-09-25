@@ -13388,7 +13388,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "24.09.c";
+const APP_VERZIJA = "24.09.d";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13409,7 +13409,7 @@ function ask(title, html, ok = "U redu", cancel = "Odustani", danger = false) {
     setTimeout(() => d.querySelector('[value="ok"]').focus(), 0);
   });
 }
-function cl(x) { const o = { id: x.id, sifra: x.sifra, naziv: x.naziv, grupa: x.grupa, aktivan: x.aktivan }; if (x.izbacen) o.izbacen = x.izbacen; if (x.min > 0) o.min = x.min; if (x.dob) o.dob = x.dob; if (x.mera) o.mera = x.mera; if (x.ng) o.ng = x.ng; return o; }
+function cl(x) { const o = { id: x.id, sifra: x.sifra, naziv: x.naziv, grupa: x.grupa, aktivan: x.aktivan }; if (x.izbacen) o.izbacen = x.izbacen; if (x.min > 0) o.min = x.min; if (x.dob) o.dob = x.dob; if (x.mera) o.mera = x.mera; if (x.ng) o.ng = x.ng; if (x.korak > 0) o.korak = x.korak; if (x.moq > 0) o.moq = x.moq; if (x.korakRucno) o.korakRucno = true; return o; }
 function izbor(title, html, dugmad) {
   return new Promise(res => {
     const d = $("#dlg");
@@ -13784,6 +13784,7 @@ async function izmeni(id, preset) {
     '<label class="fld">Naziv<input class="inp" id="eN" value="' + esc(a.naziv) + '"></label>' + grupaPolje(a.grupa) +
     '<div class="row2"><label class="fld">Glavni dobavljač<select class="inp" id="eDob">' + dobOptions(a.dob || "", a.id && S.byId[a.id] ? dobavljaciArtikla(a) : []) + '</select></label><label class="fld">Jedinica mere<input class="inp" id="eJM" value="' + esc(a.mera || "") + '" placeholder="KOM, KG, M…"></label></div>' +
     '<label class="fld">Grupa nabavke (opšti artikal)<select class="inp" id="eNG">' + ngOptions(a.ng || (a.naziv ? autoGrupa(a) : "")) + "</select></label>" +
+    '<div class="row2"><label class="fld">Nabavka: zaokruži na korak od<input class="inp" id="eKor" inputmode="decimal" value="' + (a.korak > 0 ? esc(String(a.korak).replace(".", ",")) : "") + '" placeholder="automatski"></label><label class="fld">Minimalna porudžbina<input class="inp" id="eMoq" inputmode="decimal" value="' + (a.moq > 0 ? esc(String(a.moq).replace(".", ",")) : "") + '" placeholder="nema"></label></div>' +
     (id ? "" : '<label class="fld">Trenutno stanje (ako ne znaš, ostavi prazno pa unesi ulaz)<input class="inp" id="eP" inputmode="decimal" autocomplete="off"></label>') +
     '<label class="fld">Minimalna zaliha (ispod ove količine artikal ide na spisak za poručivanje)<input class="inp" id="eMin" inputmode="decimal" autocomplete="off" value="' + (a.min > 0 ? esc(String(a.min).replace(".", ",")) : "") + '"></label>' +
     '<label class="chk"><input type="checkbox" id="eA"' + (a.aktivan ? " checked" : "") + "> aktivan (prikazuje se u stanju i izveštajima)</label></div>", id ? "Sačuvaj" : "Dodaj u artikle");
@@ -13791,13 +13792,16 @@ async function izmeni(id, preset) {
   const naziv = $("#eN").value.trim(); if (!naziv) { toast("Naziv je obavezan."); return false; }
   const sifra = $("#eS").value.trim(), grupa = procitajGrupu(), aktivan = $("#eA").checked;
   const mn = parseQty($("#eMin").value); const min = mn > 0 ? r3(mn) : 0; const dobI = $("#eDob").value, meraI = $("#eJM").value.trim().toUpperCase(), ngI = $("#eNG").value;
+  const korI = parseQty($("#eKor").value), moqI = parseQty($("#eMoq").value);
+  const korPromena = (korI > 0 ? r3(korI) : 0) !== (a.korak || 0) || (moqI > 0 ? r3(moqI) : 0) !== (a.moq || 0);
   if (sifra && S.art.some(x => !x.izbacen && String(x.sifra) === sifra && x.id !== a.id)) { toast("Artikal sa šifrom " + sifra + " već postoji."); return false; }
   if (!id) {
     const p = parseQty($("#eP").value);
     if (await dodajArtikle([{ sifra, naziv, grupa, aktivan, min, dob: dobI, mera: meraI, ng: ngI, poc: p > 0 ? p : 0 }])) { toast("Artikal je dodat – " + naziv); return true; }
     return false;
   }
-  const items = S.art.map(x => { if (x.id !== a.id) return cl(x); const o = Object.assign(cl(x), { sifra, naziv, grupa, aktivan }); if (min > 0) o.min = min; else delete o.min; if (dobI) o.dob = dobI; else delete o.dob; if (meraI) o.mera = meraI; else delete o.mera; if (ngI) o.ng = ngI; else delete o.ng; return o; });
+  const items = S.art.map(x => { if (x.id !== a.id) return cl(x); const o = Object.assign(cl(x), { sifra, naziv, grupa, aktivan }); if (min > 0) o.min = min; else delete o.min; if (dobI) o.dob = dobI; else delete o.dob; if (meraI) o.mera = meraI; else delete o.mera; if (ngI) o.ng = ngI; else delete o.ng;
+    if (korI > 0) o.korak = r3(korI); else delete o.korak; if (moqI > 0) o.moq = r3(moqI); else delete o.moq; if (korPromena) o.korakRucno = true; return o; });
   const grupe = S.grupe.slice(); if (!grupe.includes(grupa)) grupe.push(grupa);
   if (await sacuvajSifarnik(items, grupe)) { toast("Artikal je sačuvan."); return true; }
   return false;
@@ -14245,11 +14249,12 @@ function periodGrupe(a) { const g = a && a.ng && S.ngrupe && S.ngrupe.byNaziv[a.
 function planNabavke(a) {
   const st = trenutno(a.id), min = a.min || 0, mes = mesecna(a), L = rokDob(a), P = periodGrupe(a), dn = mes / 30.4;
   const rop = min + dn * L;                       // tacka porucivanja: minimum + potrosnja dok roba ne stigne
-  const pred = Math.max(0, Math.ceil(min + dn * L + mes * P - st));
+  const predRaw = Math.max(0, Math.ceil(min + dn * L + mes * P - st));
+  const pred = predRaw > 0 ? zaokruziNabavku(a, predRaw) : 0;
   let dana = null; if (dn > 0) dana = (st - rop) / dn;            // za koliko dana stanje pada na tacku porucivanja
   else if (min > 0 && st < min) dana = 0;
   const porDo = dana === null ? null : addDays(today(), Math.max(0, Math.floor(dana)));
-  return { st, min, mes, L, P, rop, pred, dana, porDo };
+  return { st, min, mes, L, P, rop, pred, predRaw, dana, porDo };
 }
 function zaliheLista(svi) {
   const W = parseQty($("#zWarn").value); const warn = W >= 0 ? W : 14;
@@ -14288,7 +14293,7 @@ function renderZalihe() {
       '<td class="num">' + pc + '</td><td class="num' + (r.p && r.p.tip === "P" ? " par" : "") + '">' + esc(dovTxt(r)) + "</td>" +
       '<td class="num">' + (r.L ? r.L + " d" : '<span class="muted" title="Upiši rok isporuke kod dobavljača">?</span>') + "</td>" +
       '<td class="num dn' + (r.odmah ? " neg" : "") + '" style="font-weight:600">' + esc(porDoTxt(r)) + "</td>" +
-      '<td class="num" style="font-weight:600">' + (r.pred > 0 ? esc(fmt(r.pred, false)) : "–") + "</td></tr>";
+      '<td class="num" style="font-weight:600" title="' + (r.pred > 0 ? esc("potrebno " + fmt(r.predRaw, false) + " · " + opisZaokruzivanja(r.a)) : "") + '">' + (r.pred > 0 ? esc(fmt(r.pred, false)) + (r.predRaw !== r.pred ? '<div class="muted" style="font-size:11px;font-weight:400">potrebno ' + esc(fmt(r.predRaw, false)) + "</div>" : "") : "–") + "</td></tr>";
   }).join("")
     : '<tr class="empty-row"><td colspan="9">' + ($("#zPrikaz").value === "svi" ? "Nema artikala." : "Nijedan artikal ne treba poručiti u zadatom periodu. Minimume postavi u prikazu „Svi artikli“.") + "</td></tr>";
 }
@@ -14302,7 +14307,7 @@ async function postaviMin(id, v) {
 $("#zZahtev").addEventListener("click", () => {
   const l = zaliheLista(false).filter(r => r.pred > 0);
   if (!l.length) { toast("Nema predloga za poručivanje."); return; }
-  dodajUZahtev(l.map(r => ({ art: r.a.id, kol: r.pred, izvor: "Zalihe: ispod minimuma / pri kraju" })));
+  dodajUZahtev(l.map(r => ({ art: r.a.id, kol: r.predRaw, izvor: "Zalihe: ispod minimuma / pri kraju" })));
 });
 $("#tZal").addEventListener("change", e => { const id = e.target.dataset.min; if (id) postaviMin(id, e.target.value); });
 $("#tZal").addEventListener("keydown", e => { if (e.target.dataset.min && e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
@@ -15219,14 +15224,53 @@ function podrazumevaniDob(a) {
 async function sacuvajZahteve(stavke) {
   try { await write(() => S.db.doc("nabavka/zahtevi").set({ stavke })); return true; } catch (e) { dbErr(e); return false; }
 }
+/* ---- logično zaokruživanje količine za nabavku ---- */
+function lepoBlizu(x) {
+  if (!(x > 0)) return 1;
+  const e = Math.pow(10, Math.floor(Math.log10(x))); let best = null;
+  for (const f of [1, 2, 2.5, 5, 10]) { const v = f * e; if (best === null || Math.abs(Math.log(v / x)) < Math.abs(Math.log(best / x))) best = v; }
+  return best;
+}
+function lepoNadole(x) {
+  if (!(x > 0)) return 0;
+  const e = Math.pow(10, Math.floor(Math.log10(x)));
+  for (const f of [5, 2.5, 2, 1]) if (f * e <= x + 1e-9) return f * e;
+  return e;
+}
+function nzd(a, b) { while (b) [a, b] = [b, a % b]; return a; }
+// iz istorije isporuka: korak (pakovanje ili "lepa" količina) i minimalna porudžbina
+function korakIzIstorije(kolicine) {
+  const q = kolicine.filter(x => x > 0).sort((a, b) => a - b); if (!q.length) return null;
+  const med = q.length % 2 ? q[(q.length - 1) / 2] : (q[q.length / 2 - 1] + q[q.length / 2]) / 2;
+  let g = null;
+  if (q.length >= 2 && q.every(x => Math.abs(x - Math.round(x)) < 1e-6)) { g = q.map(Math.round).reduce(nzd); if (!(g >= 10 && g < q[0] && g >= 0.05 * med)) g = null; }
+  let korak = g || lepoBlizu(med * 0.2); if (korak >= 1) korak = Math.round(korak);
+  let moq = lepoNadole(med * 0.5); if (moq >= 1) moq = Math.round(moq);
+  if (g) moq = Math.max(g, Math.ceil(moq / g) * g);
+  return { korak, moq, pak: !!g };
+}
+function zaokruziNabavku(a, potreba) {
+  if (!(potreba > 0)) return 0;
+  const k = a && a.korak > 0 ? a.korak : Math.max(potreba < 5 ? 0.5 : 1, lepoBlizu(potreba * 0.2));
+  const moq = a && a.moq > 0 ? a.moq : 0;
+  return r3(Math.max(moq, Math.ceil(potreba / k - 1e-9) * k));
+}
+function opisZaokruzivanja(a) {
+  if (!a || !(a.korak > 0)) return "korak po veličini potrebe";
+  return "korak " + fmt(a.korak, false) + (a.moq > 0 ? ", min. " + fmt(a.moq, false) : "") + (a.korakRucno ? " (ručno)" : "");
+}
 async function dodajUZahtev(lista) {
   if (!S.db) { toast("Baza nije dostupna."); return; }
   const st = S.zahtevi.map(x => Object.assign({}, x)); let n = 0;
   for (const l of lista) {
     const a = S.byId[l.art]; if (!a || !(l.kol > 0)) continue;
     const ex = st.find(x => x.art === l.art);
-    if (ex) { ex.kol = r3(ex.kol + l.kol); if (l.izvor && !String(ex.izvor || "").includes(l.izvor)) ex.izvor = (ex.izvor ? ex.izvor + "; " : "") + l.izvor; }
-    else st.push({ id: rid(), art: l.art, kol: r3(l.kol), dob: podrazumevaniDob(a), izvor: l.izvor || "", t: new Date().toISOString(), uid: S.uid || "anon" });
+    if (ex) {
+      ex.potreba = r3((ex.potreba != null ? ex.potreba : ex.kol) + l.kol);
+      if (!ex.rucno) ex.kol = zaokruziNabavku(a, ex.potreba);
+      if (l.izvor && !String(ex.izvor || "").includes(l.izvor)) ex.izvor = (ex.izvor ? ex.izvor + "; " : "") + l.izvor;
+    }
+    else st.push({ id: rid(), art: l.art, potreba: r3(l.kol), kol: zaokruziNabavku(a, l.kol), dob: podrazumevaniDob(a), izvor: l.izvor || "", t: new Date().toISOString(), uid: S.uid || "anon" });
     n++;
   }
   if (!n) { toast("Nema stavki za zahtev."); return; }
@@ -15253,7 +15297,8 @@ function renderZahtevi() {
       const nestaje = dn > 0 ? Math.floor(Math.max(0, stz) / dn) : null, kasni = Ld > 0 && nestaje !== null && nestaje < Ld;
       return '<tr><td class="sif">' + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '<div class="muted" style="font-size:11px">' + esc(z.izvor || "") + (a.ng ? " · " + esc(a.ng) : "") + "</div>" +
         (kasni ? '<div class="warn" style="font-size:12px">Stanje traje ~' + nestaje + " d, a isporuka ~" + Ld + " d – može da fali pre dolaska robe</div>" : "") + '</td><td class="num">' + esc(fmt(stz, false)) + "</td>" +
-        '<td class="num"><input class="inp minin" data-zk="' + z.id + '" inputmode="decimal" value="' + esc(String(z.kol).replace(".", ",")) + '"></td><td>' + esc(jm(a)) + "</td>" +
+        '<td class="num"><input class="inp minin" data-zk="' + z.id + '" inputmode="decimal" value="' + esc(String(z.kol).replace(".", ",")) + '" title="' + esc(opisZaokruzivanja(a)) + '">' +
+        (z.potreba != null && Math.abs(z.potreba - z.kol) > 1e-9 ? '<div class="muted" style="font-size:11px" title="' + esc(opisZaokruzivanja(a)) + '">potrebno ' + esc(fmt(z.potreba, false)) + (z.rucno ? " · ručno" : "") + "</div>" : "") + "</td><td>" + esc(jm(a)) + "</td>" +
         '<td><select class="inp" data-zd="' + z.id + '" style="max-width:240px;padding:4px 6px">' + dobOptions(z.dob, dobavljaciArtikla(a)) + "</select></td>" +
         '<td class="num">' + (c ? esc(fmtC(c)) + (pc.dob !== z.dob && z.dob ? '<div class="muted" style="font-size:11px">drugi dobavljač</div>' : "") : "–") + '</td><td class="num">' + (c ? esc(fmtD(c * z.kol)) : "–") + "</td>" +
         '<td><button class="x" data-zx="' + z.id + '" aria-label="Ukloni" style="border:0;background:none;cursor:pointer;color:var(--muted);font-size:16px">×</button></td></tr>';
@@ -15291,7 +15336,7 @@ $("#zahBox").addEventListener("click", async e => {
 $("#zahBox").addEventListener("change", async e => {
   const id = e.target.dataset.zk || e.target.dataset.zd; if (!id) return;
   const st = S.zahtevi.map(z => Object.assign({}, z)); const z = st.find(x => x.id === id); if (!z) return;
-  if (e.target.dataset.zk) { const k = parseQty(e.target.value); if (!(k > 0)) { toast("Količina mora biti veća od nule."); return; } z.kol = r3(k); }
+  if (e.target.dataset.zk) { const k = parseQty(e.target.value); if (!(k > 0)) { toast("Količina mora biti veća od nule."); return; } z.kol = r3(k); z.rucno = true; }
   else z.dob = e.target.value;
   S.zahtevi = st; await sacuvajZahteve(st); renderZahtevi();
 });
@@ -15584,7 +15629,9 @@ async function uvoziNabavku() {
       if ($("#nabDob").checked) {
         const prim = {};
         for (const z of nabUvoz.zapisi) if (z[3] > 0) { const o = prim[z[0]] = prim[z[0]] || {}; o[z[1]] = (o[z[1]] || 0) + z[3]; }
-        const art = S.art.map(x => { const o = cl(x); const pr = x.sifra && prim[x.sifra]; if (pr) { o.dob = Object.entries(pr).sort((a, b) => b[1] - a[1])[0][0]; const m = nabUvoz.artikli[x.sifra]; if (m && m.mera) o.mera = m.mera; } return o; });
+        const isp = {}; for (const z of nabUvoz.zapisi) if (z[3] > 0) (isp[z[0]] = isp[z[0]] || []).push(z[3]);
+        const art = S.art.map(x => { const o = cl(x); const pr = x.sifra && prim[x.sifra]; if (pr) { o.dob = Object.entries(pr).sort((a, b) => b[1] - a[1])[0][0]; const m = nabUvoz.artikli[x.sifra]; if (m && m.mera) o.mera = m.mera; }
+          const kr = x.sifra && !x.korakRucno && isp[x.sifra] ? korakIzIstorije(isp[x.sifra]) : null; if (kr) { o.korak = kr.korak; o.moq = kr.moq; } return o; });
         await S.db.doc("sifarnik/artikli").set({ items: art, grupe: S.grupe.slice() });
       }
     });
