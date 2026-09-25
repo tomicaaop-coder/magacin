@@ -361,6 +361,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button role="tab" data-grp="sirovine" aria-selected="false">Sirovine</button>
       <button role="tab" data-grp="kontrola" aria-selected="false">Kontrola</button>
       <button role="tab" data-grp="popis" aria-selected="false">Popis</button>
+      <button role="tab" data-grp="uskladjivanje" aria-selected="false">Usklađivanje</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
     <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
@@ -453,6 +454,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   <section class="view" id="v-sunos"><div id="sunosBox"></div></section>
   <section class="view" id="v-sstanje"><div id="sstanjeBox"></div></section>
   <section class="view" id="v-spopis"><div id="spopisBox"></div></section>
+  <section class="view" id="v-uskl"><div id="usklBox"></div></section>
   <section class="view" id="v-spromet"><div id="spromBox"></div></section>
   <section class="view" id="v-srokovi"><div id="srokBox"></div></section>
 
@@ -13421,7 +13423,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "25.09.d";
+const APP_VERZIJA = "25.09.e";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13956,6 +13958,7 @@ function renderAll() {
   else if (v === "v-prijem") renderPrijem();
   else if (v === "v-proizvodnja") renderProizvodnja();
   else if (v === "v-zalihe") renderZalihe();
+  else if (v === "v-uskl") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#usklBox") && /INPUT|SELECT/.test(ae.tagName))) renderUskl(); }
   else if (v === "v-kamb") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#kambBox") && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
@@ -13977,9 +13980,10 @@ const GRUPE = {
   sirovine: [["sunos", "Ulaz / izlaz"], ["sstanje", "Stanje po lotovima"], ["spopis", "Popis"], ["spromet", "Promet"], ["srokovi", "Rokovi trajanja"]],
   kontrola: [["kamb", "Ambalaža"]],
   popis: [["popis", "Popis"]],
+  uskladjivanje: [["uskl", "Usklađivanje stanja"]],
   artikli: [["artikli", "Artikli"]]
 };
-const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", sirovine: "sunos", kontrola: "kamb", popis: "popis", artikli: "artikli" };
+const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", sirovine: "sunos", kontrola: "kamb", popis: "popis", uskladjivanje: "uskl", artikli: "artikli" };
 function grupaOd(view) { for (const g in GRUPE) if (GRUPE[g].some(x => x[0] === view)) return g; return "magacin"; }
 const smeVideti = v => !window.DOZVOLE || window.DOZVOLE(v);
 const MOB = [["unos", "Ulaz / izlaz", "M4 12h16M12 4v16"], ["proizvodnja", "Proizvodnja", "M3 20h18M6 20V9l5 3V9l5 3V5h3v15"], ["stanje", "Zalihe", "M4 6h16M4 12h16M4 18h10"], ["prijem", "Dnevni ulaz", "M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"]];
@@ -14365,7 +14369,6 @@ S.popis = null; S.popisi = [];
 function popisArtikli() { const p = S.popis; return S.art.filter(a => !a.izbacen && a.aktivan && (!p.grupa || a.grupa === p.grupa)); }
 function renderPopis() {
   const box = $("#popisBox");
-  if (!S.popis && S.erp) { renderErp(); return; }
   if (!S.popis) {
     const opts = '<option value="">Svi artikli</option>' + S.grupe.filter(g => S.art.some(a => a.grupa === g && !a.izbacen)).map(g => "<option>" + esc(g) + "</option>").join("");
     box.innerHTML = '<div class="toolbar"><h1>Popis</h1></div><div class="split"><div>' +
@@ -14374,11 +14377,8 @@ function renderPopis() {
       '<h2 style="font-size:18px;margin:22px 0 10px">Dosadašnji popisi</h2><div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Obim</th><th class="num">Izbrojano</th><th class="num">Sa razlikom</th><th>Uneo</th><th></th></tr></thead><tbody>' +
       (S.popisi.length ? S.popisi.map(p => { const sr = p.stavke.filter(x => x.raz).length; return "<tr><td>" + esc(dtxt(p.datum)) + "</td><td>" + esc(p.grupa || "svi artikli") + '</td><td class="num">' + p.stavke.length + '</td><td class="num">' + sr + "</td><td>" + esc(who(p.uid)) + '</td><td class="num"><button class="btn dl" data-arh="' + esc(p._id) + '" style="padding:4px 10px">Excel</button></td></tr>'; }).join("") : '<tr class="empty-row"><td colspan="6">Još nije bilo popisa.</td></tr>') +
       "</tbody></table></div></div>" +
-      '<div class="card"><h2>Uskladi sa ERP lager listom</h2><p>Učitaj lager listu iz UPIS.Net-a (PDF „Lager-lista raspoloživosti“ ili Excel izvoz). Program uporedi stanje po magacinima sa stanjem u aplikaciji, pokaže razlike i proknjiži ih kao korekcije – promet se ne briše.</p>' +
-      '<div class="form"><label class="fld">Lager lista (PDF ili Excel)<input class="inp" type="file" id="erpF" accept=".pdf,.xlsx,.xls,.xlsm,application/pdf"></label>' +
-      '<label class="fld">Stanje na dan<input class="inp" type="date" id="erpD" value="' + today() + '"></label><div id="erpM" class="muted" style="font-size:13px"></div></div>' +
-      '<p class="muted" style="font-size:12px;margin-top:10px">Najbolje je lager listu izvući na kraju radnog dana, kad su svi prijemi i izdavanja proknjiženi i u ERP-u i u aplikaciji.</p></div>' +
-      "</div>";
+      '<div class="card"><h2>Usklađivanje sa ERP lager listom</h2><p>Premešteno na karticu <b>Usklađivanje</b> u glavnom meniju: tamo se učitava lager lista iz UPIS.Net-a (ambalaža ili sirovine po serijama) i odmah se vide razlike.</p><button class="btn" id="popUskl">Otvori Usklađivanje</button></div>' +
+    "</div>";
     if (!S.downloads) $$("#popisBox .dl").forEach(b => b.hidden = true);
     return;
   }
@@ -14420,7 +14420,7 @@ async function popisUpis(id, patch) {
   try { await write(() => S.db.doc("popis/aktivan").update({ stavke: { [id]: patch } })); } catch (e) { dbErr(e); }
 }
 $("#popisBox").addEventListener("input", e => {
-  if (e.target.id === "erpQ") { S.erp.q = e.target.value; S.erpFocus = true; renderErp(); return; }
+
   if (e.target.id === "poQ") { S.poFocusQ = true; renderPopis(); return; }
   if (e.target.id === "poSamo") { renderPopis(); return; }
   const id = e.target.dataset.po; if (!id) return;
@@ -14431,13 +14431,7 @@ $("#popisBox").addEventListener("input", e => {
 });
 $("#popisBox").addEventListener("change", e => {
   const t = e.target;
-  if (t.id === "erpF" && t.files[0]) { erpUcitaj(t.files[0]); return; }
-  if (S.erp) {
-    if (t.dataset.erpm) { if (t.checked) S.erp.izabrani.add(t.dataset.erpm); else S.erp.izabrani.delete(t.dataset.erpm); renderErp(); return; }
-    if (t.id === "erpNula") { S.erp.nula = t.checked; renderErp(); return; }
-    if (t.id === "erpDodaj") { S.erp.dodaj = t.checked; renderErp(); return; }
-    if (t.id === "erpSamo") { S.erp.samoRaz = t.checked; renderErp(); return; }
-  }
+
   const id = e.target.dataset.po;
   if (id) { const v = e.target.value.trim(), k = parseQty(v); popisUpis(id, { kol: v && !isNaN(k) && k >= 0 ? r3(k) : null }); return; }
   const rid_ = e.target.dataset.por; if (rid_) popisUpis(rid_, { razlog: e.target.value });
@@ -14448,8 +14442,7 @@ $("#popisBox").addEventListener("keydown", e => {
   const nx = all[i + 1]; if (nx) { nx.focus(); nx.select(); }
 });
 $("#popisBox").addEventListener("click", async e => {
-  if (e.target.id === "erpNazad") { S.erp = null; renderPopis(); return; }
-  if (e.target.id === "erpKnjizi") { erpKnjizi(); return; }
+  if (e.target.id === "popUskl") { show("uskl"); return; }
   if (e.target.id === "poStart") {
     if (!S.db) { toast("Baza nije dostupna."); return; }
     const body = { datum: $("#poDat").value || today(), grupa: $("#poGrp").value, uid: S.uid || "anon", t: new Date().toISOString(), stavke: {} };
@@ -15167,6 +15160,7 @@ function parseLagerSerije(linije) {
    ===================================================================== */
 S.sir = { art: [], byId: {}, bySif: {}, poc: { datum: null, lotovi: [] }, docs: {}, entries: [], sel: null, vrsta: "U", lotSel: null, treb: null, uvoz: null };
 const SVR = { U: "Ulaz", I: "Izlaz", K: "Korekcija" };
+const SIR_TOL = 0.0015;   // ERP lista ima 4 decimale, a stanje se zaokružuje na 3 – manje razlike nisu stvarne
 function sirKljuc(art, lot) { return art + "|" + String(lot || "").trim().toUpperCase(); }
 function sirRebuild() {
   const l = [];
@@ -15406,7 +15400,11 @@ $("#sstanjeBox").addEventListener("click", async e => {
       .concat(R.flatMap(r => r.lots.map(o => [r.a.sifra, r.a.naziv, o.lot, o.proiz ? dtxt(o.proiz) : "", o.vaz ? dtxt(o.vaz) : "", o.kol, r.a.mera || "", o.vaz && o.vaz < today() ? "istekao" : o.vaz && o.vaz <= addDays(today(), 90) ? "ističe" : ""]))), [10, 55, 22, 13, 13, 14, 6, 12]]]);
     return;
   }
-  if (t.id === "sUvPoc") {
+  if (t.id === "sUvPoc") { await sirUvozPostavi(renderSirStanje); return; }
+  if (t.id === "sUvUsk") { await sirUvozUskladi(renderSirStanje); return; }
+});
+async function sirUvozPostavi(posle) {
+  {
     const art = sirUvozArtikli();
     if (S.sir.entries.length && !await ask("Postaviti novo početno stanje?", "<p>Stanje sirovina biće postavljeno prema listi, a <b>sav dosadašnji promet sirovina (" + S.sir.entries.length + " stavki) biće obrisan</b>.</p>", "Postavi", "Odustani", true)) return;
     const by = await sirUvozSifarnik(art); if (!by) return;
@@ -15416,22 +15414,24 @@ $("#sstanjeBox").addEventListener("click", async e => {
         for (const id of Object.keys(S.sir.docs)) await S.db.collection("sirunosi").doc(id).delete();
         await S.db.doc("sirovine/pocetno").set({ datum: addDays(today(), -1), lotovi, izvor: S.sir.uvoz.ime, t: new Date().toISOString() });
       });
-      S.sir.uvoz = null; toast("Početno stanje sirovina: " + lotovi.length + " lotova."); renderSirStanje();
+      S.sir.uvoz = null; toast("Početno stanje sirovina: " + lotovi.length + " lotova."); posle();
     } catch (err) { dbErr(err); }
     return;
   }
-  if (t.id === "sUvUsk") {
+}
+async function sirUvozUskladi(posle) {
+  {
     const art = sirUvozArtikli(), by = await sirUvozSifarnik(art); if (!by) return;
     const cilj = new Map(); for (const [s, o] of Object.entries(art)) for (const l of o.lotovi) cilj.set(sirKljuc(by[s].id, l.lot), Object.assign({ art: by[s].id }, l));
     const sad = sirStanje(), l = [], grp = "us" + rid(), nap = "Usklađivanje sa ERP lager listom po serijama";
     const artIzListe = new Set(Object.values(by).filter(x => art[x.sifra]).map(x => x.id));
-    for (const [k, c] of cilj) { const o = sad.get(k), raz = r3(c.st - (o ? o.kol : 0)); if (Math.abs(raz) > 1e-9) l.push({ art: c.art, lot: c.lot, vrsta: "K", kol: raz, proiz: c.proiz, vaz: c.vaz, nap, grp }); }
-    for (const [k, o] of sad) if (!cilj.has(k) && artIzListe.has(o.art) && Math.abs(o.kol) > 1e-9) l.push({ art: o.art, lot: o.lot, vrsta: "K", kol: -o.kol, nap, grp });
-    if (!l.length) { toast("Stanje se već slaže sa listom."); S.sir.uvoz = null; renderSirStanje(); return; }
+    for (const [k, c] of cilj) { const o = sad.get(k), raz = r3(c.st - (o ? o.kol : 0)); if (Math.abs(raz) > SIR_TOL) l.push({ art: c.art, lot: c.lot, vrsta: "K", kol: raz, proiz: c.proiz, vaz: c.vaz, nap, grp }); }
+    for (const [k, o] of sad) if (!cilj.has(k) && artIzListe.has(o.art) && Math.abs(o.kol) > SIR_TOL) l.push({ art: o.art, lot: o.lot, vrsta: "K", kol: -o.kol, nap, grp });
+    if (!l.length) { toast("Stanje se već slaže sa listom."); S.sir.uvoz = null; posle(); return; }
     if (!await ask("Proknjižiti razlike?", "<p>Korekcija za <b>" + l.length + "</b> lotova, tako da stanje sirovina bude jednako listi.</p>", "Proknjiži")) return;
-    if (await sirDodajUnose(today(), l)) { S.sir.uvoz = null; toast("Usklađeno: " + l.length + " korekcija po lotovima."); renderSirStanje(); }
+    if (await sirDodajUnose(today(), l)) { S.sir.uvoz = null; toast("Usklađeno: " + l.length + " korekcija po lotovima."); posle(); }
   }
-});
+}
 
 /* ---------- Promet ---------- */
 function renderSirPromet() {
@@ -15796,6 +15796,108 @@ $("#kambBox").addEventListener("click", async e => {
     const docId = konDocId(dat), cur = ((S.kon.docs[docId] || {}).stavke || []).concat([o]);
     if (await konSacuvaj(docId, cur)) { toast("Dodat red " + o.kb); renderKontrola(); }
   }
+});
+
+
+/* =====================================================================
+   USKLAĐIVANJE STANJA – ERP lager lista (ambalaža) i lager lista po serijama (sirovine)
+   ===================================================================== */
+S.usk = { poruka: "" };
+function usklSirRazlike() {
+  const U = S.sir.uvoz, art = sirUvozArtikli(), sad = sirStanje(), red = [], nove = [];
+  const by = {}; for (const a of S.sir.art) by[a.sifra] = a;
+  for (const [sif, o] of Object.entries(art)) {
+    const a = by[sif];
+    if (!a) {
+      nove.push({ sifra: sif, naziv: o.n, mera: o.mera, kol: r3(o.lotovi.reduce((s, l) => s + l.st, 0)), lotovi: o.lotovi.length });
+      for (const l of o.lotovi) if (Math.abs(l.st) > 1e-9) red.push({ a: { sifra: sif, naziv: o.n, mera: o.mera, nov: true }, lot: l.lot, vaz: l.vaz, ev: 0, erp: l.st, raz: r3(l.st), nov: true });
+      continue;
+    }
+    for (const l of o.lotovi) { const k = sirKljuc(a.id, l.lot), st = sad.get(k); const ev = st ? st.kol : 0; const d = l.st - ev; if (Math.abs(d) > SIR_TOL || Math.abs(l.st) > 1e-9) red.push({ a, lot: l.lot, vaz: l.vaz, ev, erp: l.st, raz: Math.abs(d) <= SIR_TOL ? 0 : r3(d) }); }
+  }
+  const izListe = new Set(Object.keys(art).map(x => by[x] && by[x].id).filter(Boolean));
+  for (const [k, o] of sad) if (izListe.has(o.art) && Math.abs(o.kol) > 1e-9 && !(art[(S.sir.byId[o.art] || {}).sifra] || { lotovi: [] }).lotovi.some(l => sirKljuc(o.art, l.lot) === k))
+    red.push({ a: S.sir.byId[o.art], lot: o.lot, vaz: o.vaz, ev: o.kol, erp: 0, raz: r3(-o.kol) });
+  return { red, nove };
+}
+function renderUskl() {
+  const box = $("#usklBox");
+  if (S.erp) { renderErp(); return; }                       // ambalaža – postojeći prikaz razlika
+  if (S.sir.uvoz) {                                          // sirovine – razlike po lotovima
+    const U = S.sir.uvoz, { red, nove } = usklSirRazlike();
+    const raz = red.filter(x => Math.abs(x.raz) > SIR_TOL), plus = raz.filter(x => x.raz > 0).length;
+    const q = norm(U.q || "").split(" ").filter(Boolean);
+    const prikaz = (U.samoRaz === false ? red : raz).filter(x => !q.length || q.every(w => norm(x.a.sifra + " " + x.a.naziv + " " + x.lot).includes(w)));
+    const magKeys = Object.keys(U.mag).sort();
+    box.innerHTML = '<div class="toolbar"><h1>Usklađivanje stanja – sirovine (po lotovima)</h1><button class="btn" id="uNazad">Nazad</button>' +
+      '<button class="btn primary" id="uSirUskl"' + (raz.length ? "" : " disabled") + ">Proknjiži razlike (" + raz.length + ")</button>" +
+      '<button class="btn danger" id="uSirPoc" title="Briše promet sirovina i kreće od liste">Postavi kao početno stanje</button></div>' +
+      '<div class="notice" style="font-size:13px">Fajl <b>' + esc(U.ime) + "</b> – lager lista po serijama. Razlike se knjiže kao korekcije po lotu; promet ostaje sačuvan.</div>" +
+      '<div class="card" style="margin-bottom:14px"><h2 style="font-size:16px">Magacini sa liste – koji se upoređuju</h2><div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px">' +
+      magKeys.map(k => '<label class="chk"><input type="checkbox" data-usm="' + k + '"' + (U.izabrani.has(k) ? " checked" : "") + "> <b>" + k + "</b> " + esc(U.mag[k].naziv) + ' <span class="muted">(' + Object.keys(U.mag[k].art).length + ")</span></label>").join("") + "</div></div>" +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">' +
+      [["Upoređeno lotova", red.length], ["Sa razlikom", raz.length], ["Višak u ERP-u", plus], ["Manjak u ERP-u", raz.length - plus], ["Nema u šifarniku", nove.length]].map(([l, v]) => '<div class="card" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+      '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="uQ" type="search" value="' + esc(U.q || "") + '" placeholder="šifra, naziv ili lot"></label><label class="chk"><input type="checkbox" id="uSamo"' + (U.samoRaz === false ? "" : " checked") + "> samo sa razlikom</label></div>" +
+      '<div class="tbl-wrap" style="max-height:560px"><table><thead><tr><th>Šifra</th><th>Sirovina</th><th>Lot</th><th>Važi do</th><th class="num">U aplikaciji</th><th class="num">ERP lista</th><th class="num">Razlika</th></tr></thead><tbody>' +
+      (prikaz.length ? prikaz.slice(0, 1500).map(x => '<tr><td class="sif">' + esc(x.a.sifra) + "</td><td>" + esc(x.a.naziv) + (x.nov ? ' <span class="tag P">nova sirovina</span>' : "") + "</td><td>" + esc(x.lot) + '</td><td class="' + rokKlasa(x.vaz) + '">' + (x.vaz ? esc(dtxt(x.vaz)) : "–") + '</td><td class="num">' + esc(fmt(x.ev, false)) + '</td><td class="num"><b>' + esc(fmt(x.erp, false)) + '</b></td><td class="num ' + (x.raz > 0 ? "raz-p" : x.raz < 0 ? "raz-m" : "") + '">' + (Math.abs(x.raz) > SIR_TOL ? (x.raz > 0 ? "+" : "") + esc(fmt(x.raz, false)) : "✓") + "</td></tr>").join("")
+        : '<tr class="empty-row"><td colspan="7">Nema razlika – stanje sirovina se slaže sa listom.</td></tr>') + "</tbody></table></div>" +
+      (nove.length ? '<details style="margin-top:14px"><summary style="cursor:pointer"><b>' + nove.length + ' sirovina sa liste nema u šifarniku</b> – biće dodate pri knjiženju</summary><div class="tbl-wrap" style="max-height:280px;margin-top:8px"><table><tbody>' +
+        nove.map(n => '<tr><td class="sif">' + esc(n.sifra) + "</td><td>" + esc(n.naziv) + "</td><td>" + esc(n.mera) + '</td><td class="num">' + esc(fmt(n.kol, false)) + "</td></tr>").join("") + "</tbody></table></div></details>" : "");
+    if (S.usk.fokus) { const i = $("#uQ"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } S.usk.fokus = false; }
+    return;
+  }
+  const P = S.poc || {}, brA = S.art.filter(a => !a.izbacen && a.aktivan).length, brS = S.sir.art.length;
+  box.innerHTML = '<div class="toolbar"><h1>Usklađivanje stanja</h1></div>' +
+    '<div class="card"><h2>Učitaj lager listu iz UPIS.Net-a</h2><p>Program prepozna vrstu liste i odmah prikaže razlike u odnosu na stanje u aplikaciji – po artiklu za ambalažu, po lotu za sirovine. Ništa se ne menja dok ne klikneš „Proknjiži razlike“.</p>' +
+    '<div class="form" style="max-width:640px"><label class="fld">Lager lista (PDF ili Excel)<input class="inp" type="file" id="uF" accept=".pdf,.xlsx,.xls,.xlsm,application/pdf"></label>' +
+    '<label class="fld">Stanje u aplikaciji na dan<input class="inp" type="date" id="uD" value="' + today() + '"></label><div id="uM" class="muted" style="font-size:13px">' + esc(S.usk.poruka || "") + "</div></div></div>" +
+    '<div class="split" style="margin-top:16px"><div class="card"><h2 style="font-size:17px">Lager-lista raspoloživosti (ambalaža)</h2><p class="muted" style="font-size:13px">Upoređuje se stanje po artiklu. Prati se ' + brA + " artikala" + (P.datum ? ", početno stanje od " + esc(dtxt(P.datum)) : "") + ". Razlike se knjiže kao korekcije vrste „Popis“, promet ostaje.</p></div>" +
+    '<div class="card"><h2 style="font-size:17px">Lager lista po serijama (sirovine)</h2><p class="muted" style="font-size:13px">Upoređuje se stanje po lotu. Prati se ' + brS + " sirovina. Razlike se knjiže kao korekcije po lotu, a sirovine kojih nema u šifarniku se dodaju.</p></div></div>";
+}
+async function usklUcitaj(file) {
+  const m = $("#uM"); if (m) m.textContent = "Učitavam…";
+  try {
+    const buf = await file.arrayBuffer(), pdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+    const lin = pdf ? await linijeIzPdf(buf, "#uM") : linijeIzExcel(buf);
+    const ser = parseLagerSerije(lin);
+    const imaLot = Object.values(ser).reduce((s, w) => s + Object.values(w.art).reduce((x, a) => x + a.lotovi.length, 0), 0);
+    if (imaLot > 0) {
+      const k = Object.keys(ser);
+      const sirK = k.filter(x => /sirovin/i.test(ser[x].naziv));
+      S.sir.uvoz = { ime: file.name, mag: ser, izabrani: new Set(sirK.length ? sirK : k), samoRaz: true, q: "" };
+      S.erp = null; renderUskl(); return;
+    }
+    const mag = parseLagerLinije(lin), keys = Object.keys(mag);
+    if (!keys.length) { if (m) m.textContent = "U fajlu nije pronađena lager lista (redovi „šifra – naziv – mera – stanje“)."; return; }
+    const poznate = new Set(S.art.filter(a => a.sifra && !a.izbacen).map(a => String(a.sifra)));
+    const izb = new Set(keys.filter(x => !/istek/i.test(mag[x].naziv) && Object.keys(mag[x].st).filter(s => poznate.has(s)).length >= Math.max(3, Object.keys(mag[x].st).length * 0.3)));
+    S.sir.uvoz = null;
+    S.erp = { ime: file.name, datum: ($("#uD") && $("#uD").value) || today(), mag, izabrani: izb, nula: true, dodaj: true, samoRaz: true, q: "" };
+    renderUskl();
+  } catch (e) { console.error(e); if (m) m.textContent = "Fajl nije moguće pročitati: " + (e.message || e); }
+}
+$("#usklBox").addEventListener("change", async e => {
+  const t = e.target;
+  if (t.id === "uF" && t.files[0]) { usklUcitaj(t.files[0]); return; }
+  if (t.dataset.usm) { if (t.checked) S.sir.uvoz.izabrani.add(t.dataset.usm); else S.sir.uvoz.izabrani.delete(t.dataset.usm); renderUskl(); return; }
+  if (t.id === "uSamo") { S.sir.uvoz.samoRaz = t.checked; renderUskl(); return; }
+  if (S.erp) {                                   // kontrole za ambalažu (isti id-jevi kao ranije)
+    if (t.dataset.erpm) { if (t.checked) S.erp.izabrani.add(t.dataset.erpm); else S.erp.izabrani.delete(t.dataset.erpm); renderErp(); return; }
+    if (t.id === "erpNula") { S.erp.nula = t.checked; renderErp(); return; }
+    if (t.id === "erpDodaj") { S.erp.dodaj = t.checked; renderErp(); return; }
+    if (t.id === "erpSamo") { S.erp.samoRaz = t.checked; renderErp(); return; }
+  }
+});
+$("#usklBox").addEventListener("input", e => {
+  if (e.target.id === "erpQ") { S.erp.q = e.target.value; S.erpFocus = true; renderErp(); return; }
+  if (e.target.id === "uQ") { S.sir.uvoz.q = e.target.value; S.usk.fokus = true; renderUskl(); }
+});
+$("#usklBox").addEventListener("click", async e => {
+  const t = e.target;
+  if (t.id === "uNazad" || t.id === "erpNazad") { S.erp = null; S.sir.uvoz = null; S.usk.poruka = ""; renderUskl(); return; }
+  if (t.id === "erpKnjizi") { await erpKnjizi(); renderUskl(); return; }
+  if (t.id === "uSirUskl") { await sirUvozUskladi(renderUskl); return; }
+  if (t.id === "uSirPoc") { await sirUvozPostavi(renderUskl); return; }
 });
 
 /* skeniranje kamerom */
@@ -16540,7 +16642,7 @@ async function ucitajPdfjs() {
   }
   if (!window.pdfjsLib && window["pdfjs-dist/build/pdf"]) window.pdfjsLib = window["pdfjs-dist/build/pdf"];
 }
-async function linijeIzPdf(buf) {
+async function linijeIzPdf(buf, msgSel) {
   await ucitajPdfjs();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
   const linije = [];
@@ -16555,7 +16657,7 @@ async function linijeIzPdf(buf) {
     }
     redovi.sort((a, b) => b.y - a.y);
     for (const r of redovi) linije.push(r.it.sort((a, b) => a.x - b.x).map(i => i.s).join(" "));
-    { const mm = $("#erpM"); if (mm) mm.textContent = "Čitam PDF… strana " + p + " od " + pdf.numPages; }
+    { const mm = $(msgSel || "#erpM"); if (mm) mm.textContent = "Čitam PDF… strana " + p + " od " + pdf.numPages; }
   }
   return linije;
 }
@@ -16594,7 +16696,7 @@ function renderErp() {
   const q = norm(E.q || "").split(" ").filter(Boolean);
   const prikaz = (E.samoRaz ? raz : red).filter(x => !q.length || q.every(w => norm(x.a.sifra + " " + x.a.naziv).includes(w)));
   const magKeys = Object.keys(E.mag).sort();
-  $("#popisBox").innerHTML = '<div class="toolbar"><h1>Usklađivanje sa ERP lager listom</h1><button class="btn" id="erpNazad">Nazad</button>' +
+  $("#usklBox").innerHTML = '<div class="toolbar"><h1>Usklađivanje stanja – ambalaža</h1><button class="btn" id="erpNazad">Nazad</button>' +
     '<button class="btn primary" id="erpKnjizi"' + (raz.length || (E.dodaj && nove.length) ? "" : " disabled") + ">Proknjiži razlike (" + (raz.length + (E.dodaj ? nove.length : 0)) + ")</button></div>" +
     '<div class="notice" style="font-size:13px">Fajl <b>' + esc(E.ime) + "</b> · stanje u aplikaciji na kraju dana <b>" + esc(dtxt(E.datum)) + "</b> Razlike se knjiže kao korekcije (vrsta „Popis“) i mogu se stornirati iz prometa.</div>" +
     '<div class="card" style="margin-bottom:14px"><h2 style="font-size:16px">Magacini sa liste – koji se upoređuju</h2><div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px">' +
