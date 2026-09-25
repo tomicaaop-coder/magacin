@@ -279,6 +279,20 @@ td.raz-p{ color:var(--ulaz); font-weight:600; } td.raz-m{ color:var(--izlaz); fo
   body.printing #printArea{ display:block !important; }
   body.printing{ padding:0 !important; margin:0 !important; background:#fff !important; }
 }
+
+/* ---------- evidencija prijemnog kontrolisanja ---------- */
+.k-ok{ --kc:#1E7A4C; } .k-usl{ --kc:#7B3FB5; } .k-neu{ --kc:#B8322A; }
+.card.k-ok, .card.k-usl, .card.k-neu{ border-left:5px solid var(--kc); }
+.ktab tr.k-ok td{ background:rgba(30,122,76,.10); } .ktab tr.k-usl td{ background:rgba(123,63,181,.11); } .ktab tr.k-neu td{ background:rgba(184,50,42,.11); }
+.knal{ border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:2px 8px; font-size:12px; cursor:pointer; color:var(--ink); }
+.knal.otv{ background:#FFF1DE; border-color:var(--brand); color:#8a4a00; font-weight:600; animation:puls 1.6s ease-in-out 2; }
+.knal.zat{ color:var(--muted); } .knal.nov{ color:var(--muted); border-style:dashed; }
+.card.k-nal{ border-left:5px solid var(--brand); }
+.ktab .kin{ padding:5px 8px; font-size:13px; }
+.ktab td:nth-child(3){ min-width:300px; }
+.ktab select.kodl{ font-weight:600; min-width:150px; }
+.ktab select.k-ok{ color:#fff; background:#1E7A4C; border-color:#1E7A4C; } .ktab select.k-usl{ color:#fff; background:#7B3FB5; border-color:#7B3FB5; } .ktab select.k-neu{ color:#fff; background:#B8322A; border-color:#B8322A; }
+.ktab select.kodl option{ color:var(--ink); background:var(--surface); }
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -345,6 +359,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button role="tab" data-grp="proizvodnja" aria-selected="false">Proizvodnja</button>
       <button role="tab" data-grp="nabavka" aria-selected="false">Nabavka</button>
       <button role="tab" data-grp="sirovine" aria-selected="false">Sirovine</button>
+      <button role="tab" data-grp="kontrola" aria-selected="false">Kontrola</button>
       <button role="tab" data-grp="popis" aria-selected="false">Popis</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
@@ -430,6 +445,9 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
 
   <!-- POPIS -->
   <section class="view" id="v-popis"><div id="popisBox"></div></section>
+
+  <!-- KONTROLA -->
+  <section class="view" id="v-kamb"><div id="kambBox"></div></section>
 
   <!-- SIROVINE -->
   <section class="view" id="v-sunos"><div id="sunosBox"></div></section>
@@ -13403,7 +13421,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "25.09.b";
+const APP_VERZIJA = "25.09.d";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13530,7 +13548,7 @@ async function dodajUnose(datum, lista) {
       await S.db.collection("unosi").doc(docId).set(body);
     });
     try { ntfyObavesti(nove, preIspod); } catch (e) {}
-    return true;
+    return nove;
   } catch (e) { dbErr(e); return false; }
 }
 function dodajUnos(datum, art, vrsta, kol, nap, extra) { return dodajUnose(datum, [Object.assign({ art, vrsta, kol, nap }, extra || {})]); }
@@ -13938,6 +13956,7 @@ function renderAll() {
   else if (v === "v-prijem") renderPrijem();
   else if (v === "v-proizvodnja") renderProizvodnja();
   else if (v === "v-zalihe") renderZalihe();
+  else if (v === "v-kamb") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#kambBox") && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
   else if (v === "v-izdavanje") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#izdBox") && /INPUT|SELECT/.test(ae.tagName))) renderIzdavanje(); }
@@ -13956,10 +13975,11 @@ const GRUPE = {
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan proizvodnje"], ["zalihe", "Zalihe"]],
   nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["ngrupe", "Grupe nabavke"], ["analitika", "Analitika"]],
   sirovine: [["sunos", "Ulaz / izlaz"], ["sstanje", "Stanje po lotovima"], ["spopis", "Popis"], ["spromet", "Promet"], ["srokovi", "Rokovi trajanja"]],
+  kontrola: [["kamb", "Ambalaža"]],
   popis: [["popis", "Popis"]],
   artikli: [["artikli", "Artikli"]]
 };
-const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", sirovine: "sunos", popis: "popis", artikli: "artikli" };
+const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", sirovine: "sunos", kontrola: "kamb", popis: "popis", artikli: "artikli" };
 function grupaOd(view) { for (const g in GRUPE) if (GRUPE[g].some(x => x[0] === view)) return g; return "magacin"; }
 const smeVideti = v => !window.DOZVOLE || window.DOZVOLE(v);
 const MOB = [["unos", "Ulaz / izlaz", "M4 12h16M12 4v16"], ["proizvodnja", "Proizvodnja", "M3 20h18M6 20V9l5 3V9l5 3V5h3v15"], ["stanje", "Zalihe", "M4 6h16M4 12h16M4 18h10"], ["prijem", "Dnevni ulaz", "M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"]];
@@ -14786,6 +14806,7 @@ function crtajQP18(a, d) {
 function predlogLota(datum, ev) { if (!ev) return ""; const d = (datum || today()).split("-"); return d[2] + d[1] + d[0].slice(2) + "/" + ev; }
 async function qp18Dlg(lista, datum) {
   let sledeci = 0; try { sledeci = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
+  try { sledeci = Math.max(sledeci, konMaxBroj(String(datum || today()).slice(0, 4))); } catch (e) {}
   const red = (it, i) => { const a = it.a || S.byId[it.art] || {};
     return '<tr><td style="max-width:190px"><b style="font-size:12px">' + esc(a.naziv || "") + '</b><div class="muted" style="font-size:11px">' + esc(a.sifra || "") + "</div></td>" +
       '<td><input class="inp" data-q="ev" data-i="' + i + '" style="width:70px" inputmode="numeric" value="' + (sledeci ? sledeci + 1 + i : "") + '"></td>' +
@@ -14815,6 +14836,9 @@ async function qp18Dlg(lista, datum) {
     const e = parseInt(o.d.ev, 10); if (e > maxEv) maxEv = e;
   }
   try { localStorage.setItem("qpEv", String(maxEv)); } catch (e) {}
+  // kontrolni broj (= LOT sa etikete, npr. 170926/508) upisuje se u evidenciju prijemnog kontrolisanja
+  for (let i = 0; i < lista.length; i++) { const it = lista[i], o = out.find(x => x.a === (it.a || S.byId[it.art]));
+    if (!it.a && it.art && o) { const kb = o.d.ev ? predlogLota(dat, o.d.ev) : (/^\d{6}\/\d+$/.test(o.d.lot || "") ? o.d.lot : ""); try { await konPoStampi(dat, it.art, kb, o.d.lot || ""); } catch (e) {} } }
   if (v === "print") { doc.stampaj(); return; }
   if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return; }
   try { await S.downloads.save({ filename: "QP18 etikete " + dat + ".pdf", data: doc.output("arraybuffer") }); } catch (e) { if (e && e.code !== "declined") toast("PDF nije sačuvan."); }
@@ -15541,6 +15565,237 @@ $("#spopisBox").addEventListener("keydown", e => {
   S.sir.popFokus = sled ? sled.dataset.spk : null;
   t.blur();                                   // izaziva "change" koji upisuje količinu i fokusira sledeći lot
   if (S.sir.popFokus && sled && sled.isConnected) { sled.focus(); sled.select(); S.sir.popFokus = null; }
+});
+
+/* =====================================================================
+   EVIDENCIJA PRIJEMNOG KONTROLISANJA – AMBALAŽA
+   Redovi: istorija (uvezena) + svaki novi ulaz ambalaže (automatski).
+   Ručno: br. prijemnice, kontrolni broj, lot, odluka, napomena.
+   Korekcija artikla/količine menja i ulaz (storno + novi ulaz) i stanje.
+   Nalog laboratoriji nastaje pri štampi QP18 etikete (ili ručno).
+   ===================================================================== */
+S.kon = { docs: {}, f: { q: "", mes: "", odl: "", prov: false } };
+const ODLUKE = [["Odgovara", "ok"], ["Uslovno primljeno", "usl"], ["Neusaglašeno", "neu"]];
+function konKlasa(o) { const x = ODLUKE.find(y => y[0] === o); return x ? "k-" + x[1] : ""; }
+function konDocId(datum) { return "amb-" + String(datum || today()).slice(0, 7); }
+function konKbBroj(kb) { const m = String(kb || "").match(/\/(\d+)\s*$/); return m ? parseInt(m[1], 10) : 0; }
+function konRedovi() {
+  const out = [], vezani = new Set();
+  for (const [docId, d] of Object.entries(S.kon.docs)) for (const r of (d.stavke || [])) { out.push(Object.assign({ docId }, r)); if (r.ent) vezani.add(r.ent); }
+  const stornirani = new Set(S.entries.filter(e => e.storno).map(e => e.id));
+  for (const r of out) if (r.ent && stornirani.has(r.ent)) r.storniran = true;
+  for (const e of S.entries) {
+    if (e.vrsta !== "U" || e.storno || vezani.has(e.id)) continue;
+    const a = S.byId[e.art] || {};
+    out.push({ virt: true, id: "v" + e.id, ent: e.id, godina: +e.datum.slice(0, 4), datum: e.datum, naziv: a.naziv || "?", kol: e.kol, jm: a.mera || "", proiz: e.dob && typeof dobNaziv === "function" ? dobNaziv(e.dob) : "", sifra: a.sifra || "", art: e.art, docId: konDocId(e.datum) });
+  }
+  return out.sort((x, y) => (x.datum < y.datum ? 1 : x.datum > y.datum ? -1 : konKbBroj(y.kb) - konKbBroj(x.kb)));
+}
+function konMaxBroj(god) { let m = 0; for (const d of Object.values(S.kon.docs)) for (const r of (d.stavke || [])) if (String(r.godina || (r.datum || "").slice(0, 4)) === String(god)) m = Math.max(m, konKbBroj(r.kb)); return m; }
+function konSledeciKb(datum) { const d = String(datum || today()); return d.slice(8, 10) + d.slice(5, 7) + d.slice(2, 4) + "/" + (konMaxBroj(d.slice(0, 4)) + 1); }
+async function konSacuvaj(docId, stavke) {
+  S.kon.docs[docId] = { stavke };
+  try { await write(() => S.db.collection("kontrola").doc(docId).set({ stavke })); return true; } catch (e) { dbErr(e); return false; }
+}
+function konCist(o) { for (const k in o) if (o[k] === "" || o[k] == null) delete o[k]; return o; }
+// izmena jednog reda (virtuelni red se pri prvoj izmeni upisuje u evidenciju); vraća sačuvani red
+async function konIzmeni(r, polja) {
+  const docId = r.docId || konDocId(r.datum), cur = ((S.kon.docs[docId] || {}).stavke || []).map(x => Object.assign({}, x));
+  let o;
+  if (r.virt) {
+    o = { id: rid(), ent: r.ent, godina: r.godina, datum: r.datum, naziv: r.naziv, kol: r.kol, jm: r.jm, proiz: r.proiz, sifra: r.sifra, art: r.art, t: new Date().toISOString(), uid: S.uid || "anon" };
+    Object.assign(o, polja); konCist(o); cur.push(o);
+  } else {
+    o = cur.find(x => x.id === r.id); if (!o) return null;
+    Object.assign(o, polja); konCist(o);
+  }
+  return (await konSacuvaj(docId, cur)) ? Object.assign({ docId }, o) : null;
+}
+function konNalogNovi(kb) { return { br: kb || "", t: new Date().toISOString(), uid: S.uid || "anon", status: "otvoren" }; }
+// posle štampe QP18 etikete: kontrolni broj, lot i nalog laboratoriji idu u evidenciju za taj prijem
+async function konPoStampi(datum, artId, kb, lot) {
+  const R = konRedovi().filter(x => x.datum === datum && x.art === artId && !x.storniran);
+  const r = R.find(x => !x.nalog) || R[0]; if (!r) return;
+  const p = {}; if (!r.kb && kb) p.kb = kb; if (lot) p.lot = lot;
+  if (!r.nalog) p.nalog = konNalogNovi(p.kb || r.kb);
+  if (Object.keys(p).length) await konIzmeni(r, p);
+}
+function renderKontrola() {
+  const box = $("#kambBox"), F = S.kon.f, R = konRedovi();
+  const meseci = [...new Set(R.map(r => (r.datum || "").slice(0, 7)).filter(Boolean))].sort().reverse();
+  const q = norm(F.q).split(" ").filter(Boolean);
+  const vid = R.filter(r => (!F.mes || (r.datum || "").startsWith(F.mes)) &&
+    (!F.odl || (F.odl === "-" ? !r.odluka : F.odl === "nalog" ? r.nalog && r.nalog.status !== "zatvoren" : r.odluka === F.odl)) &&
+    (!F.prov || r.provera || r.virt || !r.kb || !r.odluka) &&
+    (!q.length || q.every(x => norm([r.naziv, r.sifra, r.kb, r.pr, r.proiz, r.lot, r.nap].join(" ")).includes(x))));
+  const br = o => R.filter(r => o === "-" ? !r.odluka : r.odluka === o).length;
+  const otvNal = R.filter(r => r.nalog && r.nalog.status !== "zatvoren").length;
+  const opcije = sel => '<option value=""' + (sel ? "" : " selected") + ">–</option>" + ODLUKE.map(([o]) => "<option" + (sel === o ? " selected" : "") + ">" + o + "</option>").join("");
+  box.innerHTML = '<div class="toolbar"><h1>Evidencija prijemnog kontrolisanja – ambalaža</h1><button class="btn" id="kNovi">Dodaj red ručno</button><button class="btn dl" id="kXls">Preuzmi Excel</button>' + (konBezOdluke().length ? '<button class="btn danger" id="kCisti" title="Uklanja uvezene redove iz stare evidencije koji nemaju odluku">Ukloni uvezene redove bez odluke (' + konBezOdluke().length + ")</button>" : "") + "</div>" +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">' +
+    [["Ukupno prijema", R.length, ""], ["Odgovara", br("Odgovara"), "k-ok"], ["Uslovno primljeno", br("Uslovno primljeno"), "k-usl"], ["Neusaglašeno", br("Neusaglašeno"), "k-neu"], ["Čeka odluku", br("-"), ""], ["Otvoreni nalozi lab.", otvNal, otvNal ? "k-nal" : ""]].map(([l, v, c]) => '<div class="card ' + c + '" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+    '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="kQ" type="search" value="' + esc(F.q) + '" placeholder="naziv, šifra, kontrolni broj, br. prijemnice, proizvođač, lot"></label>' +
+    '<label class="fld">Mesec<select class="inp" id="kMes"><option value="">svi</option>' + meseci.map(m => '<option value="' + m + '"' + (F.mes === m ? " selected" : "") + ">" + m.slice(5) + "/" + m.slice(0, 4) + "</option>").join("") + "</select></label>" +
+    '<label class="fld">Odluka<select class="inp" id="kOdl"><option value="">sve</option><option value="-"' + (F.odl === "-" ? " selected" : "") + '>čeka odluku</option><option value="nalog"' + (F.odl === "nalog" ? " selected" : "") + ">otvoreni nalozi laboratoriji</option>" + ODLUKE.map(([o]) => "<option" + (F.odl === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></label>" +
+    '<label class="chk"><input type="checkbox" id="kProv"' + (F.prov ? " checked" : "") + "> za dopunu / proveru</label></div>" +
+    '<div class="tbl-wrap" style="max-height:680px"><table class="ktab"><thead><tr><th>God.</th><th>Br. prijemnice</th><th>Kontrolni broj</th><th>Naziv materijala</th><th class="num">Količina</th><th>Proizvođač</th><th>Lot</th><th>Datum prijema</th><th>Šifra</th><th>Odluka</th><th>Napomena</th><th></th></tr></thead><tbody>' +
+    (vid.length ? vid.slice(0, 1500).map(r => {
+      const nal = r.nalog ? '<button class="knal ' + (r.nalog.status === "zatvoren" ? "zat" : "otv") + '" data-knal="1" title="Nalog laboratoriji">📋 ' + (r.nalog.status === "zatvoren" ? "nalog zatvoren" : "nalog laboratoriji") + "</button>" : "";
+      const posl = r.izmene && r.izmene.length ? r.izmene[r.izmene.length - 1] : null;
+      return '<tr class="' + konKlasa(r.odluka) + (r.storniran ? " storno" : "") + '" data-kr="' + esc(r.id) + '">' +
+      "<td>" + esc(r.godina || "") + "</td>" +
+      '<td><input class="inp kin" data-kf="pr" value="' + esc(r.pr || "") + '" placeholder="–" style="width:96px"></td>' +
+      '<td style="white-space:nowrap"><input class="inp kin" data-kf="kb" value="' + esc(r.kb || "") + '" placeholder="–" style="width:108px">' + (r.kb ? "" : ' <button class="x" data-kdodeli="1" title="Dodeli sledeći kontrolni broj">＋</button>') + "</td>" +
+      "<td>" + esc(r.naziv) + (r.virt ? ' <span class="tag P" title="Ulaz iz aplikacije – dopuni podatke i odluku">novi ulaz</span>' : "") + (r.storniran ? ' <span class="tag I">ulaz storniran</span>' : "") +
+        (r.provera ? '<div class="warn" style="font-size:11px">⚠ ' + esc(r.provera) + "</div>" : "") +
+        (posl ? '<div class="muted" style="font-size:11px" title="' + esc(r.izmene.map(z => dtxt(z.t.slice(0, 10)) + " " + who(z.uid) + ": " + z.opis).join("\n")) + '">✎ izmenio ' + esc(who(posl.uid)) + " " + esc(dtxt(posl.t.slice(0, 10))) + ": " + esc(posl.opis) + "</div>" : "") +
+        '<div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap">' + nal + (!r.nalog && !r.storniran ? '<button class="knal nov" data-knal="1" title="Kreiraj nalog laboratoriji">＋ nalog</button>' : "") + "</div></td>" +
+      '<td class="num" style="white-space:nowrap">' + esc(r.kol != null ? fmt(r.kol, false) : "") + " " + esc(r.jm || "") + "</td><td>" + esc(r.proiz || "") + "</td>" +
+      '<td><input class="inp kin" data-kf="lot" value="' + esc(r.lot || "") + '" placeholder="–" style="width:110px"></td>' +
+      "<td>" + (r.datum ? esc(dtxt(r.datum)) : "") + '</td><td class="sif">' + esc(r.sifra || "") + "</td>" +
+      '<td><select class="inp kin kodl ' + konKlasa(r.odluka) + '" data-kf="odluka">' + opcije(r.odluka) + "</select></td>" +
+      '<td><input class="inp kin" data-kf="nap" value="' + esc(r.nap || "") + '" style="min-width:150px"></td>' +
+      '<td class="num" style="white-space:nowrap">' + (r.storniran ? "" : '<button class="x" data-kizm="1" title="Izmeni artikal / količinu" aria-label="Izmeni">✎</button>') + (r.virt ? "" : '<button class="x" data-kdel="1" title="Obriši red" aria-label="Obriši">×</button>') + "</td></tr>"; }).join("")
+      : '<tr class="empty-row"><td colspan="12">Nema redova za izabrani filter.</td></tr>') + "</tbody></table></div>" +
+    '<p class="muted" style="font-size:12px">Svaki ulaz ambalaže sam se pojavi ovde (oznaka „novi ulaz“). Štampa QP18 etikete upisuje kontrolni broj i lot i otvara <b>nalog laboratoriji</b>. ✎ menja artikal ili količinu – izmena se knjiži i na ulazu i u stanju, uz zapis ko je izmenio.</p>';
+  if (!S.downloads) $$("#kambBox .dl").forEach(b => b.hidden = true);
+  if (S.kon.fokus) { const i = $("#kQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); S.kon.fokus = false; }
+}
+function konRedPoId(id) { return konRedovi().find(r => r.id === id); }
+function konBezOdluke() { const l = []; for (const [docId, d] of Object.entries(S.kon.docs)) for (const r of (d.stavke || [])) if (String(r.id || "").startsWith("imp") && !r.odluka && !r.ent && !r.nalog) l.push(Object.assign({ docId }, r)); return l; }
+
+/* ---------- korekcija artikla / količine ---------- */
+async function konKorekcija(r) {
+  const dl = '<datalist id="kzDL">' + S.art.filter(a => !a.izbacen).map(a => '<option value="' + esc((a.sifra || "") + " · " + a.naziv) + '"></option>').join("") + "</datalist>";
+  const vezan = r.ent ? S.entries.find(e => e.id === r.ent && !e.storno) : null;
+  const ok = await ask("Izmena podataka prijema", '<div class="form"><p style="margin:0">Trenutno: <b>' + esc(r.naziv) + "</b> (" + esc(r.sifra || "bez šifre") + "), " + esc(r.kol != null ? fmt(r.kol, false) : "–") + " " + esc(r.jm || "") + "</p>" +
+    '<label class="fld">Artikal (šifra ili naziv)<input class="inp" id="kzA" list="kzDL" value="' + esc((r.sifra || "") + " · " + r.naziv) + '"></label>' + dl +
+    '<label class="fld">Količina<input class="inp" id="kzK" inputmode="decimal" value="' + esc(r.kol != null ? String(r.kol).replace(".", ",") : "") + '"></label>' +
+    '<label class="fld">Razlog izmene<input class="inp" id="kzR" placeholder="npr. pogrešno upisan artikal"></label>' +
+    '<p class="muted" style="font-size:12px;margin:0">' + (vezan ? "Ovaj prijem je ulaz iz aplikacije: stari ulaz se stornira i knjiži se ispravljen ulaz – stanje se menja, a u prometu ostaje zapis ko je i kada izvršio izmenu." : "Ovaj red potiče iz uvezene evidencije (pre aplikacije) – izmena se beleži samo u evidenciji; stanje je već usklađeno sa ERP-om.") + "</p></div>", "Sačuvaj izmenu");
+  if (!ok) return;
+  const v = $("#kzA").value.trim(), s = v.split(" · ")[0].trim(), a = S.bySif[s] || S.art.find(x => norm(x.naziv) === norm(v) || norm((x.sifra || "") + " · " + x.naziv) === norm(v));
+  const kol = parseQty($("#kzK").value), razlog = $("#kzR").value.trim();
+  if (!a) { toast("Izaberi artikal sa liste."); return; }
+  if (!(kol > 0)) { toast("Upiši ispravnu količinu."); return; }
+  const promArt = a.id !== r.art, promKol = r.kol == null || Math.abs(kol - r.kol) > 1e-9;
+  if (!promArt && !promKol) { toast("Nema promene."); return; }
+  const opis = (promArt ? "artikal " + (r.sifra || "?") + " → " + (a.sifra || "?") : "") + (promArt && promKol ? ", " : "") + (promKol ? "količina " + fmt(r.kol || 0, false) + " → " + fmt(kol, false) : "") + (razlog ? " (" + razlog + ")" : "");
+  const zapis = { t: new Date().toISOString(), uid: S.uid || "anon", opis };
+  const polja = { art: a.id, sifra: a.sifra || "", naziv: a.naziv, jm: a.mera || "", kol: r3(kol), izmene: (r.izmene || []).concat([zapis]) };
+  if (vezan) {
+    const nap = "Korekcija iz kontrole prijema: " + opis + " – izmenio " + who(S.uid);
+    const nov = await dodajUnose(vezan.datum, [Object.assign({ art: a.id, vrsta: "U", kol: r3(kol), nap }, vezan.dob ? { dob: vezan.dob } : {}, vezan.cena ? { cena: vezan.cena } : {})]);
+    if (!nov) return;
+    try {
+      await write(async () => {
+        const c = S.docs[vezan.docId]; const t0 = new Date().toISOString();
+        const body = Object.assign({}, c, { stavke: c.stavke.map(x => x.id === vezan.id && !x.storno ? Object.assign({}, x, { storno: { uid: S.uid || "anon", t: t0, nap: "Korekcija iz kontrole prijema" } }) : x) });
+        S.docs[vezan.docId] = body; rebuildEntries();
+        await S.db.collection("unosi").doc(vezan.docId).set(body);
+      });
+    } catch (e) { dbErr(e); return; }
+    polja.ent = nov[0].id;
+  }
+  if (await konIzmeni(r, polja)) { toast("Izmena sačuvana" + (vezan ? " – ulaz i stanje ispravljeni." : ".")); renderAll(); }
+}
+
+/* ---------- nalog laboratoriji ---------- */
+function konNalogHtml(r, zaStampu) {
+  const n = r.nalog || {}, st = n.status === "zatvoren";
+  const red = (l, v) => '<tr><td style="padding:4px 10px 4px 0;color:#555;white-space:nowrap;vertical-align:top">' + l + '</td><td style="padding:4px 0;font-weight:600">' + (v || "–") + "</td></tr>";
+  return '<div class="nalog" style="font:14px/1.45 Arial,sans-serif;color:#111;background:#fff' + (zaStampu ? ";padding:10mm" : ";padding:12px;border:1px solid #ccc;border-radius:8px") + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:10px;gap:10px"><div><div style="font-size:12px">HI NEVENA DOO · Magacin ambalaže</div><div style="font:700 20px Arial">NALOG LABORATORIJI</div><div style="font-size:13px">za prijemno kontrolisanje materijala</div></div>' +
+    '<div style="text-align:right"><div style="font-size:12px">Broj naloga</div><div style="font:700 18px Arial">' + esc(n.br || r.kb || "–") + '</div><div style="font-size:12px">' + esc(n.t ? dtxt(n.t.slice(0, 10)) : "") + "</div></div></div>" +
+    '<table style="border-collapse:collapse;width:100%">' + red("Materijal", esc(r.naziv)) + red("Šifra", esc(r.sifra || "")) + red("Količina", esc(r.kol != null ? fmt(r.kol, false) : "") + " " + esc(r.jm || "")) +
+    red("Proizvođač / dobavljač", esc(r.proiz || "")) + red("Lot / serija", esc(r.lot || "")) + red("Kontrolni broj", esc(r.kb || "")) + red("Br. prijemnice", esc(r.pr || "")) + red("Datum prijema", esc(r.datum ? dtxt(r.datum) : "")) + "</table>" +
+    '<p style="margin:10px 0 4px">Molimo da se izvrši <b>prijemno kontrolisanje</b> navedenog materijala i donese odluka o prijemu.</p>' +
+    '<table style="border-collapse:collapse;width:100%;margin-top:4px">' + red("Nalog izdao", esc(n.uid ? who(n.uid) : "")) + red("Status", st ? "zatvoren" : "otvoren – čeka kontrolu") +
+    red("Odluka", esc(r.odluka || "")) + red("Nalaz laboratorije", esc(n.rez || "")) + (st ? red("Zatvorio", esc(who(n.zuid)) + ", " + esc(n.zt ? dtxt(n.zt.slice(0, 10)) : "")) : "") + "</table>" +
+    (zaStampu ? '<div style="display:flex;justify-content:space-between;margin-top:18mm"><div style="border-top:1px solid #111;width:40%;text-align:center;font-size:12px;padding-top:3px">Izdao (magacin)</div><div style="border-top:1px solid #111;width:40%;text-align:center;font-size:12px;padding-top:3px">Laboratorija</div></div>' : "") + "</div>";
+}
+function stampajHtml(html, W, H) {
+  let el = $("#printArea"); if (!el) { el = document.createElement("div"); el.id = "printArea"; document.body.appendChild(el); }
+  el.innerHTML = '<div class="pp" style="position:relative">' + html + "</div>";
+  let st = $("#printPage"); if (!st) { st = document.createElement("style"); st.id = "printPage"; document.head.appendChild(st); }
+  st.textContent = "@page{size:" + W + "mm " + H + "mm;margin:0}#printArea .pp{width:" + W + "mm;min-height:" + H + "mm;box-sizing:border-box}";
+  document.body.classList.add("printing");
+  window.addEventListener("afterprint", () => { document.body.classList.remove("printing"); el.innerHTML = ""; }, { once: true });
+  setTimeout(() => { try { window.print(); } catch (e) { document.body.classList.remove("printing"); toast("Štampa nije dostupna u ovom prikazu."); } }, 80);
+}
+async function konNalogDlg(r) {
+  if (!r.nalog) {
+    if (!await ask("Kreirati nalog laboratoriji?", "<p>Za <b>" + esc(r.naziv) + "</b> (" + esc(r.datum ? dtxt(r.datum) : "") + ") biće kreiran nalog za prijemno kontrolisanje" + (r.kb ? "" : " i dodeljen sledeći kontrolni broj") + ".</p>", "Kreiraj nalog")) return;
+    const kb = r.kb || konSledeciKb(r.datum), nr = await konIzmeni(r, { kb, nalog: konNalogNovi(kb) });
+    if (!nr) return; r = konRedPoId(nr.id) || nr; renderKontrola();
+  }
+  const zat = r.nalog.status === "zatvoren";
+  const v = await izbor("Nalog laboratoriji", konNalogHtml(r) +
+    '<div class="form" style="margin-top:12px"><label class="fld">Nalaz / napomena laboratorije<textarea class="inp" id="knRez" rows="2">' + esc(r.nalog.rez || "") + "</textarea></label>" +
+    '<label class="fld">Odluka<select class="inp" id="knOdl"><option value="">–</option>' + ODLUKE.map(([o]) => "<option" + (r.odluka === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></label></div>",
+    [{ v: "no", l: "Zatvori prozor" }, { v: "print", l: "Štampaj nalog" }, { v: "save", l: zat ? "Sačuvaj" : "Sačuvaj i zatvori nalog", primary: true }]);
+  if (v === "print") { stampajHtml(konNalogHtml(konRedPoId(r.id) || r, true), 148, 210); return; }
+  if (v !== "save") return;
+  const rez = $("#knRez").value.trim(), odl = $("#knOdl").value;
+  const nalog = Object.assign({}, r.nalog, { rez });
+  if (odl && nalog.status !== "zatvoren") Object.assign(nalog, { status: "zatvoren", zuid: S.uid || "anon", zt: new Date().toISOString() });
+  if (!odl) nalog.status = "otvoren";
+  const polja = { nalog, odluka: odl }; if (odl && r.provera) polja.provera = "";
+  if (await konIzmeni(r, polja)) { toast(odl ? "Nalog zatvoren – odluka: " + odl : "Nalog sačuvan."); renderKontrola(); }
+}
+
+$("#kambBox").addEventListener("input", e => { if (e.target.id === "kQ") { S.kon.f.q = e.target.value; S.kon.fokus = true; renderKontrola(); } });
+$("#kambBox").addEventListener("change", async e => {
+  const t = e.target, F = S.kon.f;
+  if (t.id === "kMes") { F.mes = t.value; renderKontrola(); return; }
+  if (t.id === "kOdl") { F.odl = t.value; renderKontrola(); return; }
+  if (t.id === "kProv") { F.prov = t.checked; renderKontrola(); return; }
+  const f = t.dataset.kf; if (!f) return;
+  const tr = t.closest("[data-kr]"), r = tr && konRedPoId(tr.dataset.kr); if (!r) return;
+  const v = t.value.trim(), polja = { [f]: v };
+  if (f === "odluka") { if (r.provera) polja.provera = ""; if (r.nalog) polja.nalog = Object.assign({}, r.nalog, v ? { status: "zatvoren", zuid: S.uid || "anon", zt: new Date().toISOString() } : { status: "otvoren" }); }
+  if (await konIzmeni(r, polja)) { if (f === "odluka") toast("Odluka: " + (v || "–") + " – " + r.naziv); renderKontrola(); }
+});
+$("#kambBox").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.kf) { e.preventDefault(); e.target.blur(); } });
+$("#kambBox").addEventListener("click", async e => {
+  const t = e.target, tr = t.closest("[data-kr]"), r = tr ? konRedPoId(tr.dataset.kr) : null;
+  if (r && t.closest("[data-knal]")) { konNalogDlg(r); return; }
+  if (r && t.dataset.kizm) { konKorekcija(r); return; }
+  if (r && t.dataset.kdodeli) { if (await konIzmeni(r, { kb: konSledeciKb(r.datum) })) renderKontrola(); return; }
+  if (r && t.dataset.kdel) {
+    if (!await ask("Obrisati red?", "<p><b>" + esc(r.naziv) + "</b>, " + esc(r.datum ? dtxt(r.datum) : "") + (r.kb ? ", kontrolni broj " + esc(r.kb) : "") + "</p>" + (r.ent ? "<p class='muted'>Red je vezan za ulaz iz aplikacije – posle brisanja ponovo će se pojaviti kao „novi ulaz“.</p>" : ""), "Obriši", "Odustani", true)) return;
+    const cur = ((S.kon.docs[r.docId] || {}).stavke || []).filter(x => x.id !== r.id);
+    if (await konSacuvaj(r.docId, cur)) renderKontrola();
+    return;
+  }
+  if (t.id === "kCisti") {
+    const l = konBezOdluke(); if (!l.length) return;
+    if (!await ask("Ukloniti redove bez odluke?", "<p>Iz evidencije se uklanja <b>" + l.length + "</b> uvezenih redova koji nemaju odluku (uglavnom TN/ZN nalepnice koje nisu išle na kontrolu). Novi ulazi iz aplikacije ostaju.</p>", "Ukloni", "Odustani", true)) return;
+    const ids = new Set(l.map(r => r.id)), docs = new Set(l.map(r => r.docId));
+    for (const d of docs) await konSacuvaj(d, (S.kon.docs[d].stavke || []).filter(x => !ids.has(x.id)));
+    toast("Uklonjeno redova: " + l.length); renderKontrola(); return;
+  }
+  if (t.id === "kXls") {
+    const R = konRedovi().slice().reverse();
+    saveXlsx("Evidencija prijemnog kontrolisanja ambalaza " + today() + ".xlsx", [["Ambalaža", [["Godina", "Br. prijemnice", "Kontrolni broj", "Naziv materijala", "Količina", "JM", "Proizvođač", "Lot", "Datum prijema", "Šifra", "Odluka", "Napomena", "Nalog laboratoriji", "Izmene"]]
+      .concat(R.map(r => [r.godina || "", r.pr || "", r.kb || "", r.naziv, r.kol != null ? r.kol : "", r.jm || "", r.proiz || "", r.lot || "", r.datum ? dtxt(r.datum) : "", r.sifra || "", r.odluka || "", r.nap || "", r.nalog ? (r.nalog.status === "zatvoren" ? "zatvoren" : "otvoren") + (r.nalog.rez ? " – " + r.nalog.rez : "") : "", (r.izmene || []).map(z => dtxt(z.t.slice(0, 10)) + " " + who(z.uid) + ": " + z.opis).join("; ")])), [7, 13, 13, 52, 12, 6, 22, 14, 13, 9, 19, 34, 24, 40]]]);
+    return;
+  }
+  if (t.id === "kNovi") {
+    const dl = '<datalist id="kDL">' + S.art.filter(a => !a.izbacen).map(a => '<option value="' + esc((a.sifra || "") + " · " + a.naziv) + '"></option>').join("") + "</datalist>";
+    const ok = await ask("Novi red evidencije", '<div class="form"><label class="fld">Materijal (šifra ili naziv)<input class="inp" id="knA" list="kDL"></label>' + dl +
+      '<div class="row2"><label class="fld">Količina<input class="inp" id="knK" inputmode="decimal"></label><label class="fld">Datum prijema<input class="inp" type="date" id="knD" value="' + today() + '"></label></div>' +
+      '<div class="row2"><label class="fld">Proizvođač<input class="inp" id="knP"></label><label class="fld">Lot<input class="inp" id="knL"></label></div>' +
+      '<div class="row2"><label class="fld">Br. prijemnice<input class="inp" id="knPr"></label><label class="fld">Kontrolni broj<input class="inp" id="knB" placeholder="prazno = sledeći u nizu"></label></div>' +
+      '<label class="fld">Odluka<select class="inp" id="knO"><option value="">–</option>' + ODLUKE.map(([o]) => "<option>" + o + "</option>").join("") + "</select></label></div>", "Dodaj");
+    if (!ok) return;
+    const v = $("#knA").value.trim(), s = v.split(" · ")[0].trim(), a = S.bySif[s] || S.art.find(x => norm(x.naziv) === norm(v));
+    const dat = $("#knD").value || today();
+    const o = konCist({ id: rid(), godina: +dat.slice(0, 4), datum: dat, naziv: a ? a.naziv : v, kol: parseQty($("#knK").value) || undefined, jm: a ? a.mera : "", proiz: $("#knP").value.trim(), lot: $("#knL").value.trim(), pr: $("#knPr").value.trim(), sifra: a ? a.sifra : "", art: a ? a.id : "", kb: $("#knB").value.trim() || konSledeciKb(dat), odluka: $("#knO").value, t: new Date().toISOString(), uid: S.uid || "anon" });
+    if (!o.naziv) { toast("Upiši materijal."); return; }
+    const docId = konDocId(dat), cur = ((S.kon.docs[docId] || {}).stavke || []).concat([o]);
+    if (await konSacuvaj(docId, cur)) { toast("Dodat red " + o.kb); renderKontrola(); }
+  }
 });
 
 /* skeniranje kamerom */
@@ -16762,6 +17017,7 @@ async function start() {
   db.collection("porudzbenice").limit(1000).onSnapshot(s => { S.porudz = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).sort((a, b) => a.t < b.t ? 1 : -1); renderAll(); }, fail);
   db.collection("planovi").limit(500).onSnapshot(s => { S.planovi = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); if ($("#v-plan").classList.contains("on")) { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#planBox") && /INPUT|SELECT/.test(ae.tagName))) renderPlan(); } }, fail);
   db.doc("potrosnja/mesecna").onSnapshot(s => { S.real = s.exists ? s.data() : null; S.cache = {}; renderAll(); }, fail);
+  db.collection("kontrola").limit(500).onSnapshot(s => { const d = {}; for (const x of s.docs) d[x.id] = x.data(); S.kon.docs = d; renderAll(); }, fail);
   db.doc("sirovine/sifarnik").onSnapshot(s => { const it = s.exists ? (s.data().items || []) : []; S.sir.art = it; S.sir.byId = Object.fromEntries(it.map(x => [x.id, x])); S.sir.bySif = Object.fromEntries(it.map(x => [x.sifra, x])); S.sir.cache = null; renderAll(); }, fail);
   db.doc("sirovine/pocetno").onSnapshot(s => { S.sir.poc = s.exists ? s.data() : { datum: null, lotovi: [] }; S.sir.cache = null; renderAll(); }, fail);
   db.collection("sirunosi").limit(1000).onSnapshot(s => { const d = {}; for (const x of s.docs) d[x.id] = x.data(); S.sir.docs = d; sirRebuild(); renderAll(); }, fail);
