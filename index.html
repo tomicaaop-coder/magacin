@@ -13435,7 +13435,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "26.09.c";
+const APP_VERZIJA = "26.09.d";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -15655,7 +15655,7 @@ function renderKontrola() {
   const br = o => R.filter(r => o === "-" ? !r.odluka : r.odluka === o).length;
   const otvNal = R.filter(r => r.nalog && r.nalog.status !== "zatvoren").length;
   const opcije = sel => '<option value=""' + (sel ? "" : " selected") + ">–</option>" + ODLUKE.map(([o]) => "<option" + (sel === o ? " selected" : "") + ">" + o + "</option>").join("");
-  box.innerHTML = '<div class="toolbar"><h1>Evidencija prijemnog kontrolisanja – ambalaža</h1><button class="btn" id="kNovi">Dodaj red ručno</button><button class="btn dl" id="kXls">Preuzmi Excel</button>' + (konBezOdluke().length ? '<button class="btn danger" id="kCisti" title="Uklanja uvezene redove iz stare evidencije koji nemaju odluku">Ukloni uvezene redove bez odluke (' + konBezOdluke().length + ")</button>" : "") + "</div>" +
+  box.innerHTML = '<div class="toolbar"><h1>Evidencija prijemnog kontrolisanja – ambalaža</h1><button class="btn" id="kNovi">Dodaj red ručno</button><button class="btn" id="kDupl">Duplikati</button><button class="btn dl" id="kXls">Preuzmi Excel</button>' + (konBezOdluke().length ? '<button class="btn danger" id="kCisti" title="Uklanja uvezene redove iz stare evidencije koji nemaju odluku">Ukloni uvezene redove bez odluke (' + konBezOdluke().length + ")</button>" : "") + "</div>" +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">' +
     [["Ukupno prijema", R.length, ""], ["Odgovara", br("Odgovara"), "k-ok"], ["Uslovno primljeno", br("Uslovno primljeno"), "k-usl"], ["Neusaglašeno", br("Neusaglašeno"), "k-neu"], ["Čeka odluku", br("-"), ""], ["Otvoreni nalozi lab.", otvNal, otvNal ? "k-nal" : ""]].map(([l, v, c]) => '<div class="card ' + c + '" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="kQ" type="search" value="' + esc(F.q) + '" placeholder="naziv, šifra, kontrolni broj, br. prijemnice, proizvođač, lot"></label>' +
@@ -15685,6 +15685,47 @@ function renderKontrola() {
   if (S.kon.fokus) { const i = $("#kQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); S.kon.fokus = false; }
 }
 function konRedPoId(id) { return konRedovi().find(r => r.id === id); }
+
+/* ---------- pronalaženje duplikata u evidenciji ---------- */
+function konDuplikati() {
+  const R = konRedovi().filter(r => !r.virt);
+  const gr = {}, dod = (k, r) => { if (!k) return; (gr[k] = gr[k] || []).push(r); };
+  for (const r of R) {
+    if (r.kb) dod("kb|" + String(r.kb).replace(/\s/g, "").toUpperCase(), r);
+    if (r.datum && (r.sifra || r.naziv) && r.kol != null) dod("dk|" + r.datum + "|" + (r.sifra || norm(r.naziv)) + "|" + r3(r.kol), r);
+  }
+  const vidjeni = new Set(), grupe = [];
+  for (const k of Object.keys(gr)) {
+    const l = gr[k]; if (l.length < 2) continue;
+    const kljuc = l.map(x => x.id).sort().join("+"); if (vidjeni.has(kljuc)) continue; vidjeni.add(kljuc);
+    // najstariji red (po vremenu upisa / uvezeni) se zadržava, noviji su predlog za brisanje
+    const sort = l.slice().sort((a, b) => String(a.t || "") < String(b.t || "") ? -1 : String(a.t || "") > String(b.t || "") ? 1 : String(a.id).localeCompare(String(b.id)));
+    grupe.push({ tip: k.slice(0, 2), zadrzi: sort[0], visak: sort.slice(1) });
+  }
+  return grupe.sort((a, b) => (b.zadrzi.datum || "") < (a.zadrzi.datum || "") ? -1 : 1);
+}
+async function konDuplDlg() {
+  const G = konDuplikati();
+  if (!G.length) { toast("Nema duplikata u evidenciji."); return; }
+  const red = (r, visak) => '<tr' + (visak ? ' style="background:var(--brand-soft)"' : "") + "><td>" + (visak ? '<input type="checkbox" class="kdch" value="' + esc(r.docId + "|" + r.id) + '" checked>' : "") + '</td><td class="sif">' + esc(r.sifra || "") + "</td><td>" + esc(r.naziv) + '</td><td class="num">' + esc(r.kol != null ? fmt(r.kol, false) : "") + "</td><td>" + esc(r.datum ? dtxt(r.datum) : "") + "</td><td>" + esc(r.kb || "–") + "</td><td>" + esc(r.pr || "") + "</td><td>" + esc(r.odluka || "") + '</td><td class="muted" style="font-size:11px">' + (visak ? "noviji – briše se" : "stariji – ostaje") + "</td></tr>";
+  const html = '<p>Pronađeno je <b>' + G.length + "</b> parova sa istim kontrolnim brojem ili istim danom, artiklom i količinom. Stariji red ostaje, noviji je označen za brisanje – odznači ako neki treba da ostane.</p>" +
+    '<div class="tbl-wrap" style="max-height:420px"><table><thead><tr><th></th><th>Šifra</th><th>Materijal</th><th class="num">Količina</th><th>Datum</th><th>Kontrolni broj</th><th>Prijemnica</th><th>Odluka</th><th></th></tr></thead><tbody>' +
+    G.map(g => red(g.zadrzi, false) + g.visak.map(v => red(v, true)).join("") + '<tr><td colspan="9" style="border-bottom:2px solid var(--line)"></td></tr>').join("") + "</tbody></table></div>";
+  const d = $("#dlg"); d.style.width = "min(1000px, 96vw)";
+  const ok = await ask("Duplikati u evidenciji", html, "Obriši označene", "Odustani", true);
+  const izb = [...$$("#dlg .kdch:checked")].map(x => x.value);
+  d.style.width = "";
+  if (!ok || !izb.length) return;
+  const po = {};
+  for (const v of izb) { const i = v.indexOf("|"); (po[v.slice(0, i)] = po[v.slice(0, i)] || new Set()).add(v.slice(i + 1)); }
+  let n = 0;
+  for (const [docId, ids] of Object.entries(po)) {
+    const cur = (S.kon.docs[docId] || {}).stavke || [];
+    if (await konSacuvaj(docId, cur.filter(x => !ids.has(x.id)))) n += ids.size;
+  }
+  toast("Obrisano duplikata: " + n); renderKontrola();
+}
+
 function konBezOdluke() { const l = []; for (const [docId, d] of Object.entries(S.kon.docs)) for (const r of (d.stavke || [])) if (String(r.id || "").startsWith("imp") && !r.odluka && !r.ent && !r.nalog) l.push(Object.assign({ docId }, r)); return l; }
 
 /* ---------- korekcija artikla / količine ---------- */
@@ -15791,6 +15832,7 @@ $("#kambBox").addEventListener("click", async e => {
     if (await konSacuvaj(r.docId, cur)) renderKontrola();
     return;
   }
+  if (t.id === "kDupl") { konDuplDlg(); return; }
   if (t.id === "kCisti") {
     const l = konBezOdluke(); if (!l.length) return;
     if (!await ask("Ukloniti redove bez odluke?", "<p>Iz evidencije se uklanja <b>" + l.length + "</b> uvezenih redova koji nemaju odluku (uglavnom TN/ZN nalepnice koje nisu išle na kontrolu). Novi ulazi iz aplikacije ostaju.</p>", "Ukloni", "Odustani", true)) return;
