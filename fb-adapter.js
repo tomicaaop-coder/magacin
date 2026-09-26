@@ -7,6 +7,7 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
+  const FB_VERZIJA = "26.09.c";
   const MENIJI = [
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
     ["sirovine", "Magacin sirovina", ["sunos", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
@@ -272,7 +273,7 @@
   let odjavaAdmin = null;
   function adminPanel() {
     const w = document.createElement("div"); w.id = "fbA";
-    w.innerHTML = '<div class="box"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font:600 22px \'Barlow Semi Condensed\',Arial">Korisnici i pristup</h2><button id="fbAX" style="margin-left:auto" class="btn">Zatvori</button></div>' +
+    w.innerHTML = '<div class="box"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font:600 22px \'Barlow Semi Condensed\',Arial">Korisnici i pristup <span class="muted" style="font:400 12px Arial">v' + FB_VERZIJA + '</span></h2><button id="fbAX" style="margin-left:auto" class="btn">Zatvori</button></div>' +
       '<p style="color:var(--muted);margin:0 0 12px">Novi korisnici se pojave ovde posle registracije. Za svaki glavni meni izaberi <b>nema pristup</b>, <b>samo pregled</b> ili <b>unos i izmene</b>, pa uključi „Odobren“. Ono što korisnik nema, uopšte mu se ne prikazuje. Promena važi odmah.</p>' +
       '<div id="fbAL">Učitavanje…</div>' +
       '<p style="color:var(--muted);font-size:12px;margin:8px 0 0">Brisanjem korisnik gubi pristup. Da bi se ponovo registrovao pod istim imenom (npr. zaboravljena lozinka), obriši ga i u Firebase konzoli: Authentication → Users.</p>' +
