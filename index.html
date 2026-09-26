@@ -13423,7 +13423,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "25.09.e";
+const APP_VERZIJA = "26.09.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -15616,7 +15616,7 @@ function konNalogNovi(kb) { return { br: kb || "", t: new Date().toISOString(), 
 async function konPoStampi(datum, artId, kb, lot) {
   const R = konRedovi().filter(x => x.datum === datum && x.art === artId && !x.storniran);
   const r = R.find(x => !x.nalog) || R[0]; if (!r) return;
-  const p = {}; if (!r.kb && kb) p.kb = kb; if (lot) p.lot = lot;
+  const p = {}; if (!r.kb && (kb || lot)) p.kb = kb || lot;
   if (!r.nalog) p.nalog = konNalogNovi(p.kb || r.kb);
   if (Object.keys(p).length) await konIzmeni(r, p);
 }
@@ -15638,7 +15638,7 @@ function renderKontrola() {
     '<label class="fld">Mesec<select class="inp" id="kMes"><option value="">svi</option>' + meseci.map(m => '<option value="' + m + '"' + (F.mes === m ? " selected" : "") + ">" + m.slice(5) + "/" + m.slice(0, 4) + "</option>").join("") + "</select></label>" +
     '<label class="fld">Odluka<select class="inp" id="kOdl"><option value="">sve</option><option value="-"' + (F.odl === "-" ? " selected" : "") + '>čeka odluku</option><option value="nalog"' + (F.odl === "nalog" ? " selected" : "") + ">otvoreni nalozi laboratoriji</option>" + ODLUKE.map(([o]) => "<option" + (F.odl === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></label>" +
     '<label class="chk"><input type="checkbox" id="kProv"' + (F.prov ? " checked" : "") + "> za dopunu / proveru</label></div>" +
-    '<div class="tbl-wrap" style="max-height:680px"><table class="ktab"><thead><tr><th>God.</th><th>Br. prijemnice</th><th>Kontrolni broj</th><th>Naziv materijala</th><th class="num">Količina</th><th>Proizvođač</th><th>Lot</th><th>Datum prijema</th><th>Šifra</th><th>Odluka</th><th>Napomena</th><th></th></tr></thead><tbody>' +
+    '<div class="tbl-wrap" style="max-height:680px"><table class="ktab"><thead><tr><th>God.</th><th>Br. prijemnice</th><th>Kontrolni broj</th><th>Naziv materijala</th><th class="num">Količina</th><th>Proizvođač</th><th>Datum prijema</th><th>Šifra</th><th>Odluka</th><th>Napomena</th><th></th></tr></thead><tbody>' +
     (vid.length ? vid.slice(0, 1500).map(r => {
       const nal = r.nalog ? '<button class="knal ' + (r.nalog.status === "zatvoren" ? "zat" : "otv") + '" data-knal="1" title="Nalog laboratoriji">📋 ' + (r.nalog.status === "zatvoren" ? "nalog zatvoren" : "nalog laboratoriji") + "</button>" : "";
       const posl = r.izmene && r.izmene.length ? r.izmene[r.izmene.length - 1] : null;
@@ -15651,12 +15651,11 @@ function renderKontrola() {
         (posl ? '<div class="muted" style="font-size:11px" title="' + esc(r.izmene.map(z => dtxt(z.t.slice(0, 10)) + " " + who(z.uid) + ": " + z.opis).join("\n")) + '">✎ izmenio ' + esc(who(posl.uid)) + " " + esc(dtxt(posl.t.slice(0, 10))) + ": " + esc(posl.opis) + "</div>" : "") +
         '<div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap">' + nal + (!r.nalog && !r.storniran ? '<button class="knal nov" data-knal="1" title="Kreiraj nalog laboratoriji">＋ nalog</button>' : "") + "</div></td>" +
       '<td class="num" style="white-space:nowrap">' + esc(r.kol != null ? fmt(r.kol, false) : "") + " " + esc(r.jm || "") + "</td><td>" + esc(r.proiz || "") + "</td>" +
-      '<td><input class="inp kin" data-kf="lot" value="' + esc(r.lot || "") + '" placeholder="–" style="width:110px"></td>' +
       "<td>" + (r.datum ? esc(dtxt(r.datum)) : "") + '</td><td class="sif">' + esc(r.sifra || "") + "</td>" +
       '<td><select class="inp kin kodl ' + konKlasa(r.odluka) + '" data-kf="odluka">' + opcije(r.odluka) + "</select></td>" +
       '<td><input class="inp kin" data-kf="nap" value="' + esc(r.nap || "") + '" style="min-width:150px"></td>' +
       '<td class="num" style="white-space:nowrap">' + (r.storniran ? "" : '<button class="x" data-kizm="1" title="Izmeni artikal / količinu" aria-label="Izmeni">✎</button>') + (r.virt ? "" : '<button class="x" data-kdel="1" title="Obriši red" aria-label="Obriši">×</button>') + "</td></tr>"; }).join("")
-      : '<tr class="empty-row"><td colspan="12">Nema redova za izabrani filter.</td></tr>') + "</tbody></table></div>" +
+      : '<tr class="empty-row"><td colspan="11">Nema redova za izabrani filter.</td></tr>') + "</tbody></table></div>" +
     '<p class="muted" style="font-size:12px">Svaki ulaz ambalaže sam se pojavi ovde (oznaka „novi ulaz“). Štampa QP18 etikete upisuje kontrolni broj i lot i otvara <b>nalog laboratoriji</b>. ✎ menja artikal ili količinu – izmena se knjiži i na ulazu i u stanju, uz zapis ko je izmenio.</p>';
   if (!S.downloads) $$("#kambBox .dl").forEach(b => b.hidden = true);
   if (S.kon.fokus) { const i = $("#kQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); S.kon.fokus = false; }
@@ -15708,7 +15707,7 @@ function konNalogHtml(r, zaStampu) {
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:10px;gap:10px"><div><div style="font-size:12px">HI NEVENA DOO · Magacin ambalaže</div><div style="font:700 20px Arial">NALOG LABORATORIJI</div><div style="font-size:13px">za prijemno kontrolisanje materijala</div></div>' +
     '<div style="text-align:right"><div style="font-size:12px">Broj naloga</div><div style="font:700 18px Arial">' + esc(n.br || r.kb || "–") + '</div><div style="font-size:12px">' + esc(n.t ? dtxt(n.t.slice(0, 10)) : "") + "</div></div></div>" +
     '<table style="border-collapse:collapse;width:100%">' + red("Materijal", esc(r.naziv)) + red("Šifra", esc(r.sifra || "")) + red("Količina", esc(r.kol != null ? fmt(r.kol, false) : "") + " " + esc(r.jm || "")) +
-    red("Proizvođač / dobavljač", esc(r.proiz || "")) + red("Lot / serija", esc(r.lot || "")) + red("Kontrolni broj", esc(r.kb || "")) + red("Br. prijemnice", esc(r.pr || "")) + red("Datum prijema", esc(r.datum ? dtxt(r.datum) : "")) + "</table>" +
+    red("Proizvođač / dobavljač", esc(r.proiz || "")) + red("Kontrolni broj", esc(r.kb || "")) + red("Br. prijemnice", esc(r.pr || "")) + red("Datum prijema", esc(r.datum ? dtxt(r.datum) : "")) + "</table>" +
     '<p style="margin:10px 0 4px">Molimo da se izvrši <b>prijemno kontrolisanje</b> navedenog materijala i donese odluka o prijemu.</p>' +
     '<table style="border-collapse:collapse;width:100%;margin-top:4px">' + red("Nalog izdao", esc(n.uid ? who(n.uid) : "")) + red("Status", st ? "zatvoren" : "otvoren – čeka kontrolu") +
     red("Odluka", esc(r.odluka || "")) + red("Nalaz laboratorije", esc(n.rez || "")) + (st ? red("Zatvorio", esc(who(n.zuid)) + ", " + esc(n.zt ? dtxt(n.zt.slice(0, 10)) : "")) : "") + "</table>" +
@@ -15777,8 +15776,8 @@ $("#kambBox").addEventListener("click", async e => {
   }
   if (t.id === "kXls") {
     const R = konRedovi().slice().reverse();
-    saveXlsx("Evidencija prijemnog kontrolisanja ambalaza " + today() + ".xlsx", [["Ambalaža", [["Godina", "Br. prijemnice", "Kontrolni broj", "Naziv materijala", "Količina", "JM", "Proizvođač", "Lot", "Datum prijema", "Šifra", "Odluka", "Napomena", "Nalog laboratoriji", "Izmene"]]
-      .concat(R.map(r => [r.godina || "", r.pr || "", r.kb || "", r.naziv, r.kol != null ? r.kol : "", r.jm || "", r.proiz || "", r.lot || "", r.datum ? dtxt(r.datum) : "", r.sifra || "", r.odluka || "", r.nap || "", r.nalog ? (r.nalog.status === "zatvoren" ? "zatvoren" : "otvoren") + (r.nalog.rez ? " – " + r.nalog.rez : "") : "", (r.izmene || []).map(z => dtxt(z.t.slice(0, 10)) + " " + who(z.uid) + ": " + z.opis).join("; ")])), [7, 13, 13, 52, 12, 6, 22, 14, 13, 9, 19, 34, 24, 40]]]);
+    saveXlsx("Evidencija prijemnog kontrolisanja ambalaza " + today() + ".xlsx", [["Ambalaža", [["Godina", "Br. prijemnice", "Kontrolni broj", "Naziv materijala", "Količina", "JM", "Proizvođač", "Datum prijema", "Šifra", "Odluka", "Napomena", "Nalog laboratoriji", "Izmene"]]
+      .concat(R.map(r => [r.godina || "", r.pr || "", r.kb || "", r.naziv, r.kol != null ? r.kol : "", r.jm || "", r.proiz || "", r.datum ? dtxt(r.datum) : "", r.sifra || "", r.odluka || "", r.nap || "", r.nalog ? (r.nalog.status === "zatvoren" ? "zatvoren" : "otvoren") + (r.nalog.rez ? " – " + r.nalog.rez : "") : "", (r.izmene || []).map(z => dtxt(z.t.slice(0, 10)) + " " + who(z.uid) + ": " + z.opis).join("; ")])), [7, 13, 13, 52, 12, 6, 22, 14, 13, 9, 19, 34, 24, 40]]]);
     return;
   }
   if (t.id === "kNovi") {
