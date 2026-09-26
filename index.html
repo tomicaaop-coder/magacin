@@ -289,10 +289,21 @@ td.raz-p{ color:var(--ulaz); font-weight:600; } td.raz-m{ color:var(--izlaz); fo
 .knal.zat{ color:var(--muted); } .knal.nov{ color:var(--muted); border-style:dashed; }
 .card.k-nal{ border-left:5px solid var(--brand); }
 .ktab .kin{ padding:5px 8px; font-size:13px; }
-.ktab td:nth-child(3){ min-width:300px; }
+.ktab{ font-size:13px; }
+.ktab th, .ktab td{ padding:6px 7px; }
+.ktab td:nth-child(4){ min-width:230px; }
+.ktab .kin{ padding:4px 6px; font-size:12.5px; }
+.ktab select.kodl{ min-width:126px; font-size:12.5px; }
+.ktab td:last-child{ width:56px; }
 .ktab select.kodl{ font-weight:600; min-width:150px; }
 .ktab select.k-ok{ color:#fff; background:#1E7A4C; border-color:#1E7A4C; } .ktab select.k-usl{ color:#fff; background:#7B3FB5; border-color:#7B3FB5; } .ktab select.k-neu{ color:#fff; background:#B8322A; border-color:#B8322A; }
 .ktab select.kodl option{ color:var(--ink); background:var(--surface); }
+
+/* samo pregled: vidljivo upozorenje i zaključana polja u sadržaju */
+body.samoPregled main::before{ content:"Pristup samo za pregled – izmene na ovoj kartici nisu dozvoljene."; display:block; margin:0 0 14px; padding:9px 14px; border-radius:10px; background:var(--brand-soft); border-left:4px solid var(--brand); font-size:13px; font-weight:600; color:var(--ink); }
+body.samoPregled main .btn.primary, body.samoPregled main .btn.danger, body.samoPregled main button.x, body.samoPregled main .knal{ display:none !important; }
+body.samoPregled main input:not([type=search]):not([type=date]):not([type=checkbox]), body.samoPregled main select:not(.flt), body.samoPregled main textarea{ pointer-events:none; background:var(--bg); color:var(--muted); }
+body.samoPregled main input[type=file]{ display:none; }
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -355,13 +366,12 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   <div class="bar-in">
     <div class="brand"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABPCAIAAADeCG9iAAAYhElEQVR42u1daXRcxZWuW/Ver1q7ZUmWLGu3ZNl4lXcwBmMIBkMCgUBimMCETIDMyUASSGBOmCEhZhJOdgZOEsIEhjAkLNnAgPcF2xivsi15kWXJlq1dra0l9Xuv6s4Pt9VauqVW9+u2cer7Zau761XVq6/uWrcAEUksoHnR2yY6Tov6/aLlGPH1YOdZ7G1HXzfh+vAvg0kPhTE/BXMahOhagGB/gkhaAxj5AY7xLBi9xTC6GvgnhjctMPzT0E+BQaMarbMQ+pGhHgTB+wfhNDt4pBCq38H+DGNNMhDFTOIhoq8bm6v4uQpRs12015C+DtS8JEY8l5C4LGASCbkmmo/zExv4yS3YWo2+bjmzEhLxIqHh46d384Nv8VPbsddDiJBzKiERLxJyXZw9oO95VdRsxb5Ok607CQlJwlFtPyHaTxm7f88r38Vez3BPgISERGxJqHmNw38xdr0k2msJSuVTQiK+JMTOs/qWnxqV7xK9X86dhER8SYhCnD2grV8j6vdJASghEXcSct2oek/f9Bx21Mspk5CIOwkNn7H3NX3bL7GvQ86XhETcScg1fff/GNt+iZpXTpaERCxAR/tQGMaBN43tz0sGSkhcDBKi4Ec/0Df/ROagSUhcHHVUnP5E2/As9rbJOZKQCAlmhaRcYkkiBElvE3obCHJzSIieOm3dM9IXKiEREkBpxjxadBuxuYi3gTAL2NNFx3Fx9DX01kdNQr1X3/68aDwi51lCIiQDc5bT4ttFzd+xaQ/6PIQQcGbS3BtY+WP8wM+x82QUJERhVK01jvxdRuQlJEJyMLmQFt/OK35NJ11Nc1cQRMI19FSJE29Cfzub9hXjkx8QPVx35nDHjGivNT56keh9cqIlJEJQEOjkFXh2G3qO0Yy5ROsRZzai5ygtvoMW3CJq1xIC1H1F+O0NJaEwjD2virYaOc8SEiGhJkDaDNG87/z5IdFaIWr+xqtewbYjkFJMeD+27of08gjVUXGugktFVEJidEGoOIBZiK/DL8cyygkhkJAN7jJ+4BcEBfq6qGs6ARomlQZJQr1X//h36JUxCQmJUcF9BA2iJvo5aXNRdxkruk1UvyPObCKEENWJvvbwhVlAEvIze0XN1nic0KUMVAexOAll/r/4uuKXEgAUrAnEkhCq9lYYLZyfLw172/wTDQycaYQO9XIJHXvbCRrjaJlZwJ5KqAJUDd69QX9DrmNPJFEpQoBYHGBNCp6qEX61NRTY10qEHuFbUJ1EdRJK/U1yHfvaotHCwOYiim20/o9RbQ2J4UO9m4gxXhlqXaK9CtKmY089IYTXfSiq32a9zTTnGnF6HfY2Ufd0cWbD+NVRbvBDf8b+7hgu/cRMmpoDE0pY9mxw5YLDNbBqjY9f0j95+YLCbSeEmO8ZAgpJE+mEEpa/hGbPAWdaWKU4Qn9FNFVpf3/kfEIf2FOsq34CKZOHfMPw8bqdxpF3RNNhwrUxLP3ETDapnBVdTzPKCLMSysbsHnbU+f72MOkLX3MBcLjAXcwmLaA5CyFhYmATjAjY36F/8G/CUzOODtiSISWPphTQrHmQWgh298AaQM9Jbf0j6Ov0vyxbCvZ3jmOLoQqb9w2aszSaARHdi1112LhHtFWSzlPY3x5cJqEQZzaxGQ9iS4XwHCN9LUQY4tj/gTOLTlyIfa3Emopth8ZNQtF6nNdsiwn7rIk0exYrvZHmzqdJWUSxEhixAdsSA8Igp1yZdx+v2caPf4hdDSYYqIqNZpQp026h+Utocg5RrOaMy9saGAhlkJABSdnDn+zKZ6UredVf9V0vYE9zCCvfrpTerMz5MnUXEaaOowdaT5CZDLFAaUoeK72F5i2lrkKi2s2pBaTYCA2vw1SlqQWseCWdtIi6iolqJzCC/1pXYDjMoix+gghDVL8nGveG6esHmwsSsqJ9ralTyOTlzOjHzlOiYZc4tRY7qgn3Dadh22Gs38JmPSyOvi7aKwkh6PPwAz+DrCtp8Z3iyK/xgsUYNgkRefVm861B1c7yr1TmrmaT5hBrQrizoNpZ/pWs4Cox54v8wBvG4T+jtzVi6UczypS597DiFeBIuRhVqADsqcqs1ZCQoa17Cr0tI3codfE3lJl3EdURo+dDco4y/U429VZIyAyXtKYqINRdwqbfzfKXgyM9bBMAICGLTixn+deLcx/zw6+Kc7vH1BJN7DNRHZA2jaWVsaLPivqt4sRbovXgEMVbGPzEm9TXQaeuptyHnuOEWcE9jfja+cFfoadyfLsZIQS1Hn5io6lOUaDuPGXJw0rpZ4jFOcKu1VHvBWviaGuCKjStiF77OJuyQv/oeV67Y7zvAGzJyozPK/Pug+Tsi2zHU8aKV6jdjdrmZ4fopUxV5vyTMns1YZYLM6OJtpNE99KM6USxRftcZmVFK5SFD1NX0UWgHyHEkqBM/bwy88uQNGmERsexvxMU2xi7jyWB5i2HzDni2Nv80CvobYjzFkLsblr8OZqzjJ/8q6h8Gb2Ng3ioidq12LCTJOWDNYkIQ9RvxM5ThPePd7dXCCHYWIXNx03cfVnuQvX679EJJcN3PsF5zVaj4i3i67Gs+hEkpI+tR02eb0krMnb/Tt/9MtF7w+1CymTL8idY0TWB9X1xAYxN+yyrXs/rdgQGlzZFmX3PQA+xp0nf9d/8+FqwJlnveAWSotKswJaiLHhImX4nsSZenBE70tSFj7KSWwkbrv9jZ51R8Xtxbrcy519Y8aowxpLKZtwHGbP5zh+K5kMh7DSM0EUUDmyprGw1TZ/F9/xoIDzof6yvg7TsRxKVmkUJIaLxkHnOSWD5V1pW/pCml45goGEcfkf722O88l3RWh3kRoqQr9OlLvm6Zdm3wJYc1pDchZaVa9iUFZcKAy+wghWtGCyRWNF14Ei78C679M1rjIOvY28bci1KHzU4J6jXfE+Zfe9FY6AzU136FCu9PQgDPTXahseNw/8r2o5h2IldBCjNnKNcvYZmLQiu0yIXrUdiGOIGBhNmssXP0KwlpqsVlOi9vOYj02Rg/hLLyh+AKy+IO7GtRt/80wgNPNWmzF2tXv0ojGVbUle+5cZnWN6ii6OAjd63yQvAnhLw1ibnBLzjbdW8ZuP44g1MCereBLtLvfoJVnpzuF4T05er3aVe9QQrvCFI97hmHHhJNOyL7HoScBUrS5+mmcGTUcSZ7djbHNuhJeexxd+nk5aZu7oo9rSK1mpz2korVFc8OdxTPzBHDRXY3RiFhaMqs76glN87igsRHG712u/SnHmXZiVwsCYGLD2gcD4Yc0FRx/Hu4sCC+BgVq7LwYTZlZZCP4gPFqsx+gBVcH3SZYr+Hn9sdjZyH5Dxl8ZOQUhCkcU81P/wKMWKb9gzOiaz8MXBNM5OEovMsMaWCk2pXFn+NTigJvWaskcfHAyvsq6x4eXCOMVWZfz8ruvYSlIFDbP3g/zbHHcaKrlem3TE8bSCOYJOXKtPvDtkBUCBq+QzuqcqCb4M1eaRGyo/8gR98iWg9sX2FSXls5oPEkmgeCc/uN6WEDCtcqpR+ZjSaMSX6ZQe2ZHXR1yAxiEeH5cxTZt0VZQD6Uw1IyVUXfj2IOzp+iqhbmXU/sSSMYrCYsEUC0JyraOHNQZaT0Wcc/LW+9Uls2jcyuGem7MpaTCdda9Y2qojGqujNWbAmKuX3xuf108xpyhW36TteHKLVMAubupJwHXuaQrjOeEQDG/ry7SkBlzqKS+zeRWBF1xHVGSIrAAlyf4chClGsOsCWEmhziGIJLH85zZwVF4FrYWV3i9ObsGdE0MLwiVPv642fQMZcVvAZSMwmNldUqoHQiTDAmUHUQZsLs7Epd4r6zUTrMoGERDPBL0pz57NJs+Pl31BY2Srj0NvY3TRYFdF3vGjsfinoLxCFP8wYjT5MmeX6/2AFy/xt9rbjGMlo8Qav/AuvXhd8KxmYgfHtO8O3IWX6F5R5D/n/p/cO1qHA4mQlt8bNGwQpBTRnKa96I/gb72vD2g/F6Y1EsYHF6beQI7upVxgEBaQW0oJVNO/GgV0Y3NNo+hxRv9kEEmJXY9TzwVjBVWSwmyHWNHQX0IwyPpiEgmNnPcbyumxIzR2cmCYaD5FLi4SI3mbiJbG7LhtsKTRrbmAGWo8PrgMGaWU0rSx+w6UKzb+Bn/gLMUJfiyIMoveg3hOMbaPb6TDCpdQimg+w7no280F/6EuxQfpsUr8l+jMPFHtaouWgI5XmLYrrelOsrHBZ/BwwAJCaa7n2Seou9L8SX5eo3/OPZXDaXcq8B2nm7IH1LWo3Eh4gAE0riXNYEpLzwJERR02jnx97HdsCKWk0Y95oBvA4JKEvaleSaoe4B4XphClEsfgvh7I4leLriMURhpyLRBKCw8WmrqJpF5K/EHn1Rn523yVEEcpY/jJwTrhgqoU5B2GfI1EdrGAFzZw1EB8STYf4qU1DNqrUwnjvC44JkFqIXXWh7EawuyE5D5wZ/pwBCPONQ3Cj2i9LB02vIx3UBIzaoFNM0KmoclEygwOqgzNNXf4dSMyMz5NF0xFj5/OjaUHxcsQAZXhhwSnlX6HZ8+Kk+HafM3b9DL2tgeUKAJa4Z+dQBdRgvkBmo1nz2ZTbwT0VnOmEWWO1Pqk6MiUoIhJKjGP1cVG/V9vwA9F28uJ3BuhFiMijwI5T+kfP8fpdl+YNzWB3s1kPsJI7TFEUx9oGJQkHYPTHuDwcEs0r2mr48Q+Nw29hd9NIu/3y34CMfuyo42e2G4ffwI7aSyw8c4EV1mRl0RO08MZ4bU8Qbf7J5UNCzYt9HRBQFyuN/a+HyMOMyDuKHD11ovko+rqDx1QNHbXeeGfK6V4cSNESnGiBIybY127s+S05f0rdFJuQIHY3ipZK7Gu/hOqAoRhycgIoK/siLbhhgIHY144Nu0TTfn/gfphbmFnPf3MEjyDchcP7ibcpep32ciAhch37B8VMBefH1gY5oxxdiGK0DmjdoqWKZk6P66h7mkj/BZpxXbRU0vyrA3NQt000VwYfQqQhigg3sljOAQ7KwYCkybTk9oFAJXpOGDufEU17A16PyOKE/j9ghLvYmFAT6GVAQmJo4szuAQWJppcqM79gVhmL8Hw1XNTvjauIQOT1n2DAOYTi7B5i+BO1wJaizLoXrEn/UAY7TZ8ZKG+hdRsf/1ic23WJxXKDqtCpl4djBnndbkXr8UdKmKoufggcLuPQ28JTF+BGxJIQkXDf6FaQOPMxdp6BlNw4Dbi/g9dsIogDAxLtNdjT6O8AUDb1VqJYjYo/YMtRHK3iG4wh5AYqkXE9ospucVvLFDLLBzKH0XMS2yoJs4VTbY3A+SMpMD5JiEiMPhN2XufEy8Q7ii1HxbmDLP9K//8tTmX+/axsFXacGbR0IlQeUBjYeIjXbBGNR9AXPFdQdNbzE+uV8vviE63hpzaJlqohnew6y2u3KrNW+4fJLKz0Fpp3NXbURiUNLiw49NTwmvWi+fAlelseVcAZSOuHlHxl+c/DdJgBEALqGC9uxNpBzzFj9xpi9Ea7e6iJlwsJfT384J/YpDmDapYAJKSPXUEjTOQuVGav5uf2G5+8zGu3BamkILhx8A1WvCLUcUpzrUHjwGvDqYWCH3mLFd0weMhgS4bMmeY8NXs+K/2saDvOD73Oq9/HGB8XikwYBv5tTaaZc2O5C2rixFuER+2TB4DUUkouF/DqTfzklpi5zoFYHCxvieXm59T5DwRNlBXtNcb+10YTO4KboL1w3dj3smg6HKT5lqP88B8jPC8SDhQbzZihLntKvfLxQWcp/hEhGnby2rUmLDbVCWkz40jCGAeW0Netb/2paD0R293WnqIuflidc0+Q0zEojIo/8hPrQr4brkVbjAi5cexdo+KN4EcihGEceFWc3h7bIJ5iY2WfVxZ/04QyjfipjK9iVy0/+CuidZqwnCzJxJkVPxKitzVgnhn9Q07BONNMMaVEa7W+6dkhR5xiAdWulN8fNCCB/Z361ufE2b3Bl5cjjboKophBwWs269ufC2WXEkKwt03fskY0HYrtDFBFKb2V5V8TgRaHg9P9egcdHrAkEmvyp4CB3ga+57+wzaQrdJMKweaOFwkFF+cODixN7OvE5mMDH7LCq2mWKaYL8pNbtXX/iZ1nYysPE9JZ4TVBPT3CU6d98OTgkMkQKbrkEeoujMRFJDivXqdt+A/sHqP2pmg7oa//d9FwILa6h2JXSm4lyvjOr2HnadLXHqBkQ6C6NiRMVKbeMb4GY1rmMLgMPM13PiXqN5sVjqITFxHFEScSirZqXrtzsOLEqzcN5JpBymTLyjWs9EawJRNmiSoEipwf+0B79zHRdCSmgTuaeUWoklOi9YT2/nf4iXUjlwjNmW9Z9Qtl5t1s4oxxHD3RvEbF69r672H3ubBmu/mI/uF3Rd1HMa1aDe4pYHePSwzyY+8MPnOArVWitWrAraJccY+68NvgmgKKPTzNCGNoAI9kvOc43/mUOLvNNC1aTTxfMCou3lHNa+z8zbBSa/zYh0bBVcr0W89PN00vsa56TrRVE9VOILpeoeC1O8TbD6sLHmBlN4dZrXTcS1B1EspIiDUgPHXa+99V5tyrzLp7iIcWgKZPtax4mmg9Ye36iKL9pPHxC8bx94kxjtLOou24tvZRdsVdyswvQkJszpcwdTyXZyA/vY2fWjdUe/cYe36lLv8xOCb4pev01Sz/OvQ20tSiS0gHNfrE6fX84AvYeYoQNCtlCFKKILU0LiTU+/SPf2tUvjtMLqHm1Tf9GFQHm7Lc7+SwOOjEGaZtXJ46bd3T7Pg6Ze6X6OSF8T/xiH0efefz/NQWZeZdrPAacKQFgsVAyZjpLCiwu8Go+qtx6E/YeTqC3Rd724zdL4q6bcqMu2nBcnC4LlrGGQpxbo++41nsH+7M4PW7yI416sJv+ZNdACBhIiRMvFToxzVsq+RVr4n6DeEXgA+PgpRmLyOqM9YkRPSc0Xf9xqh4M+jpO+xq0N57Qmm4S5l9FyRPMiUhfbj+U7NF1O+h2bPZ1JtY7iJImRTX4z/CEA0HtOZKuq+Ild7EchbQCaXE4hj7V+f2i/Y3+dF3RUddVColctFUoW08Riv+wEpuppOXUNc4734yQw/i1Wv1vS9g1+ng5kP1e9h9Vpn5zyznylhdjBOJ8PCKlgOiZi2e2Yz9bUMyZkyBzQVZV53fFhVTlhp2Nw5bK9jbzqs38qr3RcuxUXZx7G3Xd7zIT2xg+Uto/hLqLgyzMBZ6W8MUDqh5+antvHYnpOaw7Lk0awbNmhWuWIBR5ExLuNKJa6K5UjRXGbZkmlEGqfk0rYi6i8E5gaj281sP9gaGg72t2gffRRP3Xe4TTYdE82FwTKDZc2n6dJpVDonRXtKEva2DXzr2e4abrLpXNOzjpzbw+h3E8IWcTMFF4z6t7SjLmk8zy2nWPHCmh9U3rg2ur0H0vrFqn8EYFz8a/Wj0ku6zomEntlSIloNE98aI4zRzEST7axGA9+m8qNtTwJnmT9uDwP6H/Z3hLtPzv1JsYE8Jt3Co4cPetuHth1PoCShYE4nFGfVNvcE6ECaNKRDFBqqTKBb/N7iGfZG0BkFyHccs9ARgcRJrohk39bYM8BBsqcRiH67L9XuI4BfKhITxFABQE8CaGCSJM8hPEPs8F44pASTl+k/3h3oQAKEh0tOAEESi9xCtC7UuoveNmMaxTlGEeCgEzVi2JipX/QwyF5lHwvBpYO6vxtuOiUeZILoWgq5siKS1iEg4eothk3DY0hxtWsImof8twdidhdCPHIWEQTtnylGmcZAQaN6NbOH3Bzxzl0/amoTEpwN2Ny29Z7BvXJJQQiKOAEpzVw67T0aSUEIijhxMKqAlwy/MkSSUkIgXFAed/gAkDD/sJkkoIREvRTT/JpqzYqR/SJJQQiIuHHRPp9O+GrglVpJQQiKuDEyczOY+BgnZQT+VJJSQiDFsbjr7m5AW8u5ASUIJiVjCksxmP0Jzrh0lQ0uSUEIiZlqoJYHNeIjmrxr92IC8EEZCIkZaqIvN/FdadNuYtxdLEkpIxEAGJuayOY/SSdeGcypIklBCwlz+UUifo5Q/Dq5pYZ7UkSSUkDAPip3m38yu+CokTBrHj+S8SUiYIwCTC9m0+2jujUEj8pKEEhIx5B/Y3bTgJlryJUiIpEqLJKGERBT8s7kgeykrvRtcZWFWZpEklJAwhXwM7GmQdSUr+hykzSDMEpUhKedTQiJ88hFbMqQU0ZxraPZSSMqPWPpJEkpIhM87SiyJYE0CVwlkLqBpV0BKEVEdJhZxVUyuiisLPYXzzXgWeiKj126CiEY3UMU47EJPo/QhWD244J8E/9WotarGKvQEI74P1EIUO7G7wD6BWBLBPY2mTSOODLC7CbPFgub/Dyn+4PBU7CszAAAAAElFTkSuQmCC" alt="Nevena"><div class="brand-name">Magacin ambalaže<small id="danas"></small></div></div>
     <nav class="tabs" role="tablist" aria-label="Glavni meni">
-      <button role="tab" data-grp="magacin" aria-selected="true">Magacin</button>
+      <button role="tab" data-grp="magacin" aria-selected="true">Magacin ambalaže</button>
+      <button role="tab" data-grp="sirovine" aria-selected="false">Magacin sirovina</button>
       <button role="tab" data-grp="proizvodnja" aria-selected="false">Proizvodnja</button>
       <button role="tab" data-grp="nabavka" aria-selected="false">Nabavka</button>
-      <button role="tab" data-grp="sirovine" aria-selected="false">Sirovine</button>
       <button role="tab" data-grp="kontrola" aria-selected="false">Kontrola</button>
-      <button role="tab" data-grp="popis" aria-selected="false">Popis</button>
-      <button role="tab" data-grp="uskladjivanje" aria-selected="false">Usklađivanje</button>
+      <button role="tab" data-grp="kuvaona" aria-selected="false">Kuvaona</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
     <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
@@ -455,6 +465,8 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   <section class="view" id="v-sstanje"><div id="sstanjeBox"></div></section>
   <section class="view" id="v-spopis"><div id="spopisBox"></div></section>
   <section class="view" id="v-uskl"><div id="usklBox"></div></section>
+  <section class="view" id="v-usklsir"><div id="usklSirBox"></div></section>
+  <section class="view" id="v-sprijem"><div id="sprijemBox"></div></section>
   <section class="view" id="v-spromet"><div id="spromBox"></div></section>
   <section class="view" id="v-srokovi"><div id="srokBox"></div></section>
 
@@ -13423,7 +13435,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "26.09.a";
+const APP_VERZIJA = "26.09.c";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13515,12 +13527,14 @@ async function resolveNames() {
 }
 
 function write(fn) {
+  if (!smeUpis()) { const e = new Error("Nemaš pravo izmene na ovoj kartici – imaš pristup samo za pregled."); e.code = "read_only"; toast("Samo pregled – izmene na ovoj kartici nisu dozvoljene."); return Promise.reject(e); }
   const p = S.chain.then(fn);
   S.chain = p.catch(() => {});
   return p;
 }
 function dbErr(e) {
   const c = e && e.code;
+  if (c === "read_only") return;
   if (c === "quota_exceeded") toast("Baza je puna – obrati se administratoru.");
   else if (c === "invalid_argument") toast("Nemaš dozvolu za upis u ovu aplikaciju.");
   else toast("Upis nije uspeo, pokušaj ponovo.");
@@ -13951,6 +13965,7 @@ async function saveXlsx(name, sheets) {
 /* ---------- render / nav ---------- */
 function renderAll() {
   updBadge();
+  try { osveziPravo(); } catch (e) {}
   try { proveriObavestenja(); } catch (e) { console.error(e); }
   const v = document.querySelector(".view.on").id;
   if (v === "v-unos") { renderRez(); renderTicket(); renderSide(); }
@@ -13958,7 +13973,8 @@ function renderAll() {
   else if (v === "v-prijem") renderPrijem();
   else if (v === "v-proizvodnja") renderProizvodnja();
   else if (v === "v-zalihe") renderZalihe();
-  else if (v === "v-uskl") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#usklBox") && /INPUT|SELECT/.test(ae.tagName))) renderUskl(); }
+  else if (v === "v-uskl" || v === "v-usklsir") { const bx = v === "v-uskl" ? "#usklBox" : "#usklSirBox", ae = document.activeElement; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderUskl(v === "v-usklsir" ? "sir" : "amb"); }
+  else if (v === "v-sprijem") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#sprijemBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirPrijem(); }
   else if (v === "v-kamb") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#kambBox") && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
@@ -13974,18 +13990,24 @@ function renderAll() {
   else if (v === "v-artikli") { renderArtikli(); renderNeprac(); }
 }
 const GRUPE = {
-  magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["izdavanje", "Etikete izdavanje materijala"], ["promet", "Promet"]],
-  proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan proizvodnje"], ["zalihe", "Zalihe"]],
-  nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["ngrupe", "Grupe nabavke"], ["analitika", "Analitika"]],
-  sirovine: [["sunos", "Ulaz / izlaz"], ["sstanje", "Stanje po lotovima"], ["spopis", "Popis"], ["spromet", "Promet"], ["srokovi", "Rokovi trajanja"]],
-  kontrola: [["kamb", "Ambalaža"]],
-  popis: [["popis", "Popis"]],
-  uskladjivanje: [["uskl", "Usklađivanje stanja"]],
+  magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"], ["popis", "Popis ambalaže"], ["uskl", "Usklađivanje sa UPIS-om"]],
+  sirovine: [["sunos", "Unos"], ["sstanje", "Stanje"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
+  proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan"], ["zalihe", "Zalihe"]],
+  nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["analitika", "Analitika"], ["ngrupe", "Grupe nabavke"]],
+  kontrola: [["kamb", "Evidencija prijemnog kontrolisanja"]],
+  kuvaona: [["izdavanje", "Etikete izdavanja materijala"]],
   artikli: [["artikli", "Artikli"]]
 };
-const poslednji = { magacin: "unos", proizvodnja: "proizvodnja", nabavka: "zahtevi", sirovine: "sunos", kontrola: "kamb", popis: "popis", uskladjivanje: "uskl", artikli: "artikli" };
+const poslednji = { magacin: "unos", sirovine: "sunos", proizvodnja: "proizvodnja", nabavka: "zahtevi", kontrola: "kamb", kuvaona: "izdavanje", artikli: "artikli" };
 function grupaOd(view) { for (const g in GRUPE) if (GRUPE[g].some(x => x[0] === view)) return g; return "magacin"; }
 const smeVideti = v => !window.DOZVOLE || window.DOZVOLE(v);
+function grupaPogleda(v) { for (const g in GRUPE) if (GRUPE[g].some(([x]) => x === v)) return g; return "magacin"; }
+// pravo upisa za tekući pogled: "pun" ili "pregled" (samo gledanje)
+function smeUpis(v) { if (!window.PRAVO) return true; return window.PRAVO(v || (document.querySelector(".view.on") || { id: "v-unos" }).id.slice(2)) === "pun"; }
+function osveziPravo() {
+  const v = (document.querySelector(".view.on") || { id: "v-unos" }).id.slice(2);
+  document.body.classList.toggle("samoPregled", !smeUpis(v));
+}
 const MOB = [["unos", "Ulaz / izlaz", "M4 12h16M12 4v16"], ["proizvodnja", "Proizvodnja", "M3 20h18M6 20V9l5 3V9l5 3V5h3v15"], ["stanje", "Zalihe", "M4 6h16M4 12h16M4 18h10"], ["prijem", "Dnevni ulaz", "M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"]];
 function prviDozvoljen() { for (const [v] of MOB) if (smeVideti(v)) return v; for (const g in GRUPE) for (const [v] of GRUPE[g]) if (smeVideti(v)) return v; return "unos"; }
 function renderNav(view) {
@@ -14005,6 +14027,7 @@ function show(view) {
   if (!smeVideti(view)) view = prviDozvoljen();
   document.body.classList.remove("mobmeni");
   renderNav(view);
+  try { osveziPravo(); } catch (e) {}
   $$(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + view));
   renderAll();
   if (view === "unos") $("#q").focus();
@@ -14017,6 +14040,7 @@ document.addEventListener("click", e => {
   if (e.target.closest("#bnMeni")) { document.body.classList.toggle("mobmeni"); const v = document.querySelector(".view.on"); renderNav(v ? v.id.slice(2) : "unos"); }
 });
 window.APP_SHOW = v => show(v);
+window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prava
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
 const q = $("#q");
 q.addEventListener("input", () => {
@@ -15819,10 +15843,11 @@ function usklSirRazlike() {
     red.push({ a: S.sir.byId[o.art], lot: o.lot, vaz: o.vaz, ev: o.kol, erp: 0, raz: r3(-o.kol) });
   return { red, nove };
 }
-function renderUskl() {
-  const box = $("#usklBox");
-  if (S.erp) { renderErp(); return; }                       // ambalaža – postojeći prikaz razlika
-  if (S.sir.uvoz) {                                          // sirovine – razlike po lotovima
+function renderUskl(vrsta) {
+  vrsta = vrsta || (document.querySelector("#v-usklsir.on") ? "sir" : "amb");
+  const box = $(vrsta === "sir" ? "#usklSirBox" : "#usklBox");
+  if (vrsta === "amb" && S.erp) { renderErp(); return; }    // ambalaža – prikaz razlika po artiklu
+  if (vrsta === "sir" && S.sir.uvoz) {                                          // sirovine – razlike po lotovima
     const U = S.sir.uvoz, { red, nove } = usklSirRazlike();
     const raz = red.filter(x => Math.abs(x.raz) > SIR_TOL), plus = raz.filter(x => x.raz > 0).length;
     const q = norm(U.q || "").split(" ").filter(Boolean);
@@ -15846,38 +15871,44 @@ function renderUskl() {
     return;
   }
   const P = S.poc || {}, brA = S.art.filter(a => !a.izbacen && a.aktivan).length, brS = S.sir.art.length;
-  box.innerHTML = '<div class="toolbar"><h1>Usklađivanje stanja</h1></div>' +
-    '<div class="card"><h2>Učitaj lager listu iz UPIS.Net-a</h2><p>Program prepozna vrstu liste i odmah prikaže razlike u odnosu na stanje u aplikaciji – po artiklu za ambalažu, po lotu za sirovine. Ništa se ne menja dok ne klikneš „Proknjiži razlike“.</p>' +
-    '<div class="form" style="max-width:640px"><label class="fld">Lager lista (PDF ili Excel)<input class="inp" type="file" id="uF" accept=".pdf,.xlsx,.xls,.xlsm,application/pdf"></label>' +
-    '<label class="fld">Stanje u aplikaciji na dan<input class="inp" type="date" id="uD" value="' + today() + '"></label><div id="uM" class="muted" style="font-size:13px">' + esc(S.usk.poruka || "") + "</div></div></div>" +
-    '<div class="split" style="margin-top:16px"><div class="card"><h2 style="font-size:17px">Lager-lista raspoloživosti (ambalaža)</h2><p class="muted" style="font-size:13px">Upoređuje se stanje po artiklu. Prati se ' + brA + " artikala" + (P.datum ? ", početno stanje od " + esc(dtxt(P.datum)) : "") + ". Razlike se knjiže kao korekcije vrste „Popis“, promet ostaje.</p></div>" +
-    '<div class="card"><h2 style="font-size:17px">Lager lista po serijama (sirovine)</h2><p class="muted" style="font-size:13px">Upoređuje se stanje po lotu. Prati se ' + brS + " sirovina. Razlike se knjiže kao korekcije po lotu, a sirovine kojih nema u šifarniku se dodaju.</p></div></div>";
+  box.innerHTML = '<div class="toolbar"><h1>Usklađivanje stanja sa UPIS-om – ' + (vrsta === "sir" ? "sirovine" : "ambalaža") + "</h1></div>" +
+    '<div class="card" style="max-width:720px"><h2>Učitaj lager listu iz UPIS.Net-a</h2><p>' +
+    (vrsta === "sir" ? "Učitaj <b>lager listu po serijama</b>. Stanje se upoređuje <b>po lotu</b>; prati se " + brS + " sirovina. Sirovine sa liste kojih nema u šifarniku se dodaju."
+      : "Učitaj <b>lager-listu raspoloživosti</b>. Stanje se upoređuje <b>po artiklu</b>; prati se " + brA + " artikala" + (P.datum ? ", početno stanje od " + esc(dtxt(P.datum)) : "") + ".") +
+    " Razlike se prikazuju odmah, a knjiže se tek kad klikneš „Proknjiži razlike“; promet ostaje sačuvan.</p>" +
+    '<div class="form"><label class="fld">Lager lista (PDF ili Excel)<input class="inp" type="file" id="' + (vrsta === "sir" ? "uFs" : "uF") + '" accept=".pdf,.xlsx,.xls,.xlsm,application/pdf"></label>' +
+    (vrsta === "sir" ? "" : '<label class="fld">Stanje u aplikaciji na dan<input class="inp" type="date" id="uD" value="' + today() + '"></label>') +
+    '<div id="' + (vrsta === "sir" ? "uMs" : "uM") + '" class="muted" style="font-size:13px">' + esc(S.usk.poruka || "") + "</div></div></div>";
 }
-async function usklUcitaj(file) {
-  const m = $("#uM"); if (m) m.textContent = "Učitavam…";
+async function usklUcitaj(file, vrsta) {
+  const sel = vrsta === "sir" ? "#uMs" : "#uM", m = $(sel); if (m) m.textContent = "Učitavam…";
   try {
     const buf = await file.arrayBuffer(), pdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
-    const lin = pdf ? await linijeIzPdf(buf, "#uM") : linijeIzExcel(buf);
+    const lin = pdf ? await linijeIzPdf(buf, sel) : linijeIzExcel(buf);
     const ser = parseLagerSerije(lin);
     const imaLot = Object.values(ser).reduce((s, w) => s + Object.values(w.art).reduce((x, a) => x + a.lotovi.length, 0), 0);
     if (imaLot > 0) {
+      if (vrsta === "amb") { if (m) m.textContent = "Ovo je lager lista po serijama (sirovine). Učitaj je na kartici Magacin sirovina → Usklađivanje sa UPIS-om."; return; }
       const k = Object.keys(ser);
       const sirK = k.filter(x => /sirovin/i.test(ser[x].naziv));
       S.sir.uvoz = { ime: file.name, mag: ser, izabrani: new Set(sirK.length ? sirK : k), samoRaz: true, q: "" };
-      S.erp = null; renderUskl(); return;
+      S.erp = null; renderUskl("sir"); return;
     }
+    if (vrsta === "sir") { if (m) m.textContent = "Ovo je lager-lista raspoloživosti (ambalaža). Učitaj je na kartici Magacin ambalaže → Usklađivanje sa UPIS-om."; return; }
     const mag = parseLagerLinije(lin), keys = Object.keys(mag);
     if (!keys.length) { if (m) m.textContent = "U fajlu nije pronađena lager lista (redovi „šifra – naziv – mera – stanje“)."; return; }
     const poznate = new Set(S.art.filter(a => a.sifra && !a.izbacen).map(a => String(a.sifra)));
     const izb = new Set(keys.filter(x => !/istek/i.test(mag[x].naziv) && Object.keys(mag[x].st).filter(s => poznate.has(s)).length >= Math.max(3, Object.keys(mag[x].st).length * 0.3)));
     S.sir.uvoz = null;
     S.erp = { ime: file.name, datum: ($("#uD") && $("#uD").value) || today(), mag, izabrani: izb, nula: true, dodaj: true, samoRaz: true, q: "" };
-    renderUskl();
+    renderUskl("amb");
   } catch (e) { console.error(e); if (m) m.textContent = "Fajl nije moguće pročitati: " + (e.message || e); }
 }
-$("#usklBox").addEventListener("change", async e => {
+["#usklBox", "#usklSirBox"].forEach(bx => {
+$(bx).addEventListener("change", async e => {
   const t = e.target;
-  if (t.id === "uF" && t.files[0]) { usklUcitaj(t.files[0]); return; }
+  if (t.id === "uF" && t.files[0]) { usklUcitaj(t.files[0], "amb"); return; }
+  if (t.id === "uFs" && t.files[0]) { usklUcitaj(t.files[0], "sir"); return; }
   if (t.dataset.usm) { if (t.checked) S.sir.uvoz.izabrani.add(t.dataset.usm); else S.sir.uvoz.izabrani.delete(t.dataset.usm); renderUskl(); return; }
   if (t.id === "uSamo") { S.sir.uvoz.samoRaz = t.checked; renderUskl(); return; }
   if (S.erp) {                                   // kontrole za ambalažu (isti id-jevi kao ranije)
@@ -15887,16 +15918,48 @@ $("#usklBox").addEventListener("change", async e => {
     if (t.id === "erpSamo") { S.erp.samoRaz = t.checked; renderErp(); return; }
   }
 });
-$("#usklBox").addEventListener("input", e => {
+$(bx).addEventListener("input", e => {
   if (e.target.id === "erpQ") { S.erp.q = e.target.value; S.erpFocus = true; renderErp(); return; }
-  if (e.target.id === "uQ") { S.sir.uvoz.q = e.target.value; S.usk.fokus = true; renderUskl(); }
+  if (e.target.id === "uQ") { S.sir.uvoz.q = e.target.value; S.usk.fokus = true; renderUskl("sir"); }
 });
-$("#usklBox").addEventListener("click", async e => {
+$(bx).addEventListener("click", async e => {
   const t = e.target;
-  if (t.id === "uNazad" || t.id === "erpNazad") { S.erp = null; S.sir.uvoz = null; S.usk.poruka = ""; renderUskl(); return; }
-  if (t.id === "erpKnjizi") { await erpKnjizi(); renderUskl(); return; }
-  if (t.id === "uSirUskl") { await sirUvozUskladi(renderUskl); return; }
-  if (t.id === "uSirPoc") { await sirUvozPostavi(renderUskl); return; }
+  if (t.id === "uNazad") { S.sir.uvoz = null; S.usk.poruka = ""; renderUskl("sir"); return; }
+  if (t.id === "erpNazad") { S.erp = null; S.usk.poruka = ""; renderUskl("amb"); return; }
+  if (t.id === "erpKnjizi") { await erpKnjizi(); renderUskl("amb"); return; }
+  if (t.id === "uSirUskl") { await sirUvozUskladi(() => renderUskl("sir")); return; }
+  if (t.id === "uSirPoc") { await sirUvozPostavi(() => renderUskl("sir")); return; }
+});
+});
+
+
+/* ---------- Prijem sirovina (dnevni ulazi po lotovima) ---------- */
+function renderSirPrijem() {
+  const X = S.sir.pd || today();
+  const l = S.sir.entries.filter(e => e.datum === X && e.vrsta === "U" && !e.storno);
+  const uk = {};
+  for (const e of l) { const a = S.sir.byId[e.art] || {}; const k = a.mera || ""; uk[k] = r3((uk[k] || 0) + e.kol); }
+  $("#sprijemBox").innerHTML = '<div class="toolbar"><h1>Prijem sirovina</h1><label class="fld">Datum<input class="inp" type="date" id="spdD" value="' + X + '"></label>' +
+    '<button class="btn primary" id="spdEt"' + (l.length ? "" : " disabled") + '>Etikete IDENTIFIKOVANO (QP18)</button>' +
+    '<button class="btn dl" id="spdXls"' + (l.length ? "" : " disabled") + '>Preuzmi Excel</button><button class="btn" id="spdPrint">Štampaj spisak</button></div>' +
+    '<div class="notice" style="font-size:13px">Primljeno <b>' + l.length + "</b> stavki" + (Object.keys(uk).length ? " · " + Object.entries(uk).map(([k, v]) => fmt(v, false) + " " + k).join(" · ") : "") + ". Svaka stavka ima svoj lot, rok važenja i dobavljača.</div>" +
+    '<div class="tbl-wrap"><table><thead><tr><th style="width:44px">Rb.</th><th>Šifra</th><th>Sirovina</th><th>Lot</th><th>Proizvedeno</th><th>Važi do</th><th class="num">Količina</th><th>Dobavljač</th><th class="num">Cena</th><th>Uneo</th><th></th></tr></thead><tbody>' +
+    (l.length ? l.map((e, i) => { const a = S.sir.byId[e.art] || {};
+      return "<tr><td>" + (i + 1) + '</td><td class="sif">' + esc(a.sifra || "") + "</td><td>" + esc(a.naziv || "?") + "</td><td><b>" + esc(e.lot) + "</b></td><td>" + (e.proiz ? esc(dtxt(e.proiz)) : "–") + '</td><td class="' + rokKlasa(e.vaz) + '">' + esc(rokTxt(e.vaz)) + '</td><td class="num">' + esc(fmt(e.kol, false)) + " " + esc(a.mera || "") + "</td><td>" + esc(e.dob && typeof dobNaziv === "function" ? dobNaziv(e.dob) : "") + '</td><td class="num">' + (e.cena ? esc(fmt(e.cena, false)) : "") + "</td><td>" + esc(who(e.uid)) + '</td><td class="num"><button class="x" data-spet="' + esc(e.id) + '" title="Etiketa IDENTIFIKOVANO">🏷</button></td></tr>'; }).join("")
+      : '<tr class="empty-row"><td colspan="11">Tog dana nije bilo prijema sirovina.</td></tr>') + "</tbody></table></div>";
+  if (!S.downloads) $$("#sprijemBox .dl").forEach(b => b.hidden = true);
+}
+$("#sprijemBox").addEventListener("change", e => { if (e.target.id === "spdD") { S.sir.pd = e.target.value; renderSirPrijem(); } });
+$("#sprijemBox").addEventListener("click", e => {
+  const X = S.sir.pd || today(), l = S.sir.entries.filter(x => x.datum === X && x.vrsta === "U" && !x.storno), t = e.target;
+  const b = t.closest("[data-spet]");
+  if (b) { const x = l.find(y => y.id === b.dataset.spet); if (x) { const it = sirEtiketaStavka(x.art, x.lot, x.kol, x.dob); if (it) qp18Dlg([it], X); } return; }
+  if (t.id === "spdEt") { const lista = l.map(x => sirEtiketaStavka(x.art, x.lot, x.kol, x.dob)).filter(Boolean); if (lista.length) qp18Dlg(lista, X); return; }
+  if (t.id === "spdPrint") { window.print(); return; }
+  if (t.id === "spdXls") {
+    saveXlsx("Prijem sirovina " + X + ".xlsx", [["Prijem", [["Prijem sirovina – " + dtxt(X)], [], ["Rb.", "Šifra", "Sirovina", "Lot", "Proizvedeno", "Važi do", "Količina", "JM", "Dobavljač", "Cena", "Uneo"]]
+      .concat(l.map((e, i) => { const a = S.sir.byId[e.art] || {}; return [i + 1, a.sifra || "", a.naziv || "", e.lot, e.proiz ? dtxt(e.proiz) : "", e.vaz ? dtxt(e.vaz) : "", e.kol, a.mera || "", e.dob && typeof dobNaziv === "function" ? dobNaziv(e.dob) : "", e.cena || "", who(e.uid)]; })), [6, 10, 50, 22, 13, 13, 13, 6, 28, 11, 16]]]);
+  }
 });
 
 /* skeniranje kamerom */

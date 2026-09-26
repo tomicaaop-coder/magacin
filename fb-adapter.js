@@ -6,23 +6,29 @@
 (function () {
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
-  const ULOGE = [
-    ["admin", "Administrator", "sve + korisnici"],
-    ["magacin", "Magacin", "unos, stanje, prijem, promet, popis, artikli"],
-    ["proizvodnja", "Proizvodnja", "proizvodnja, zalihe, knjiženje utroška"],
-    ["nabavka", "Nabavka", "zahtevi, porudžbenice, dobavljači, analitika"],
-    ["kontrola", "Kontrola kvaliteta", "evidencija prijemnog kontrolisanja (odluke)"],
-    ["sirovine", "Magacin sirovina", "ulaz/izlaz sirovina po lotovima, stanje, rokovi, etikete izdavanja"],
-    ["pregled", "Pregled", "sve samo za čitanje"]
+  // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
+  const MENIJI = [
+    ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
+    ["sirovine", "Magacin sirovina", ["sunos", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
+    ["proizvodnja", "Proizvodnja", ["proizvodnja", "plan", "zalihe"]],
+    ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "ngrupe"]],
+    ["kontrola", "Kontrola", ["kamb"]],
+    ["kuvaona", "Kuvaona", ["izdavanje"]],
+    ["artikli", "Artikli", ["artikli"]]
   ];
-  const PRAVA = {
-    magacin: ["uskl", "kamb", "unos", "stanje", "prijem", "izdavanje", "promet", "popis", "artikli", "zalihe", "plan"],
-    proizvodnja: ["izdavanje", "proizvodnja", "plan", "zalihe", "stanje", "promet"],
-    nabavka: ["uskl", "sstanje", "srokovi", "plan", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "zalihe", "stanje", "promet", "artikli"],
-    kontrola: ["kamb", "stanje", "prijem", "promet"],
-    sirovine: ["uskl", "sunos", "sstanje", "spopis", "spromet", "srokovi", "izdavanje"],
-    pregled: ["uskl", "kamb", "sunos", "sstanje", "spopis", "spromet", "srokovi", "izdavanje", "plan", "unos", "stanje", "prijem", "promet", "proizvodnja", "zalihe", "zahtevi", "porudzbenice", "dobavljaci", "ngrupe", "analitika", "popis", "artikli"]
-  };
+  const POGLED_MENI = {};
+  for (const [k, , vs] of MENIJI) for (const v of vs) POGLED_MENI[v] = k;
+  // stara imena uloga -> novi oblik (puna prava na odgovarajući meni)
+  const STARE = { magacin: ["magacin:pun", "artikli:pun"], proizvodnja: ["proizvodnja:pun", "kuvaona:pun"], nabavka: ["nabavka:pun"], sirovine: ["sirovine:pun", "kuvaona:pun"], kontrola: ["kontrola:pun"], pregled: MENIJI.map(m => m[0] + ":pregled") };
+  function pravaKorisnika(k) {
+    const out = {};
+    for (const u of (k && k.uloge) || []) {
+      if (u === "admin") { for (const [m] of MENIJI) out[m] = "pun"; continue; }
+      const lista = u.indexOf(":") > 0 ? [u] : (STARE[u] || []);
+      for (const x of lista) { const [m, p] = x.split(":"); if (!POGLED_MENI || !m) continue; if (out[m] !== "pun") out[m] = p === "pregled" ? "pregled" : "pun"; }
+    }
+    return out;
+  }
 
   if (!CFG.apiKey || /UPISI/.test(CFG.apiKey)) {
     document.addEventListener("DOMContentLoaded", () => {
@@ -104,11 +110,12 @@
   };
   kapija.then(() => fs.doc("sistem/ntfy").onSnapshot(d => { const x = d.exists ? d.data() : null; window.NTFY = x && x.tema ? x : null; }, () => {}));
 
-  window.DOZVOLE = v => {
-    if (!ja) return false;
-    if (ja.uloge.includes("admin")) return true;
-    return ja.uloge.some(u => (PRAVA[u] || []).includes(v));
+  window.PRAVO = v => {
+    if (!ja) return null;
+    const m = POGLED_MENI[v]; if (!m) return null;
+    return pravaKorisnika(ja)[m] || null;
   };
+  window.DOZVOLE = v => !!window.PRAVO(v);
 
   /* ---------- ekran za prijavu ---------- */
   const css = `
@@ -128,6 +135,7 @@
   #fbA .box{background:var(--surface,#fff);color:var(--ink);border-radius:14px;width:min(900px,100%);padding:20px 22px;font:14px "IBM Plex Sans",Arial}
   #fbA table{width:100%;border-collapse:collapse} #fbA td,#fbA th{padding:8px 6px;border-bottom:1px solid var(--line-2,#E6EBF0);text-align:left;vertical-align:top}
   #fbA .ul{display:flex;flex-wrap:wrap;gap:6px 12px} #fbA .ul label{display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+  #fbA .mprava{border-collapse:collapse;margin-top:6px} #fbA .mprava td{padding:2px 8px 2px 0;border:0;white-space:nowrap;font-size:13px} #fbA .mprava select{padding:2px 4px;font:inherit}
   .fbUser{display:flex;gap:8px;align-items:center}
   .fbUser button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 10px;font:13px Arial;cursor:pointer;color:var(--ink)}`;
   const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
@@ -265,7 +273,7 @@
   function adminPanel() {
     const w = document.createElement("div"); w.id = "fbA";
     w.innerHTML = '<div class="box"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font:600 22px \'Barlow Semi Condensed\',Arial">Korisnici i pristup</h2><button id="fbAX" style="margin-left:auto" class="btn">Zatvori</button></div>' +
-      '<p style="color:var(--muted);margin:0 0 12px">Novi korisnici se pojave ovde posle registracije. Označi uloge i uključi „Odobren“. Promena važi odmah.</p>' +
+      '<p style="color:var(--muted);margin:0 0 12px">Novi korisnici se pojave ovde posle registracije. Za svaki glavni meni izaberi <b>nema pristup</b>, <b>samo pregled</b> ili <b>unos i izmene</b>, pa uključi „Odobren“. Ono što korisnik nema, uopšte mu se ne prikazuje. Promena važi odmah.</p>' +
       '<div id="fbAL">Učitavanje…</div>' +
       '<p style="color:var(--muted);font-size:12px;margin:8px 0 0">Brisanjem korisnik gubi pristup. Da bi se ponovo registrovao pod istim imenom (npr. zaboravljena lozinka), obriši ga i u Firebase konzoli: Authentication → Users.</p>' +
       '<h3 style="margin:22px 0 6px">Ključ za registraciju</h3><p style="color:var(--muted);margin:0 0 8px">Novi korisnici se registruju imenom i prezimenom uz ovaj ključ. Promena ne utiče na postojeće korisnike.</p>' +
@@ -285,15 +293,19 @@
       w.querySelector("#fbAL").innerHTML = '<div style="overflow-x:auto"><table><thead><tr><th>Korisnik</th><th>Odobren</th><th>Uloge</th><th></th></tr></thead><tbody>' +
         l.map(k => '<tr><td><b>' + esc(k.ime) + '</b><br><span style="color:var(--muted);font-size:12px">prijava: ' + esc(k.ime) + (k.t ? " · od " + esc(new Date(k.t).toLocaleDateString("sr-Latn-RS")) : "") + "</span>" + (k.odobren ? "" : '<br><span style="color:#B8322A;font-size:12px">čeka odobrenje</span>') + "</td>" +
           '<td><input type="checkbox" data-od="' + k.uid + '"' + (k.odobren ? " checked" : "") + (k.uid === ja.uid ? " disabled" : "") + "></td>" +
-          '<td><div class="ul">' + ULOGE.map(([u, n, o]) => '<label title="' + esc(o) + '"><input type="checkbox" data-ul="' + k.uid + '" value="' + u + '"' + ((k.uloge || []).includes(u) ? " checked" : "") + (k.uid === ja.uid && u === "admin" ? " disabled" : "") + "> " + n + "</label>").join("") + "</div></td>" +
+          '<td><div class="ul"><label title="Sve, uključujući korisnike"><input type="checkbox" data-adm="' + k.uid + '"' + ((k.uloge || []).includes("admin") ? " checked" : "") + (k.uid === ja.uid ? " disabled" : "") + "> <b>Administrator</b></label></div>" +
+          '<table class="mprava">' + MENIJI.map(([m, n]) => { const p = (pravaKorisnika(k) || {})[m] || "", adm = (k.uloge || []).includes("admin");
+            return "<tr><td>" + esc(n) + '</td><td><select data-men="' + k.uid + '" data-m="' + m + '"' + (adm || k.uid === ja.uid ? " disabled" : "") + '><option value=""' + (p ? "" : " selected") + '>nema pristup</option><option value="pregled"' + (p === "pregled" ? " selected" : "") + '>samo pregled</option><option value="pun"' + (p === "pun" ? " selected" : "") + ">unos i izmene</option></select></td></tr>"; }).join("") + "</table></td>" +
           "<td>" + (k.uid === ja.uid ? "" : '<button class="btn danger" data-del="' + k.uid + '" style="padding:4px 10px">Obriši</button>') + "</td></tr>").join("") + "</tbody></table></div>";
     });
     w.addEventListener("change", async e => {
       const t = e.target;
       try {
         if (t.dataset.od) await fs.collection("korisnici").doc(t.dataset.od).update({ odobren: t.checked });
-        if (t.dataset.ul) {
-          const uid = t.dataset.ul, ul = [...w.querySelectorAll('[data-ul="' + uid + '"]:checked')].map(x => x.value);
+        if (t.dataset.adm || t.dataset.men) {
+          const uid = t.dataset.adm || t.dataset.men;
+          const adm = w.querySelector('[data-adm="' + uid + '"]').checked;
+          const ul = adm ? ["admin"] : [...w.querySelectorAll('[data-men="' + uid + '"]')].filter(x => x.value).map(x => x.dataset.m + ":" + x.value);
           await fs.collection("korisnici").doc(uid).update({ uloge: ul });
         }
         if (t.id === "fbImp" && t.files[0]) uvoz(t.files[0], w.querySelector("#fbImpM"));
@@ -335,11 +347,20 @@
         docs[pt] = { stavke: nove };
       } catch (e) {}
     }
-    for (let i = 0; i < putanje.length; i += 400) {
-      const b = fs.batch();
-      for (const pt of putanje.slice(i, i + 400)) { b.set(fs.doc(pt), enc(docs[pt])); n++; }
-      msg.textContent = "Upisujem… " + n + " / " + putanje.length;
-      await b.commit();
+    try {
+      for (let i = 0; i < putanje.length; i += 400) {
+        const b = fs.batch();
+        for (const pt of putanje.slice(i, i + 400)) { b.set(fs.doc(pt), enc(docs[pt])); n++; }
+        msg.textContent = "Upisujem… " + n + " / " + putanje.length;
+        await b.commit();
+      }
+    } catch (e) {
+      const c = (e && e.code) || "";
+      msg.innerHTML = '<b style="color:#B8322A">Uvoz nije uspeo' + (c ? " (" + esc(c) + ")" : "") + ".</b> " +
+        (c === "permission-denied"
+          ? "Baza je odbila upis. U Firebase konzoli otvori <b>Firestore Database → Rules</b>, nalepi sadržaj fajla <b>firestore.rules</b> iz poslednjeg paketa i klikni <b>Publish</b>, pa pokušaj ponovo."
+          : "Greška: " + esc((e && e.message) || String(e)) + ". Proveri internet vezu i pokušaj ponovo.");
+      return;
     }
     msg.textContent = "Uvezeno " + n + " dokumenata" + (spojeno ? " (zadržano " + spojeno + " postojećih redova evidencije)" : "") + ". Stranica se osvežava…";
     setTimeout(() => location.reload(), 1500);
