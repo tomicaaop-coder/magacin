@@ -13439,7 +13439,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "26.09.e";
+const APP_VERZIJA = "26.09.f";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14825,11 +14825,16 @@ function crtajQP18(a, d) {
   return c;
 }
 function predlogLota(datum, ev) { if (!ev) return ""; const d = (datum || today()).split("-"); return d[2] + d[1] + d[0].slice(2) + "/" + ev; }
+document.addEventListener("change", e => {   // „označi sve“ u maski za etikete
+  if (e.target.id === "qpAll") { $$("#dlg .qpS").forEach(x => { x.checked = e.target.checked; }); return; }
+  if (e.target.classList && e.target.classList.contains("qpS")) { const sve = $$("#dlg .qpS"), a_ = $("#qpAll"); if (a_) a_.checked = sve.every(x => x.checked); }
+});
 async function qp18Dlg(lista, datum) {
   let sledeci = 0; try { sledeci = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
   try { sledeci = Math.max(sledeci, konMaxBroj(String(datum || today()).slice(0, 4))); } catch (e) {}
   const red = (it, i) => { const a = it.a || S.byId[it.art] || {};
-    return '<tr><td style="max-width:190px"><b style="font-size:12px">' + esc(a.naziv || "") + '</b><div class="muted" style="font-size:11px">' + esc(a.sifra || "") + "</div></td>" +
+    return '<tr><td style="text-align:center"><input type="checkbox" class="qpS" data-i="' + i + '" checked></td>' +
+      '<td style="max-width:190px"><b style="font-size:12px">' + esc(a.naziv || "") + '</b><div class="muted" style="font-size:11px">' + esc(a.sifra || "") + "</div></td>" +
       '<td><input class="inp" data-q="ev" data-i="' + i + '" style="width:70px" inputmode="numeric" value="' + (sledeci ? sledeci + 1 + i : "") + '"></td>' +
       '<td><input class="inp" data-q="lot" data-i="' + i + '" style="width:110px" placeholder="auto" value="' + esc(it.lot || "") + '"></td>' +
       '<td><input class="inp" data-q="kol" data-i="' + i + '" style="width:80px" inputmode="decimal" value="' + esc(it.kol ? String(r3(it.kol)).replace(".", ",") : "") + '"></td>' +
@@ -14838,7 +14843,7 @@ async function qp18Dlg(lista, datum) {
       '<td><input class="inp" data-q="rok" data-i="' + i + '" style="width:92px" placeholder="dd.mm.gg" value="' + esc(it.rok ? dtxt(it.rok) : "") + '"></td>' +
       '<td><input class="inp" data-q="n" data-i="' + i + '" style="width:48px" inputmode="numeric" value="1"></td></tr>'; };
   const html = '<div class="form"><label class="fld">Datum prijema<input class="inp" type="date" id="qpD" value="' + esc(datum || today()) + '"></label>' +
-    '<div class="etl" style="max-height:340px"><table><thead><tr><th>Artikal</th><th>Ev. broj</th><th>Serija / LOT</th><th>Količina</th><th>Br. pak.</th><th>Dobavljač</th><th>Rok traj.</th><th>Kom.</th></tr></thead><tbody>' + lista.map(red).join("") + "</tbody></table></div>" +
+    '<div class="etl" style="max-height:340px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="qpAll" checked title="Označi sve"></th><th>Artikal</th><th>Ev. broj</th><th>Serija / LOT</th><th>Količina</th><th>Br. pak.</th><th>Dobavljač</th><th>Rok traj.</th><th>Kom.</th></tr></thead><tbody>' + lista.map(red).join("") + "</tbody></table></div>" +
     '<p class="muted" style="font-size:12px;margin:0">Evidencioni broj i LOT se unose ručno. Ako LOT ostane prazan, upisuje se datum prijema/evidencioni broj (npr. 170926/508). Dole na etiketi su QR kod i bar kod šifre – skeniraju se za izlaz. Format: 100 × 70 mm, jedna etiketa po strani.</p></div>';
   const d = $("#dlg"); d.style.width = "min(980px, 96vw)";
   const samoAmb = lista.every(it => !it.a && it.art && S.byId[it.art]);
@@ -14847,34 +14852,57 @@ async function qp18Dlg(lista, datum) {
   if (v !== "pdf" && v !== "print" && v !== "nalog") return;
   const dat = $("#qpD").value || today(), polja = {};
   $$("#dlg [data-q]").forEach(el => { (polja[el.dataset.i] = polja[el.dataset.i] || {})[el.dataset.q] = el.value.trim(); });
-  const out = lista.map((it, i) => { const p = polja[i] || {}; return { a: it.a || S.byId[it.art], d: { ev: p.ev, lot: p.lot || predlogLota(dat, p.ev), kol: p.kol, pak: p.pak, dob: p.dob, rok: p.rok, datum: dat, kod: it.kodFn ? it.kodFn(p.lot || it.lot || "") : undefined }, n: Math.max(0, Math.min(200, parseInt(p.n || "1", 10) || 0)) }; }).filter(x => x.a && x.n > 0);
-  if (!out.length) return;
+  const oznaceni = new Set([...$$("#dlg .qpS")].filter(x => x.checked).map(x => +x.dataset.i));
+  const out = lista.map((it, i) => { const p = polja[i] || {}; return { i, a: it.a || S.byId[it.art], d: { ev: p.ev, lot: p.lot || predlogLota(dat, p.ev), kol: p.kol, pak: p.pak, dob: p.dob, rok: p.rok, datum: dat, kod: it.kodFn ? it.kodFn(p.lot || it.lot || "") : undefined }, n: Math.max(0, Math.min(200, parseInt(p.n || "1", 10) || 0)) }; }).filter(x => x.a && x.n > 0);
+  const izbor2 = out.filter(o => oznaceni.has(o.i));
+  if (!izbor2.length) { toast("Nije označen nijedan artikal."); return; }
+  const zaNalog = izbor2.filter(o => !lista[o.i].a && lista[o.i].art);
   if (v === "nalog") {                 // upis u evidenciju kontrole + nalog laboratoriji, bez štampe
-    let n = 0;
-    for (let i = 0; i < lista.length; i++) {
-      const it = lista[i]; if (it.a || !it.art) continue;
-      const o = out.find(x => x.a === S.byId[it.art]); if (!o) continue;
-      const kb = o.d.lot || o.d.ev || konSledeciKb(dat);
-      if (await konNaloziIzPrijema(dat, it.art, kb, o.d)) n++;
-    }
-    toast(n ? "Kreirano naloga laboratoriji: " + n + " (Kontrola)" : "Nalog nije kreiran.");
-    if (n) { let mv = 0; try { mv = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
-      for (const o of out) { const x = parseInt(o.d.ev, 10); if (x > mv) mv = x; }
-      try { localStorage.setItem("qpEv", String(mv)); } catch (e) {} }
+    await naloziUpit(zaNalog, lista, dat);
+    let mv = 0; try { mv = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
+    for (const o of izbor2) { const x = parseInt(o.d.ev, 10); if (x > mv) mv = x; }
+    try { localStorage.setItem("qpEv", String(mv)); } catch (e) {}
     return;
   }
   if (!window.jspdf || !window.qrcode) { toast("Biblioteka za etikete nije učitana."); return; }
   const doc = noviDoc(v === "print", { format: [100, 70], orientation: "landscape" });
   let prvi = true, maxEv = sledeci;
-  for (const o of out) {
+  for (const o of izbor2) {
     const img = crtajQP18(o.a, o.d).toDataURL("image/png");
     for (let k = 0; k < o.n; k++) { if (!prvi) doc.addPage([100, 70], "landscape"); prvi = false; doc.addImage(img, "PNG", 0, 0, 100, 70, o.a.id + o.d.ev, "FAST"); }
     const e = parseInt(o.d.ev, 10); if (e > maxEv) maxEv = e;
   }
   try { localStorage.setItem("qpEv", String(maxEv)); } catch (e) {}
-  if (v === "print") { doc.stampaj(); return; }
-  if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return; }
-  try { await S.downloads.save({ filename: "QP18 etikete " + dat + ".pdf", data: doc.output("arraybuffer") }); } catch (e) { if (e && e.code !== "declined") toast("PDF nije sačuvan."); }
+  if (v === "print") doc.stampaj();
+  else if (!S.downloads) toast("Preuzimanje fajlova nije dostupno u ovom prikazu.");
+  else { try { await S.downloads.save({ filename: "QP18 etikete " + dat + ".pdf", data: doc.output("arraybuffer") }); } catch (e) { if (e && e.code !== "declined") toast("PDF nije sačuvan."); } }
+  // posle etiketa: za svaki označeni artikal upit da li ide nalog laboratoriji
+  await naloziUpit(zaNalog, lista, dat);
+}
+/* upit za nalog laboratoriji, artikal po artikal, sa proverom i ispravkom podataka */
+async function naloziUpit(zaNalog, lista, dat) {
+  if (!zaNalog.length) return;
+  let n = 0, presk = 0;
+  for (let k = 0; k < zaNalog.length; k++) {
+    const o = zaNalog[k], art = lista[o.i].art, a = S.byId[art] || {};
+    const post = konRedovi().find(x => x.datum === dat && x.art === art && x.nalog && !x.storniran);
+    if (post) { presk++; continue; }
+    const kbP = o.d.lot || (o.d.ev ? predlogLota(dat, o.d.ev) : "") || konSledeciKb(dat);
+    const html = '<p class="muted" style="margin:0 0 10px">Artikal <b>' + (k + 1) + " / " + zaNalog.length + "</b> – proveri i po potrebi ispravi podatke pre slanja u kontrolu.</p>" +
+      '<div class="form"><div class="row2"><label class="fld">Materijal<input class="inp" value="' + esc((a.sifra ? a.sifra + " · " : "") + (a.naziv || "")) + '" disabled></label>' +
+      '<label class="fld">Datum prijema<input class="inp" type="date" id="nuD" value="' + esc(dat) + '"></label></div>' +
+      '<div class="row2"><label class="fld">Kontrolni broj<input class="inp" id="nuKb" value="' + esc(kbP) + '"></label><label class="fld">Br. prijemnice<input class="inp" id="nuPr" placeholder="ručno"></label></div>' +
+      '<div class="row2"><label class="fld">Količina' + (a.mera ? " (" + esc(a.mera) + ")" : "") + '<input class="inp" id="nuKol" inputmode="decimal" value="' + esc(o.d.kol || "") + '"></label>' +
+      '<label class="fld">Proizvođač / dobavljač<input class="inp" id="nuDob" value="' + esc(o.d.dob || "") + '"></label></div>' +
+      '<label class="fld">Napomena za laboratoriju<input class="inp" id="nuNap" placeholder="nije obavezno"></label></div>';
+    const v2 = await izbor("Nalog laboratoriji – " + (a.naziv || ""), html, [{ v: "skip", l: "Bez naloga" }, { v: "stop", l: "Prekini" }, { v: "ok", l: "Kreiraj nalog", primary: true }]);
+    if (v2 === "stop") break;
+    if (v2 !== "ok") { presk++; continue; }
+    const d2 = Object.assign({}, o.d, { kol: $("#nuKol").value.trim(), dob: $("#nuDob").value.trim(), pr: $("#nuPr").value.trim(), nap: $("#nuNap").value.trim() });
+    const datum2 = $("#nuD").value || dat, kb = $("#nuKb").value.trim() || konSledeciKb(datum2);
+    if (await konNaloziIzPrijema(datum2, art, kb, d2)) n++;
+  }
+  if (n || presk) toast(n ? "Kreirano naloga laboratoriji: " + n + (presk ? " · bez naloga: " + presk : "") + " (Kontrola)" : "Nije kreiran nijedan nalog.");
 }
 $("#qpPrijem").addEventListener("click", () => {
   const X = $("#dPrijem").value || today(); const l = prijemList(X);
@@ -15661,6 +15689,8 @@ async function konNaloziIzPrijema(datum, artId, kb, d) {
   const ulaz = S.entries.filter(e => !e.storno && e.vrsta === "U" && e.datum === datum && e.art === artId).pop();
   const polja = { kb: kb || konSledeciKb(datum), nalog: konNalogNovi(kb) };
   if (d && d.pak) polja.pak = d.pak;
+  if (d && d.pr) polja.pr = d.pr;
+  if (d && d.nap) polja.nap = d.nap;
   if (post) { if (post.nalog) return false; return !!(await konIzmeni(post, polja)); }
   const o = konCist(Object.assign({
     id: rid(), godina: +String(datum).slice(0, 4), datum, naziv: a.naziv, kol: d && d.kol ? parseQty(d.kol) : (ulaz ? ulaz.kol : null), jm: a.mera || "",
