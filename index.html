@@ -13473,7 +13473,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "29.09.b";
+const APP_VERZIJA = "29.09.c";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -16065,10 +16065,31 @@ function renderUskl(vrsta) {
     '<div class="card" style="max-width:720px"><h2>Učitaj lager listu iz UPIS.Net-a</h2><p>' +
     (vrsta === "sir" ? "Učitaj <b>lager listu po serijama</b>. Stanje se upoređuje <b>po lotu</b>; prati se " + brS + " sirovina. Sirovine sa liste kojih nema u šifarniku se dodaju."
       : "Učitaj <b>lager-listu raspoloživosti</b>. Stanje se upoređuje <b>po artiklu</b>; prati se " + brA + " artikala" + (P.datum ? ", početno stanje od " + esc(dtxt(P.datum)) : "") + ".") +
-    " Razlike se prikazuju odmah, a knjiže se tek kad klikneš „Proknjiži razlike“; promet ostaje sačuvan.</p>" +
+    " Razlike se prikazuju odmah, a knjiže se tek kad klikneš „Proknjiži razlike“; promet ostaje sačuvan." +
+    (vrsta === "sir" ? "" : " Ako se ambalaža vodi u dve liste (naša i Galenika – šifre 250xxx u drugom magacinu), posle prve liste klikni <b>Dodaj još jednu listu</b> i učitaj drugu; obe se porede zajedno.") + "</p>" +
     '<div class="form"><label class="fld">Lager lista (PDF ili Excel)<input class="inp" type="file" id="' + (vrsta === "sir" ? "uFs" : "uF") + '" accept=".pdf,.xlsx,.xls,.xlsm,application/pdf"></label>' +
     (vrsta === "sir" ? "" : '<label class="fld">Stanje u aplikaciji na dan<input class="inp" type="date" id="uD" value="' + today() + '"></label>') +
     '<div id="' + (vrsta === "sir" ? "uMs" : "uM") + '" class="muted" style="font-size:13px">' + esc(S.usk.poruka || "") + "</div></div></div>";
+}
+async function usklDodaj(file) {                        // druga lager lista (npr. Galenika) – spaja se sa prvom
+  const m = $("#uM2"); if (m) m.textContent = "Učitavam…";
+  try {
+    const buf = await file.arrayBuffer(), pdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+    const lin = pdf ? await linijeIzPdf(buf, "#uM2") : linijeIzExcel(buf);
+    const mag = parseLagerLinije(lin), keys = Object.keys(mag);
+    if (!keys.length) { if (m) m.textContent = "U fajlu nije pronađena lager lista."; return; }
+    const poznate = new Set(S.art.filter(a => a.sifra && !a.izbacen).map(a => String(a.sifra)));
+    let dodato = 0;
+    for (const k of keys) {
+      const cilj = S.erp.mag[k] || (S.erp.mag[k] = { naziv: mag[k].naziv, st: {} });
+      for (const [sif, o] of Object.entries(mag[k].st)) { const p = cilj.st[sif]; if (p) p.q = r3(p.q + o.q); else cilj.st[sif] = o; dodato++; }
+      const rel = Object.keys(mag[k].st).filter(x => poznate.has(x)).length;
+      if (!/istek/i.test(mag[k].naziv) && rel >= Math.max(3, Object.keys(mag[k].st).length * 0.3)) S.erp.izabrani.add(k);
+    }
+    S.erp.fajlovi = (S.erp.fajlovi || [S.erp.ime]).concat([file.name]);
+    renderErp();
+    toast("Dodata lista " + file.name + " – " + dodato + " stavki, magacini: " + keys.join(", "));
+  } catch (e) { console.error(e); if (m) m.textContent = "Fajl nije moguće pročitati: " + (e.message || e); }
 }
 async function usklUcitaj(file, vrsta) {
   const sel = vrsta === "sir" ? "#uMs" : "#uM", m = $(sel); if (m) m.textContent = "Učitavam…";
@@ -16090,7 +16111,7 @@ async function usklUcitaj(file, vrsta) {
     const poznate = new Set(S.art.filter(a => a.sifra && !a.izbacen).map(a => String(a.sifra)));
     const izb = new Set(keys.filter(x => !/istek/i.test(mag[x].naziv) && Object.keys(mag[x].st).filter(s => poznate.has(s)).length >= Math.max(3, Object.keys(mag[x].st).length * 0.3)));
     S.sir.uvoz = null;
-    S.erp = { ime: file.name, datum: ($("#uD") && $("#uD").value) || today(), mag, izabrani: izb, nula: true, dodaj: true, samoRaz: true, q: "" };
+    S.erp = { ime: file.name, fajlovi: [file.name], datum: ($("#uD") && $("#uD").value) || today(), mag, izabrani: izb, nula: true, dodaj: true, samoRaz: true, q: "" };
     renderUskl("amb");
   } catch (e) { console.error(e); if (m) m.textContent = "Fajl nije moguće pročitati: " + (e.message || e); }
 }
@@ -16098,6 +16119,7 @@ async function usklUcitaj(file, vrsta) {
 $(bx).addEventListener("change", async e => {
   const t = e.target;
   if (t.id === "uF" && t.files[0]) { usklUcitaj(t.files[0], "amb"); return; }
+  if (t.id === "uF2" && t.files[0]) { const f = t.files[0]; t.value = ""; usklDodaj(f); return; }
   if (t.id === "uFs" && t.files[0]) { usklUcitaj(t.files[0], "sir"); return; }
   if (t.dataset.usm) { if (t.checked) S.sir.uvoz.izabrani.add(t.dataset.usm); else S.sir.uvoz.izabrani.delete(t.dataset.usm); renderUskl(); return; }
   if (t.id === "uSamo") { S.sir.uvoz.samoRaz = t.checked; renderUskl(); return; }
@@ -17264,8 +17286,10 @@ function renderErp() {
   const magKeys = Object.keys(E.mag).sort();
   $("#usklBox").innerHTML = '<div class="toolbar"><h1>Usklađivanje stanja – ambalaža</h1><button class="btn" id="erpNazad">Nazad</button>' +
     '<button class="btn primary" id="erpKnjizi"' + (raz.length || (E.dodaj && nove.length) ? "" : " disabled") + ">Proknjiži razlike (" + (raz.length + (E.dodaj ? nove.length : 0)) + ")</button></div>" +
-    '<div class="notice" style="font-size:13px">Fajl <b>' + esc(E.ime) + "</b> · stanje u aplikaciji na kraju dana <b>" + esc(dtxt(E.datum)) + "</b> Razlike se knjiže kao korekcije (vrsta „Popis“) i mogu se stornirati iz prometa.</div>" +
-    '<div class="card" style="margin-bottom:14px"><h2 style="font-size:16px">Magacini sa liste – koji se upoređuju</h2><div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px">' +
+    '<div class="notice" style="font-size:13px">Fajl <b>' + esc((E.fajlovi || [E.ime]).join(" + ")) + "</b> · stanje u aplikaciji na kraju dana <b>" + esc(dtxt(E.datum)) + "</b> Razlike se knjiže kao korekcije (vrsta „Popis“) i mogu se stornirati iz prometa.</div>" +
+    '<div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h2 style="font-size:16px;margin:0">Magacini sa liste – koji se upoređuju</h2>' +
+    '<label class="btn" style="cursor:pointer;margin-left:auto;padding:4px 12px;font-size:13px">Dodaj još jednu listu (npr. Galenika)<input type="file" id="uF2" accept=".pdf,.xlsx,.xls,.xlsm,application/pdf" hidden></label></div>' +
+    '<div id="uM2" class="muted" style="font-size:12px"></div><div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;margin-top:8px">' +
     magKeys.map(k => '<label class="chk"><input type="checkbox" data-erpm="' + k + '"' + (E.izabrani.has(k) ? " checked" : "") + "> <b>" + k + "</b> " + esc(E.mag[k].naziv) + ' <span class="muted">(' + Object.keys(E.mag[k].st).length + ")</span></label>").join("") + "</div>" +
     '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:13px"><label class="chk"><input type="checkbox" id="erpNula"' + (E.nula ? " checked" : "") + "> artikli iz aplikacije kojih nema na listi imaju stanje 0</label>" +
     '<label class="chk"><input type="checkbox" id="erpDodaj"' + (E.dodaj ? " checked" : "") + "> dodaj u šifarnik artikle sa liste kojih nema u aplikaciji (" + nove.length + ")</label></div></div>" +
