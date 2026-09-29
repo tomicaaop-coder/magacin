@@ -13473,7 +13473,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "29.09.c";
+const APP_VERZIJA = "29.09.d";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14878,18 +14878,28 @@ function crtajQP18(a, d) {
   return c;
 }
 function predlogLota(datum, ev) { if (!ev) return ""; const d = (datum || today()).split("-"); return d[2] + d[1] + d[0].slice(2) + "/" + ev; }
+document.addEventListener("input", e => {   // promena ev. broja odmah menja predlog LOT-a
+  const t = e.target; if (!t.dataset || t.dataset.q !== "ev") return;
+  const lot = document.querySelector('#dlg [data-q="lot"][data-i="' + t.dataset.i + '"]');
+  if (lot && (!lot.dataset.rucno || lot.value === "")) lot.value = predlogLota(($("#qpD") && $("#qpD").value) || today(), t.value.trim());
+});
+document.addEventListener("input", e => { const t = e.target; if (t.dataset && t.dataset.q === "lot") t.dataset.rucno = "1"; });
+document.addEventListener("change", e => {   // promena datuma prijema osvežava LOT-ove
+  if (e.target.id !== "qpD") return;
+  $$('#dlg [data-q="lot"]').forEach(l => { if (l.dataset.rucno) return; const ev = document.querySelector('#dlg [data-q="ev"][data-i="' + l.dataset.i + '"]'); l.value = predlogLota(e.target.value || today(), ev ? ev.value.trim() : ""); });
+});
 document.addEventListener("change", e => {   // „označi sve“ u maski za etikete
   if (e.target.id === "qpAll") { $$("#dlg .qpS").forEach(x => { x.checked = e.target.checked; }); return; }
   if (e.target.classList && e.target.classList.contains("qpS")) { const sve = $$("#dlg .qpS"), a_ = $("#qpAll"); if (a_) a_.checked = sve.every(x => x.checked); }
 });
 async function qp18Dlg(lista, datum) {
-  let sledeci = 0; try { sledeci = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
-  try { sledeci = Math.max(sledeci, konMaxBroj(String(datum || today()).slice(0, 4))); } catch (e) {}
+  // evidencioni broj se uvek uzima iz evidencije prijemnog kontrolisanja: poslednji + 1
+  let sledeci = 0; try { sledeci = konMaxBroj(String(datum || today()).slice(0, 4)); } catch (e) {}
   const red = (it, i) => { const a = it.a || S.byId[it.art] || {};
     return '<tr><td style="text-align:center"><input type="checkbox" class="qpS" data-i="' + i + '" checked></td>' +
       '<td style="max-width:190px"><b style="font-size:12px">' + esc(a.naziv || "") + '</b><div class="muted" style="font-size:11px">' + esc(a.sifra || "") + "</div></td>" +
       '<td><input class="inp" data-q="ev" data-i="' + i + '" style="width:70px" inputmode="numeric" value="' + (sledeci ? sledeci + 1 + i : "") + '"></td>' +
-      '<td><input class="inp" data-q="lot" data-i="' + i + '" style="width:110px" placeholder="auto" value="' + esc(it.lot || "") + '"></td>' +
+      '<td><input class="inp" data-q="lot" data-i="' + i + '" style="width:118px" value="' + esc(it.lot || predlogLota(datum || today(), sledeci + 1 + i)) + '"></td>' +
       '<td><input class="inp" data-q="kol" data-i="' + i + '" style="width:80px" inputmode="decimal" value="' + esc(it.kol ? String(r3(it.kol)).replace(".", ",") : "") + '"></td>' +
       '<td><input class="inp" data-q="pak" data-i="' + i + '" style="width:60px"></td>' +
       '<td><input class="inp" data-q="dob" data-i="' + i + '" style="width:140px" value="' + esc(it.dob || "") + '"></td>' +
@@ -14897,7 +14907,7 @@ async function qp18Dlg(lista, datum) {
       '<td><input class="inp" data-q="n" data-i="' + i + '" style="width:48px" inputmode="numeric" value="1"></td></tr>'; };
   const html = '<div class="form"><label class="fld">Datum prijema<input class="inp" type="date" id="qpD" value="' + esc(datum || today()) + '"></label>' +
     '<div class="etl" style="max-height:340px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="qpAll" checked title="Označi sve"></th><th>Artikal</th><th>Ev. broj</th><th>Serija / LOT</th><th>Količina</th><th>Br. pak.</th><th>Dobavljač</th><th>Rok traj.</th><th>Kom.</th></tr></thead><tbody>' + lista.map(red).join("") + "</tbody></table></div>" +
-    '<p class="muted" style="font-size:12px;margin:0">Evidencioni broj i LOT se unose ručno. Ako LOT ostane prazan, upisuje se datum prijema/evidencioni broj (npr. 170926/508). Dole na etiketi su QR kod i bar kod šifre – skeniraju se za izlaz. Format: 100 × 70 mm, jedna etiketa po strani.</p></div>';
+    '<p class="muted" style="font-size:12px;margin:0">Evidencioni broj se nastavlja na poslednji iz evidencije prijemnog kontrolisanja, a LOT se sam sastavlja kao <b>datum prijema/evidencioni broj</b> (npr. 290926/517). Oba se mogu ispraviti ručno. Dole na etiketi su QR kod i bar kod šifre – skeniraju se za izlaz. Format: 100 × 70 mm, jedna etiketa po strani.</p></div>';
   const d = $("#dlg"); d.style.width = "min(980px, 96vw)";
   const samoAmb = lista.every(it => !it.a && it.art && S.byId[it.art]);
   const v = await izbor("Identifikaciona etiketa QP18", html, [{ v: "no", l: "Odustani" }].concat(samoAmb ? [{ v: "nalog", l: "Kreiraj nalog laboratoriji" }] : []).concat([{ v: "pdf", l: "Preuzmi PDF" }, { v: "print", l: "Štampaj", primary: true }]));
@@ -14912,20 +14922,15 @@ async function qp18Dlg(lista, datum) {
   const zaNalog = izbor2.filter(o => !lista[o.i].a && lista[o.i].art);
   if (v === "nalog") {                 // upis u evidenciju kontrole + nalog laboratoriji, bez štampe
     await naloziUpit(zaNalog, lista, dat);
-    let mv = 0; try { mv = parseInt(localStorage.getItem("qpEv") || "0", 10) || 0; } catch (e) {}
-    for (const o of izbor2) { const x = parseInt(o.d.ev, 10); if (x > mv) mv = x; }
-    try { localStorage.setItem("qpEv", String(mv)); } catch (e) {}
     return;
   }
   if (!window.jspdf || !window.qrcode) { toast("Biblioteka za etikete nije učitana."); return; }
   const doc = noviDoc(v === "print", { format: [100, 70], orientation: "landscape" });
-  let prvi = true, maxEv = sledeci;
+  let prvi = true;
   for (const o of izbor2) {
     const img = crtajQP18(o.a, o.d).toDataURL("image/png");
     for (let k = 0; k < o.n; k++) { if (!prvi) doc.addPage([100, 70], "landscape"); prvi = false; doc.addImage(img, "PNG", 0, 0, 100, 70, o.a.id + o.d.ev, "FAST"); }
-    const e = parseInt(o.d.ev, 10); if (e > maxEv) maxEv = e;
   }
-  try { localStorage.setItem("qpEv", String(maxEv)); } catch (e) {}
   if (v === "print") doc.stampaj();
   else if (!S.downloads) toast("Preuzimanje fajlova nije dostupno u ovom prikazu.");
   else { try { await S.downloads.save({ filename: "QP18 etikete " + dat + ".pdf", data: doc.output("arraybuffer") }); } catch (e) { if (e && e.code !== "declined") toast("PDF nije sačuvan."); } }
