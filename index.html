@@ -308,6 +308,39 @@ body.samoPregled main input[type=file]{ display:none; }
 .knal.uzo{ background:#FFF2C2; box-shadow:0 0 0 2px #D9A400 inset; color:#7A5B00; }
 .card.k-uzo{ border-left:5px solid #D9A400; }
 .ktab tr.n-uzo td{ background:rgba(217,164,0,.12); }
+
+/* ---------- brzo popisivanje (mini prozor) ---------- */
+#bzWrap{ position:fixed; inset:auto 16px 16px auto; z-index:70; width:min(420px, calc(100vw - 32px)); }
+.bzBox{ background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:0 18px 46px rgba(0,0,0,.28); overflow:hidden; }
+.bzHead{ display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--brand); color:#fff; font:600 16px var(--head); }
+.bzHead .obX{ margin-left:auto; color:#fff; font-size:22px; }
+.bzHead .muted{ color:rgba(255,255,255,.85); font:400 13px var(--body); }
+.bzTelo{ padding:12px 14px; }
+.bzSearch{ position:relative; }
+.bzSearch input{ font-size:17px; padding:12px 92px 12px 42px; }
+.bzSearch > svg{ left:13px; }
+.bzSearch .ikona{ position:absolute; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--muted); display:grid; place-items:center; cursor:pointer; }
+.bzSearch #bzMic{ right:48px; } .bzSearch #bzCam{ right:8px; }
+.bzSearch #bzMic.on{ background:var(--izlaz); border-color:var(--izlaz); color:#fff; animation:puls 1.2s ease-in-out infinite; }
+.bzHint{ font-size:12px; color:var(--muted); margin:8px 2px 0; }
+.bzRez{ list-style:none; margin:8px 0 0; padding:0; max-height:44vh; overflow:auto; }
+.bzRez button{ display:grid; grid-template-columns:62px 1fr auto; gap:8px; align-items:center; width:100%; text-align:left; border:1px solid var(--line-2); background:var(--surface); border-radius:10px; padding:10px 12px; margin-bottom:6px; font:inherit; color:var(--ink); cursor:pointer; }
+.bzRez button:active{ background:var(--brand-soft); }
+.bzArt{ display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+.bzArt b{ font:600 17px var(--head); line-height:1.25; display:block; }
+.bzArt .muted{ font-size:12px; }
+.bzNazad{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:9px; width:34px; height:34px; font-size:22px; line-height:1; cursor:pointer; flex:none; }
+.bzEv{ font-size:13px; color:var(--muted); margin-bottom:8px; }
+.bzKol{ display:grid; grid-template-columns:1fr auto; gap:8px; }
+.bzKol input{ font:700 24px var(--head); text-align:right; padding:12px 14px; }
+.bzKol .btn{ padding:0 18px; font-size:17px; }
+.bzBrzo{ display:flex; gap:8px; margin-top:8px; }
+.bzBrzo .btn{ flex:1; font-size:13px; }
+.bzLog{ border-top:1px solid var(--line-2); padding:8px 14px; font-size:12px; color:var(--muted); max-height:96px; overflow:auto; }
+.bzLog b{ color:var(--ink); }
+#bzMic.on{ color:var(--izlaz); }
+@media (max-width: 760px){ #bzWrap{ inset:auto 8px calc(74px + env(safe-area-inset-bottom,0px)) 8px; width:auto; } .bzRez{ max-height:38vh; } }
+@media print{ #bzWrap{ display:none !important; } }
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -13439,7 +13472,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "26.09.f";
+const APP_VERZIJA = "28.09.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14431,7 +14464,7 @@ function renderPopis() {
   }
   box.innerHTML = '<div class="toolbar"><h1>Popis na dan ' + esc(dtxt(P.datum)) + "</h1>" +
     '<label class="fld grow">Filter<input class="inp" id="poQ" type="search" placeholder="Šifra ili naziv"></label><label class="chk"><input type="checkbox" id="poSamo"' + (samo ? " checked" : "") + "> samo neizbrojani</label>" +
-    '<button class="btn" id="poOdustani">Odustani od popisa</button><button class="btn primary" id="poKnjizi">Proknjiži popis</button></div>' +
+    '<button class="btn primary" id="poBrzi">Brzo popisivanje</button><button class="btn" id="poOdustani">Odustani od popisa</button><button class="btn primary" id="poKnjizi">Proknjiži popis</button></div>' +
     '<div class="notice" style="font-size:13px">' + esc(P.grupa || "Svi artikli") + " · izbrojano <b id=\"poIz\">" + izbr + "</b> od " + svi.length + " · sa razlikom <b id=\"poSr\">" + sraz + "</b> · započeo " + esc(who(P.uid)) + ". Upiši izbrojanu količinu i pritisni Enter – prelazi se na sledeći artikal. Neizbrojani artikli se ne menjaju.</div>" +
     '<div class="tbl-wrap"><table><thead><tr><th>Šifra</th><th>Naziv artikla</th><th class="num">Po evidenciji</th><th class="num">Izbrojano</th><th class="num">Razlika</th><th>Razlog</th></tr></thead><tbody>' + (rows || '<tr class="empty-row"><td colspan="6">Nema artikala za prikaz.</td></tr>') + "</tbody></table></div>";
   $("#poQ").value = qv;
@@ -15577,7 +15610,7 @@ function renderSirPopis() {
   const vid = R.filter(r => { const a = S.sir.byId[r.art]; return (!q.length || q.every(x => norm(a.sifra + " " + a.naziv + " " + r.lot).includes(x))) && (!P.samoRaz || Math.abs(r.raz) > 1e-9); });
   const upisano = R.filter(r => r.izbr != null).length, zaKnj = R.filter(r => Math.abs(r.raz) > 1e-9);
   let prev = null;
-  box.innerHTML = '<div class="toolbar"><h1>Popis sirovina – ' + esc(dtxt(P.datum)) + '</h1><button class="btn" id="spOtkazi">Otkaži popis</button><button class="btn dl" id="spXls">Excel</button><button class="btn primary" id="spKnjizi"' + (zaKnj.length ? "" : " disabled") + ">Proknjiži razlike (" + zaKnj.length + ")</button></div>" +
+  box.innerHTML = '<div class="toolbar"><h1>Popis sirovina – ' + esc(dtxt(P.datum)) + '</h1><button class="btn primary" id="spBrzi">Brzo popisivanje</button><button class="btn" id="spOtkazi">Otkaži popis</button><button class="btn dl" id="spXls">Excel</button><button class="btn primary" id="spKnjizi"' + (zaKnj.length ? "" : " disabled") + ">Proknjiži razlike (" + zaKnj.length + ")</button></div>" +
     '<div class="notice" style="font-size:13px">Upisano <b>' + upisano + "</b> od " + R.length + " lotova. Enter prelazi na sledeći lot. " + (P.nula ? "Lotovi bez upisane količine smatraju se <b>praznim (0)</b>." : "Lotovi bez upisane količine se <b>ne menjaju</b>.") + "</div>" +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="spQ" type="search" value="' + esc(P.q || "") + '" placeholder="šifra, naziv ili lot"></label><label class="chk"><input type="checkbox" id="spSamo"' + (P.samoRaz ? " checked" : "") + '> samo sa razlikom</label><label class="chk"><input type="checkbox" id="spNula"' + (P.nula ? " checked" : "") + "> neupisani lotovi = 0</label></div>" +
     '<details class="card" style="margin-bottom:12px;padding:10px 14px"><summary style="cursor:pointer"><b>Dodaj lot pronađen na popisu</b> (lot kojeg nema u evidenciji)</summary><div class="form" style="margin-top:10px"><div class="row2"><label class="fld">Sirovina (šifra ili naziv)<input class="inp" id="spnA" list="spnDL"></label><label class="fld">Lot<input class="inp" id="spnL"></label></div><datalist id="spnDL">' + S.sir.art.map(a => '<option value="' + esc(a.sifra + " · " + a.naziv) + '"></option>').join("") + '</datalist><div class="row2"><label class="fld">Važi do<input class="inp" type="date" id="spnV"></label><label class="fld">Izbrojano<input class="inp" id="spnK" inputmode="decimal"></label></div><div><button class="btn" id="spnOk">Dodaj u popis</button></div></div></details>' +
@@ -16081,6 +16114,141 @@ $("#sprijemBox").addEventListener("click", e => {
   }
 });
 
+
+/* =====================================================================
+   BRZO POPISIVANJE – mini prozor za telefon (kucanje, glas ili skener)
+   ===================================================================== */
+S.brzi = { otvoren: false, q: "", sel: null, poslednji: [], sir: false };
+function brziArtikli() {
+  return S.brzi.sir ? S.sir.art.filter(a => a.aktivan !== false) : (typeof popisArtikli === "function" && S.popis ? popisArtikli() : S.art.filter(a => !a.izbacen && a.aktivan));
+}
+function brziEvid(a) {
+  if (S.brzi.sir) { const l = sirLotovi(a.id); return { ev: sirUkupno(a.id), lot: l }; }
+  const r = obracun(S.popis.datum); return { ev: (r[a.id] || { s: 0 }).s };
+}
+function brziIzbrojano(a, lot) {
+  if (S.brzi.sir) { const v = (S.sir.popis.izbr || {})[sirKljuc(a.id, lot)]; return v == null ? null : v; }
+  const x = (S.popis.stavke || {})[a.id]; return x && x.kol != null ? x.kol : null;
+}
+function brziTrazi(q) {
+  const w = norm(q).split(" ").filter(Boolean); if (!w.length) return [];
+  const l = brziArtikli().filter(a => w.every(x => norm((a.sifra || "") + " " + a.naziv).includes(x)));
+  return l.slice(0, 25);
+}
+function brziHtml() {
+  const B = S.brzi, a = B.sel ? (B.sir ? S.sir.byId[B.sel] : S.byId[B.sel]) : null;
+  const rez = a ? [] : brziTrazi(B.q);
+  const e = a ? brziEvid(a) : null;
+  let telo;
+  if (a) {
+    const lotovi = B.sir ? e.lot : [];
+    const lotSel = B.lot || (lotovi[0] ? lotovi[0].lot : "");
+    const izb = brziIzbrojano(a, lotSel), ev = B.sir ? ((lotovi.find(x => x.lot === lotSel) || {}).kol || 0) : e.ev;
+    const raz = izb == null ? null : r3(izb - ev);
+    telo = '<div class="bzArt"><button class="bzNazad" id="bzNazad" aria-label="Nazad na pretragu">‹</button><div><b>' + esc(a.naziv) + '</b><div class="muted">' + esc(a.sifra || "") + (a.mera ? " · " + esc(a.mera) : "") + "</div></div></div>" +
+      (B.sir && lotovi.length ? '<label class="fld">Lot / serija<select class="inp bzLot" id="bzLot">' + lotovi.map(o => '<option value="' + esc(o.lot) + '"' + (o.lot === lotSel ? " selected" : "") + ">" + esc(o.lot) + " · " + esc(fmt(o.kol, false)) + (o.vaz ? " · do " + esc(dtxt(o.vaz)) : "") + "</option>").join("") + "</select></label>" : "") +
+      '<div class="bzEv">Po evidenciji: <b>' + esc(fmt(ev, false)) + "</b> " + esc(a.mera || "") + (izb == null ? "" : ' · izbrojano <b>' + esc(fmt(izb, false)) + "</b>" + (raz ? ' <span class="' + (raz > 0 ? "raz-p" : "raz-m") + '">' + (raz > 0 ? "+" : "") + esc(fmt(raz, false)) + "</span>" : " ✓")) + "</div>" +
+      '<div class="bzKol"><input class="inp" id="bzKol" inputmode="decimal" placeholder="Izbrojana količina" autocomplete="off" value="' + (izb == null ? "" : esc(String(izb).replace(".", ","))) + '"><button class="btn primary" id="bzUpisi">Upiši</button></div>' +
+      '<div class="bzBrzo">' + [["=", "ev"], ["0", "0"]].map(([l, v]) => '<button class="btn" data-bzq="' + v + '">' + (v === "ev" ? "koliko i evidencija" : "nula") + "</button>").join("") + "</div>";
+  } else {
+    telo = '<div class="search bzSearch"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+      '<input id="bzQ" type="search" placeholder="Šifra, naziv ili deo naziva" autocomplete="off" value="' + esc(B.q) + '">' +
+      (SR ? '<button class="ikona" id="bzMic" title="Izgovori naziv" aria-label="Glasovna pretraga"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>' : "") +
+      '<button class="ikona" id="bzCam" title="Skeniraj etiketu" aria-label="Skeniraj"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/></svg></button></div>' +
+      '<div class="bzHint" id="bzHint">Kucaj ili izgovori deo naziva, pa izaberi artikal i upiši količinu.</div>' +
+      '<ul class="bzRez">' + (rez.length ? rez.map(x => { const iz = brziIzbrojano(x, ""); return '<li><button type="button" data-bza="' + x.id + '"><span class="sif">' + esc(x.sifra || "") + "</span><span>" + esc(x.naziv) + "</span>" + (iz != null && !S.brzi.sir ? '<span class="tag U">✓</span>' : "") + "</button></li>"; }).join("")
+        : (B.q ? '<li class="muted" style="padding:10px 4px">Nema artikla za taj upit.</li>' : "")) + "</ul>";
+  }
+  const brz = S.brzi.poslednji.slice(0, 6);
+  return '<div class="bzBox" role="dialog" aria-label="Brzo popisivanje"><div class="bzHead"><b>Brzo popisivanje</b>' + (B.sir ? ' <span class="muted">sirovine</span>' : "") + '<button class="obX" id="bzZatvori" aria-label="Zatvori">×</button></div>' +
+    '<div class="bzTelo">' + telo + "</div>" +
+    (brz.length ? '<div class="bzLog">' + brz.map(x => '<div><b>' + esc(fmt(x.kol, false)) + "</b> " + esc(x.naziv) + (x.lot ? " · " + esc(x.lot) : "") + "</div>").join("") + "</div>" : "") + "</div>";
+}
+function renderBrzi() {
+  let el = $("#bzWrap");
+  if (!S.brzi.otvoren) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "bzWrap"; document.body.appendChild(el); }
+  const fokusKol = document.activeElement && document.activeElement.id === "bzKol";
+  el.innerHTML = brziHtml();
+  const q = $("#bzQ"), k = $("#bzKol");
+  if (k && (S.brzi.fokusKol || fokusKol)) { k.focus(); k.select(); S.brzi.fokusKol = false; }
+  else if (q && S.brzi.fokusQ) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); S.brzi.fokusQ = false; }
+}
+function brziOtvori(sir) {
+  if (sir ? !S.sir.popis : !S.popis) { toast("Prvo započni popis."); return; }
+  S.brzi = { otvoren: true, q: "", sel: null, lot: "", poslednji: S.brzi.poslednji || [], sir: !!sir, fokusQ: true };
+  renderBrzi();
+}
+async function brziUpisi() {
+  const B = S.brzi, a = B.sir ? S.sir.byId[B.sel] : S.byId[B.sel]; if (!a) return;
+  const v = $("#bzKol").value.trim(), k = parseQty(v);
+  if (v === "" || isNaN(k) || k < 0) { toast("Upiši količinu."); return; }
+  if (B.sir) {
+    const lot = ($("#bzLot") && $("#bzLot").value) || B.lot || "";
+    if (!lot) { toast("Izaberi lot."); return; }
+    S.sir.popis.izbr[sirKljuc(a.id, lot)] = r3(k); sirPopisSacuvaj();
+    B.poslednji.unshift({ naziv: a.naziv, kol: r3(k), lot });
+    if (document.querySelector("#v-spopis.on")) renderSirPopis();
+  } else {
+    await popisUpis(a.id, { kol: r3(k) });
+    B.poslednji.unshift({ naziv: a.naziv, kol: r3(k) });
+    if (document.querySelector("#v-popis.on")) renderPopis();
+  }
+  B.poslednji = B.poslednji.slice(0, 10);
+  toast("Upisano: " + fmt(k, false) + " – " + a.naziv);
+  S.brzi.sel = null; S.brzi.q = ""; S.brzi.lot = ""; S.brzi.fokusQ = true; renderBrzi();
+}
+document.addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("#bzZatvori")) { S.brzi.otvoren = false; renderBrzi(); return; }
+  if (t.closest("#bzNazad")) { S.brzi.sel = null; S.brzi.fokusQ = true; renderBrzi(); return; }
+  const b = t.closest("[data-bza]"); if (b) { S.brzi.sel = b.dataset.bza; S.brzi.lot = ""; S.brzi.fokusKol = true; renderBrzi(); return; }
+  if (t.closest("#bzUpisi")) { brziUpisi(); return; }
+  const q2 = t.closest("[data-bzq]");
+  if (q2) {
+    const B = S.brzi, a = B.sir ? S.sir.byId[B.sel] : S.byId[B.sel]; if (!a) return;
+    let v = 0;
+    if (q2.dataset.bzq === "ev") { const e2 = brziEvid(a); v = B.sir ? ((e2.lot.find(x => x.lot === (($("#bzLot") || {}).value || B.lot)) || {}).kol || 0) : e2.ev; }
+    $("#bzKol").value = String(r3(v)).replace(".", ","); brziUpisi(); return;
+  }
+  if (t.closest("#bzMic")) { brziGlas(); return; }
+  if (t.closest("#bzCam")) { S.brziScan = true; skeniraj(); return; }
+  if (t.closest("#poBrzi")) { brziOtvori(false); return; }
+  if (t.closest("#spBrzi")) { brziOtvori(true); return; }
+});
+document.addEventListener("input", e => { if (e.target.id === "bzQ") { S.brzi.q = e.target.value; S.brzi.fokusQ = true; const r = brziTrazi(S.brzi.q); if (r.length === 1 && norm(S.brzi.q).length >= 4) { S.brzi.sel = r[0].id; S.brzi.fokusKol = true; } renderBrzi(); } });
+document.addEventListener("change", e => { if (e.target.id === "bzLot") { S.brzi.lot = e.target.value; S.brzi.fokusKol = true; renderBrzi(); } });
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.id === "bzKol") { e.preventDefault(); brziUpisi(); }
+  if (e.key === "Enter" && e.target.id === "bzQ") { e.preventDefault(); const r = brziTrazi(S.brzi.q); if (r.length) { S.brzi.sel = r[0].id; S.brzi.fokusKol = true; renderBrzi(); } }
+  if (e.key === "Escape" && S.brzi.otvoren) { S.brzi.otvoren = false; renderBrzi(); }
+});
+/* glasovna pretraga u brzom popisu */
+let brziRec = null;
+function brziGlas() {
+  if (!SR) { toast("Glasovni unos nije podržan u ovom pregledaču."); return; }
+  if (!brziRec) {
+    brziRec = new SR(); brziRec.lang = "sr-RS"; brziRec.interimResults = true; brziRec.maxAlternatives = 1;
+    brziRec.onresult = ev => {
+      let fin = "", tmp = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) { const x = ev.results[i][0].transcript; if (ev.results[i].isFinal) fin += x; else tmp += x; }
+      const h = $("#bzHint"); if (h && tmp) h.textContent = "Slušam: " + tmp;
+      if (fin) {
+        const m = String(fin).trim().match(/^(.*?)[\s,]+(\d+[.,]?\d*)\s*$/);   // npr. „folija plava 250“
+        S.brzi.q = (m ? m[1] : fin).trim(); S.brzi.fokusQ = true;
+        const r = brziTrazi(S.brzi.q);
+        if (r.length === 1) { S.brzi.sel = r[0].id; S.brzi.fokusKol = true; }
+        renderBrzi();
+        if (m && $("#bzKol")) { $("#bzKol").value = m[2].replace(".", ","); if (S.brzi.sel) brziUpisi(); }
+      }
+    };
+    brziRec.onerror = () => { const h = $("#bzHint"); if (h) h.textContent = "Mikrofon nije dozvoljen ili nije uspeo."; };
+    brziRec.onend = () => { const b = $("#bzMic"); if (b) b.classList.remove("on"); };
+  }
+  try { brziRec.start(); const b = $("#bzMic"); if (b) b.classList.add("on"); const h = $("#bzHint"); if (h) h.textContent = "Slušam… izgovori naziv, npr. „folija plava“ ili „folija plava 250“."; }
+  catch (err) { toast("Glasovni unos nije moguće pokrenuti."); }
+}
+
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
 async function skeniraj() {
@@ -16113,6 +16281,13 @@ async function skeniraj() {
 }
 function zatvoriSken() { scanRun = false; if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; } const d = $("#scanDlg"); if (d.open) d.close(); }
 function primeniSken(code) {
+  if (S.brziScan) {
+    S.brziScan = false;
+    const kod = String(code || "").trim(), i = kod.indexOf("|"), sif = i > 0 ? kod.slice(0, i) : kod, lot = i > 0 ? kod.slice(i + 1) : "";
+    const a2 = S.brzi.sir ? S.sir.bySif[sif] : nadjiPoKodu(sif);
+    if (!a2) { toast("Nepoznat kod: " + code); return; }
+    S.brzi.sel = a2.id; if (lot) S.brzi.lot = lot; S.brzi.fokusKol = true; renderBrzi(); return;
+  }
   const a = nadjiPoKodu(code);
   if (!a) { toast("Nepoznat kod: " + code); return; }
   show("unos"); S.vrsta = "I"; q.value = a.sifra ? String(a.sifra) : a.naziv; S.hits = [a]; S.act = 0; renderRez(); izaberi(a.id, true);
