@@ -500,6 +500,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   <!-- SIROVINE -->
   <section class="view" id="v-sunos"><div id="sunosBox"></div></section>
   <section class="view" id="v-sstanje"><div id="sstanjeBox"></div></section>
+  <section class="view" id="v-szbirno"><div id="szbirBox"></div></section>
   <section class="view" id="v-spopis"><div id="spopisBox"></div></section>
   <section class="view" id="v-uskl"><div id="usklBox"></div></section>
   <section class="view" id="v-usklsir"><div id="usklSirBox"></div></section>
@@ -13472,7 +13473,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "28.09.a";
+const APP_VERZIJA = "29.09.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14013,6 +14014,7 @@ function renderAll() {
   else if (v === "v-uskl" || v === "v-usklsir") { const bx = v === "v-uskl" ? "#usklBox" : "#usklSirBox", ae = document.activeElement; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderUskl(v === "v-usklsir" ? "sir" : "amb"); }
   else if (v === "v-sprijem") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#sprijemBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirPrijem(); }
   else if (v === "v-kamb") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#kambBox") && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
+  else if (v === "v-szbirno") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#szbirBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirZbir(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
   else if (v === "v-izdavanje") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#izdBox") && /INPUT|SELECT/.test(ae.tagName))) renderIzdavanje(); }
@@ -14028,7 +14030,7 @@ function renderAll() {
 }
 const GRUPE = {
   magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"], ["popis", "Popis ambalaže"], ["uskl", "Usklađivanje sa UPIS-om"]],
-  sirovine: [["sunos", "Unos"], ["sstanje", "Stanje"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
+  sirovine: [["sunos", "Unos"], ["szbirno", "Zbirno stanje"], ["sstanje", "Stanje po lotovima"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan"], ["zalihe", "Zalihe"]],
   nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["analitika", "Analitika"], ["ngrupe", "Grupe nabavke"]],
   kontrola: [["kamb", "Evidencija prijemnog kontrolisanja"]],
@@ -16248,6 +16250,156 @@ function brziGlas() {
   try { brziRec.start(); const b = $("#bzMic"); if (b) b.classList.add("on"); const h = $("#bzHint"); if (h) h.textContent = "Slušam… izgovori naziv, npr. „folija plava“ ili „folija plava 250“."; }
   catch (err) { toast("Glasovni unos nije moguće pokrenuti."); }
 }
+
+
+/* =====================================================================
+   SIROVINE – ZBIRNO STANJE (bez lotova) i usaglašavanje sa Excel tabelom magacionera
+   Tabela magacionera: redni broj, šifra, naziv, stanje, ulaz, izlaz, stanje.
+   Povezivanje ide po ŠIFRI, jer se nazivi razlikuju.
+   ===================================================================== */
+S.zbir = { q: "", prikaz: "stanje", uvoz: null, samoRaz: true };
+function sirZbirno() {
+  const m = sirStanje(), po = {};
+  for (const o of m.values()) { const a = S.sir.byId[o.art]; if (!a) continue; const x = po[a.id] || (po[a.id] = { a, kol: 0, lot: 0, ist: 0 }); x.kol = r3(x.kol + o.kol); if (Math.abs(o.kol) > 1e-9) { x.lot++; if (o.vaz && o.vaz < today()) x.ist++; } }
+  for (const a of S.sir.art) if (!po[a.id]) po[a.id] = { a, kol: 0, lot: 0, ist: 0 };
+  return Object.values(po).sort((x, y) => String(x.a.sifra).localeCompare(String(y.a.sifra)));
+}
+/* --- čitanje Excel tabele magacionera --- */
+function parseMagXls(buf) {
+  const wb = XLSX.read(buf, { type: "array" }), out = [];
+  for (const n of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null });
+    let h = -1, C = null;
+    for (let i = 0; i < Math.min(rows.length, 30); i++) {
+      const r = (rows[i] || []).map(x => norm(String(x == null ? "" : x)));
+      const sif = r.findIndex(x => /^(sifra|sif|sifra artikla|sifra materijala)$/.test(x));
+      if (sif < 0) continue;
+      const naz = r.findIndex(x => /naziv/.test(x)), ul = r.findIndex(x => /^ulaz/.test(x)), iz = r.findIndex(x => /^izlaz/.test(x));
+      const st = []; r.forEach((x, k) => { if (/^stanje|^zaliha|^kolicina/.test(x)) st.push(k); });
+      h = i; C = { sif, naz, ul, iz, st }; break;
+    }
+    if (h < 0) continue;
+    for (let i = h + 1; i < rows.length; i++) {
+      const r = rows[i] || []; const sifRaw = r[C.sif]; if (sifRaw == null || String(sifRaw).trim() === "") continue;
+      const sif = String(sifRaw).trim().replace(/\.0$/, "");
+      if (!/^\d{3,8}$/.test(sif)) continue;
+      const broj = v => { if (v == null || v === "") return null; if (typeof v === "number") return v; const t = String(v).trim().replace(/\s/g, ""); return brojPoFormatu(t, /,\d{1,4}$/.test(t) ? "sr" : "en"); };
+      const ul = C.ul >= 0 ? broj(r[C.ul]) : null, iz = C.iz >= 0 ? broj(r[C.iz]) : null;
+      let kraj = null;
+      for (let k = C.st.length - 1; k >= 0; k--) { const v = broj(r[C.st[k]]); if (v != null && !isNaN(v)) { kraj = v; break; } }
+      if (kraj == null && C.st.length) { const poc = broj(r[C.st[0]]); if (poc != null) kraj = poc + (ul || 0) - (iz || 0); }
+      if (kraj == null || isNaN(kraj)) continue;
+      out.push({ sifra: sif.padStart(6, "0"), naziv: C.naz >= 0 ? String(r[C.naz] == null ? "" : r[C.naz]).trim() : "", ul, iz, kol: r3(kraj) });
+    }
+    if (out.length) break;
+  }
+  const spoj = {};
+  for (const r of out) { const x = spoj[r.sifra] || (spoj[r.sifra] = Object.assign({}, r, { kol: 0, ul: 0, iz: 0 })); x.kol = r3(x.kol + r.kol); x.ul = r3((x.ul || 0) + (r.ul || 0)); x.iz = r3((x.iz || 0) + (r.iz || 0)); if (!x.naziv) x.naziv = r.naziv; }
+  return Object.values(spoj);
+}
+function zbirPoredjenje() {
+  const U = S.zbir.uvoz, red = [], nema = [];
+  const zb = {}; for (const x of sirZbirno()) zb[String(x.a.sifra)] = x;
+  const uListi = new Set();
+  for (const r of U.redovi) {
+    uListi.add(r.sifra);
+    const x = zb[r.sifra] || zb[String(parseInt(r.sifra, 10))];
+    if (!x) { nema.push(r); continue; }
+    red.push({ a: x.a, app: x.kol, xls: r.kol, raz: r3(r.kol - x.kol), ul: r.ul, iz: r.iz, nazXls: r.naziv, lot: x.lot });
+  }
+  if (U.nula) for (const k of Object.keys(zb)) if (!uListi.has(k) && Math.abs(zb[k].kol) > 1e-9) red.push({ a: zb[k].a, app: zb[k].kol, xls: 0, raz: r3(-zb[k].kol), nema: true, lot: zb[k].lot });
+  return { red, nema };
+}
+function renderSirZbir() {
+  const box = $("#szbirBox"), Z = S.zbir;
+  if (Z.uvoz) {
+    const { red, nema } = zbirPoredjenje();
+    const raz = red.filter(x => Math.abs(x.raz) > SIR_TOL), plus = raz.filter(x => x.raz > 0).length;
+    const q = norm(Z.q).split(" ").filter(Boolean);
+    const prikaz = (Z.samoRaz ? raz : red).filter(x => !q.length || q.every(w => norm(x.a.sifra + " " + x.a.naziv + " " + (x.nazXls || "")).includes(w)));
+    box.innerHTML = '<div class="toolbar"><h1>Usaglašavanje sa tabelom magacionera</h1><button class="btn" id="zbNazad">Nazad</button>' +
+      '<button class="btn primary" id="zbKnjizi"' + (raz.length ? "" : " disabled") + ">Proknjiži razlike (" + raz.length + ")</button><button class=\"btn dl\" id=\"zbXls\">Preuzmi Excel</button></div>" +
+      '<div class="notice" style="font-size:13px">Fajl <b>' + esc(Z.uvoz.ime) + "</b> – " + Z.uvoz.redovi.length + " redova. Povezivanje ide <b>po šifri</b>, nazivi se ne porede. Razlike se knjiže kao korekcije na lot sa najvećim stanjem, a artikal bez lota dobija lot <b>BEZ LOTA</b>.</div>" +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">' +
+      [["Upoređeno", red.length], ["Sa razlikom", raz.length], ["Više u tabeli", plus], ["Manje u tabeli", raz.length - plus], ["Šifre van šifarnika", nema.length]].map(([l, v]) => '<div class="card" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+      '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="zbQ" type="search" value="' + esc(Z.q) + '" placeholder="šifra ili naziv"></label>' +
+      '<label class="chk"><input type="checkbox" id="zbSamo"' + (Z.samoRaz ? " checked" : "") + '> samo sa razlikom</label><label class="chk"><input type="checkbox" id="zbNula"' + (Z.uvoz.nula ? " checked" : "") + "> sirovine kojih nema u tabeli imaju stanje 0</label></div>" +
+      '<div class="tbl-wrap" style="max-height:560px"><table><thead><tr><th>Šifra</th><th>Sirovina (aplikacija)</th><th>Naziv u tabeli</th><th class="num">U aplikaciji</th><th class="num">U tabeli</th><th class="num">Razlika</th><th class="num">Lotova</th></tr></thead><tbody>' +
+      (prikaz.length ? prikaz.slice(0, 1500).map(x => '<tr><td class="sif">' + esc(x.a.sifra) + "</td><td>" + esc(x.a.naziv) + (x.nema ? ' <span class="tag K">nema u tabeli</span>' : "") + '</td><td class="muted" style="font-size:12px">' + esc(x.nazXls || "") + '</td><td class="num">' + esc(fmt(x.app, false)) + " " + esc(x.a.mera || "") + '</td><td class="num"><b>' + esc(fmt(x.xls, false)) + '</b></td><td class="num ' + (x.raz > 0 ? "raz-p" : x.raz < 0 ? "raz-m" : "") + '">' + (Math.abs(x.raz) > SIR_TOL ? (x.raz > 0 ? "+" : "") + esc(fmt(x.raz, false)) : "✓") + '</td><td class="num">' + (x.lot || 0) + "</td></tr>").join("")
+        : '<tr class="empty-row"><td colspan="7">Nema razlika – stanje se slaže sa tabelom.</td></tr>') + "</tbody></table></div>" +
+      (nema.length ? '<details style="margin-top:14px"><summary style="cursor:pointer"><b>' + nema.length + ' šifara iz tabele nema u šifarniku sirovina</b> – biće dodate pri knjiženju</summary><div class="tbl-wrap" style="max-height:260px;margin-top:8px"><table><tbody>' +
+        nema.map(n => '<tr><td class="sif">' + esc(n.sifra) + "</td><td>" + esc(n.naziv || "") + '</td><td class="num">' + esc(fmt(n.kol, false)) + "</td></tr>").join("") + "</tbody></table></div></details>" : "");
+    if (Z.fokus) { const i = $("#zbQ"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } Z.fokus = false; }
+    return;
+  }
+  const L = sirZbirno(), q = norm(Z.q).split(" ").filter(Boolean);
+  const vid = L.filter(x => (Z.prikaz === "svi" || Math.abs(x.kol) > 1e-9) && (!q.length || q.every(w => norm(x.a.sifra + " " + x.a.naziv).includes(w))));
+  const uk = vid.reduce((s, x) => s + (x.lot || 0), 0);
+  box.innerHTML = '<div class="toolbar"><h1>Zbirno stanje sirovina</h1><label class="btn" style="cursor:pointer">Usaglasi sa tabelom magacionera (Excel)<input type="file" id="zbF" accept=".xlsx,.xls,.xlsm,.csv" hidden></label><button class="btn dl" id="zbXls2">Preuzmi Excel</button></div>' +
+    '<p class="muted" style="font-size:13px">Zbir svih lotova po sirovini, bez prikaza lotova. Za pregled po lotovima koristi karticu <b>Stanje</b>.</p>' +
+    '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="zbQ2" type="search" value="' + esc(Z.q) + '" placeholder="šifra ili naziv"></label>' +
+    '<label class="fld">Prikaz<select class="inp" id="zbPrikaz"><option value="stanje"' + (Z.prikaz === "stanje" ? " selected" : "") + '>samo sa stanjem</option><option value="svi"' + (Z.prikaz === "svi" ? " selected" : "") + ">sve sirovine</option></select></label></div>" +
+    '<div class="notice" style="font-size:13px">' + vid.length + " sirovina · " + uk + " lotova na stanju</div>" +
+    '<div class="tbl-wrap" style="max-height:640px"><table><thead><tr><th>Šifra</th><th>Sirovina</th><th class="num">Stanje</th><th>JM</th><th class="num">Lotova</th><th class="num">Istekli lotovi</th></tr></thead><tbody>' +
+    (vid.length ? vid.map(x => '<tr><td class="sif">' + esc(x.a.sifra) + "</td><td>" + esc(x.a.naziv) + '</td><td class="num"><b>' + esc(fmt(x.kol, false)) + "</b></td><td>" + esc(x.a.mera || "") + '</td><td class="num">' + (x.lot || 0) + '</td><td class="num ' + (x.ist ? "raz-m" : "") + '">' + (x.ist || "") + "</td></tr>").join("") : '<tr class="empty-row"><td colspan="6">Nema sirovina za ovaj prikaz.</td></tr>') + "</tbody></table></div>";
+  if (!S.downloads) $$("#szbirBox .dl").forEach(b => b.hidden = true);
+  if (Z.fokus2) { const i = $("#zbQ2"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } Z.fokus2 = false; }
+}
+$("#szbirBox").addEventListener("input", e => {
+  if (e.target.id === "zbQ") { S.zbir.q = e.target.value; S.zbir.fokus = true; renderSirZbir(); }
+  if (e.target.id === "zbQ2") { S.zbir.q = e.target.value; S.zbir.fokus2 = true; renderSirZbir(); }
+});
+$("#szbirBox").addEventListener("change", async e => {
+  const t = e.target;
+  if (t.id === "zbPrikaz") { S.zbir.prikaz = t.value; renderSirZbir(); return; }
+  if (t.id === "zbSamo") { S.zbir.samoRaz = t.checked; renderSirZbir(); return; }
+  if (t.id === "zbNula") { S.zbir.uvoz.nula = t.checked; renderSirZbir(); return; }
+  if (t.id === "zbF" && t.files[0]) {
+    const f = t.files[0]; t.value = "";
+    try {
+      const redovi = parseMagXls(await f.arrayBuffer());
+      if (!redovi.length) { toast("U tabeli nije pronađena kolona ŠIFRA sa stanjem."); return; }
+      S.zbir.uvoz = { ime: f.name, redovi, nula: false }; S.zbir.q = ""; S.zbir.samoRaz = true; renderSirZbir();
+    } catch (err) { console.error(err); toast("Tabelu nije moguće pročitati."); }
+  }
+});
+$("#szbirBox").addEventListener("click", async e => {
+  const t = e.target, Z = S.zbir;
+  if (t.id === "zbNazad") { Z.uvoz = null; Z.q = ""; renderSirZbir(); return; }
+  if (t.id === "zbXls2") {
+    saveXlsx("Zbirno stanje sirovina " + today() + ".xlsx", [["Sirovine", [["Zbirno stanje sirovina – " + dtxt(today())], [], ["Šifra", "Sirovina", "Stanje", "JM", "Lotova", "Istekli lotovi"]]
+      .concat(sirZbirno().map(x => [x.a.sifra, x.a.naziv, x.kol, x.a.mera || "", x.lot, x.ist])), [10, 55, 14, 6, 9, 13]]]);
+    return;
+  }
+  if (t.id === "zbXls") {
+    const { red, nema } = zbirPoredjenje();
+    saveXlsx("Usaglasavanje sirovina " + today() + ".xlsx", [
+      ["Poređenje", [["Šifra", "Sirovina (aplikacija)", "Naziv u tabeli", "U aplikaciji", "U tabeli", "Razlika", "JM", "Lotova"]].concat(red.map(x => [x.a.sifra, x.a.naziv, x.nazXls || "", x.app, x.xls, x.raz, x.a.mera || "", x.lot])), [10, 50, 40, 14, 14, 13, 6, 9]],
+      ["Van šifarnika", [["Šifra", "Naziv iz tabele", "Stanje"]].concat(nema.map(n => [n.sifra, n.naziv, n.kol])), [10, 50, 14]]]);
+    return;
+  }
+  if (t.id === "zbKnjizi") {
+    const { red, nema } = zbirPoredjenje(), raz = red.filter(x => Math.abs(x.raz) > SIR_TOL);
+    if (!raz.length) return;
+    const dodaj = Z.uvoz.nula ? [] : nema.filter(n => Math.abs(n.kol) > 1e-9);
+    if (!await ask("Proknjižiti razlike?", "<p>Korekcija za <b>" + raz.length + "</b> sirovina" + (dodaj.length ? " i dodavanje <b>" + dodaj.length + "</b> novih sirovina iz tabele" : "") + ".</p><p class='muted'>Razlika se knjiži na lot sa najvećim stanjem; ako sirovina nema lot, koristi se lot <b>BEZ LOTA</b>. Korekcije se vide u prometu i mogu se stornirati.</p>", "Proknjiži")) return;
+    let by = {}; for (const a of S.sir.art) by[a.sifra] = a;
+    if (dodaj.length) {
+      const items = S.sir.art.map(x => Object.assign({}, x));
+      for (const n of dodaj) { const it = { id: "s" + n.sifra, sifra: n.sifra, naziv: n.naziv || ("Sirovina " + n.sifra), mera: "KG", aktivan: true }; items.push(it); by[n.sifra] = it; }
+      items.sort((a, b) => String(a.sifra).localeCompare(String(b.sifra)));
+      if (!(await sirSacuvajSifarnik(items))) return;
+    }
+    const grp = "zb" + rid(), nap = "Usaglašavanje sa tabelom magacionera (" + Z.uvoz.ime + ")", l = [];
+    for (const x of raz) {
+      const lots = sirLotovi(x.a.id).filter(o => Math.abs(o.kol) > 1e-9).sort((p, r2) => r2.kol - p.kol);
+      const lot = lots[0] ? lots[0].lot : "BEZ LOTA";
+      l.push({ art: x.a.id, lot, vrsta: "K", kol: x.raz, nap, grp });
+    }
+    for (const n of dodaj) l.push({ art: by[n.sifra].id, lot: "BEZ LOTA", vrsta: "K", kol: n.kol, nap, grp });
+    if (await sirDodajUnose(today(), l)) { toast("Usaglašeno: " + l.length + " korekcija."); S.zbir.uvoz = null; renderSirZbir(); }
+  }
+});
 
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;

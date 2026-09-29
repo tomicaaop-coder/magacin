@@ -10,7 +10,7 @@
   const FB_VERZIJA = "26.09.c";
   const MENIJI = [
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
-    ["sirovine", "Magacin sirovina", ["sunos", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
+    ["sirovine", "Magacin sirovina", ["sunos", "szbirno", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
     ["proizvodnja", "Proizvodnja", ["proizvodnja", "plan", "zalihe"]],
     ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "ngrupe"]],
     ["kontrola", "Kontrola", ["kamb"]],
