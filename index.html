@@ -13473,7 +13473,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "29.09.a";
+const APP_VERZIJA = "29.09.b";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13967,6 +13967,24 @@ function parseExcel(buf) {
 async function doImport() {
   if (!uvoz) return;
   const X = $("#xd").value; if (!X) { toast("Izaberi dan na koji se odnosi tabela."); return; }
+  // povezivanje po šifri: postojeći artikli zadržavaju naziv iz programa, za nove se bira šta se uvozi
+  {
+    const posSif = {}; for (const a of S.art) if (a.sifra) posSif[String(a.sifra)] = a;
+    const nove = uvoz.items.filter(it => it.sifra && !posSif[String(it.sifra)]);
+    if (nove.length) {
+      const izb = await izborNovihSifri(nove.map(it => ({ sifra: it.sifra, naziv: it.naziv, kol: uvoz.kol[it.id] })), "Artikli kojih nema u šifarniku", "Ove šifre su u tabeli, a nema ih u šifarniku programa. Označi koje treba uvesti – neoznačene se preskaču zajedno sa svojim stanjem.");
+      if (izb === null) return;
+      const set = new Set(izb.map(x => String(x.sifra)));
+      const izbaci = new Set(nove.filter(it => !set.has(String(it.sifra))).map(it => it.id));
+      if (izbaci.size) {
+        uvoz.items = uvoz.items.filter(it => !izbaci.has(it.id));
+        for (const id of izbaci) delete uvoz.kol[id];
+        uvoz.pro = uvoz.pro.filter(p => !izbaci.has(p[0]));
+      }
+    }
+    for (const it of uvoz.items) { const a = it.sifra && posSif[String(it.sifra)]; if (a) { it.naziv = a.naziv; if (a.grupa) it.grupa = a.grupa; } }
+    uvoz.grupe = [...new Set(uvoz.items.map(it => it.grupa).filter(Boolean))];
+  }
   const ok = await ask("Uvesti tabelu?", "<p>Uvozi se <b>" + uvoz.items.length + "</b> artikala i početno stanje za " + esc(dtxt(X)) + (uvoz.pro.length ? ", plus " + uvoz.pro.length + " stavki prometa tog dana" : "") + ".</p><p><b>Postojeći šifarnik i sav dosadašnji promet biće obrisani.</b></p>", "Uvezi", "Odustani", true);
   if (!ok) return;
   $("#xgo").disabled = true;
@@ -15467,10 +15485,11 @@ function sirUvozHtml() {
     '<p class="muted" style="font-size:12px;margin:8px 0 0">„Početno stanje“ briše sav promet sirovina i kreće od liste. „Uskladi“ čuva promet i knjiži korekcije po lotu tako da stanje bude jednako listi.</p></div>';
 }
 function sirUvozArtikli() { const U = S.sir.uvoz, art = {}; for (const k of U.izabrani) for (const [s, o] of Object.entries(U.mag[k].art)) { const x = art[s] || (art[s] = { n: o.n, mera: o.mera, lotovi: [] }); x.lotovi.push(...o.lotovi); } return art; }
-async function sirUvozSifarnik(art) {
+async function sirUvozSifarnik(art, dozvoljene) {
   const items = S.sir.art.map(x => Object.assign({}, x)), by = Object.fromEntries(items.map(x => [x.sifra, x]));
   for (const [s, o] of Object.entries(art)) {
-    if (by[s]) { if (o.mera) by[s].mera = o.mera; if (o.n && o.n.length > by[s].naziv.length) by[s].naziv = o.n; continue; }
+    if (by[s]) { if (o.mera && !by[s].mera) by[s].mera = o.mera; continue; }   // naziv iz programa se ne menja
+    if (dozvoljene && !dozvoljene.has(s)) continue;
     const it = { id: "s" + s, sifra: s, naziv: o.n, mera: o.mera || "KG", aktivan: true }; items.push(it); by[s] = it;
   }
   items.sort((a, b) => a.sifra.localeCompare(b.sifra));
@@ -15509,9 +15528,17 @@ $("#sstanjeBox").addEventListener("click", async e => {
 async function sirUvozPostavi(posle) {
   {
     const art = sirUvozArtikli();
+    const post0 = new Set(S.sir.art.map(x => String(x.sifra)));
+    const nove0 = Object.entries(art).filter(([s]) => !post0.has(s)).map(([s, o]) => ({ sifra: s, naziv: o.n, mera: o.mera, kol: r3(o.lotovi.reduce((a2, l) => a2 + l.st, 0)) }));
+    let dozv0 = null;
+    if (nove0.length) {
+      const izb0 = await izborNovihSifri(nove0, "Sirovine kojih nema u šifarniku", "Ove šifre su na lager listi, a nema ih u šifarniku programa. Označi koje treba dodati.");
+      if (izb0 === null) return;
+      dozv0 = new Set(izb0.map(x => x.sifra));
+    }
     if (S.sir.entries.length && !await ask("Postaviti novo početno stanje?", "<p>Stanje sirovina biće postavljeno prema listi, a <b>sav dosadašnji promet sirovina (" + S.sir.entries.length + " stavki) biće obrisan</b>.</p>", "Postavi", "Odustani", true)) return;
-    const by = await sirUvozSifarnik(art); if (!by) return;
-    const lotovi = []; for (const [s, o] of Object.entries(art)) for (const l of o.lotovi) if (Math.abs(l.st) > 1e-9) lotovi.push({ art: by[s].id, lot: l.lot, proiz: l.proiz, vaz: l.vaz, kol: l.st });
+    const by = await sirUvozSifarnik(art, dozv0); if (!by) return;
+    const lotovi = []; for (const [s, o] of Object.entries(art)) { if (!by[s]) continue; for (const l of o.lotovi) if (Math.abs(l.st) > 1e-9) lotovi.push({ art: by[s].id, lot: l.lot, proiz: l.proiz, vaz: l.vaz, kol: l.st }); }
     try {
       await write(async () => {
         for (const id of Object.keys(S.sir.docs)) await S.db.collection("sirunosi").doc(id).delete();
@@ -15524,8 +15551,17 @@ async function sirUvozPostavi(posle) {
 }
 async function sirUvozUskladi(posle) {
   {
-    const art = sirUvozArtikli(), by = await sirUvozSifarnik(art); if (!by) return;
-    const cilj = new Map(); for (const [s, o] of Object.entries(art)) for (const l of o.lotovi) cilj.set(sirKljuc(by[s].id, l.lot), Object.assign({ art: by[s].id }, l));
+    const art = sirUvozArtikli();
+    const post = new Set(S.sir.art.map(x => String(x.sifra)));
+    const nove = Object.entries(art).filter(([s]) => !post.has(s)).map(([s, o]) => ({ sifra: s, naziv: o.n, mera: o.mera, kol: r3(o.lotovi.reduce((a2, l) => a2 + l.st, 0)) }));
+    let dozvoljene = null;
+    if (nove.length) {
+      const izb = await izborNovihSifri(nove, "Sirovine kojih nema u šifarniku", "Ove šifre su na lager listi, a nema ih u šifarniku programa. Označi koje treba dodati – neoznačene se preskaču, a njihovo stanje se ne knjiži.");
+      if (izb === null) return;
+      dozvoljene = new Set(izb.map(x => x.sifra));
+    }
+    const by = await sirUvozSifarnik(art, dozvoljene); if (!by) return;
+    const cilj = new Map(); for (const [s, o] of Object.entries(art)) { if (!by[s]) continue; for (const l of o.lotovi) cilj.set(sirKljuc(by[s].id, l.lot), Object.assign({ art: by[s].id }, l)); }
     const sad = sirStanje(), l = [], grp = "us" + rid(), nap = "Usklađivanje sa ERP lager listom po serijama";
     const artIzListe = new Set(Object.values(by).filter(x => art[x.sifra]).map(x => x.id));
     for (const [k, c] of cilj) { const o = sad.get(k), raz = r3(c.st - (o ? o.kol : 0)); if (Math.abs(raz) > SIR_TOL) l.push({ art: c.art, lot: c.lot, vrsta: "K", kol: raz, proiz: c.proiz, vaz: c.vaz, nap, grp }); }
@@ -16381,7 +16417,12 @@ $("#szbirBox").addEventListener("click", async e => {
   if (t.id === "zbKnjizi") {
     const { red, nema } = zbirPoredjenje(), raz = red.filter(x => Math.abs(x.raz) > SIR_TOL);
     if (!raz.length) return;
-    const dodaj = Z.uvoz.nula ? [] : nema.filter(n => Math.abs(n.kol) > 1e-9);
+    let dodaj = Z.uvoz.nula ? [] : nema.filter(n => Math.abs(n.kol) > 1e-9);
+    if (dodaj.length) {
+      const izb = await izborNovihSifri(dodaj.map(n => ({ sifra: n.sifra, naziv: n.naziv, kol: n.kol })), "Sirovine kojih nema u šifarniku", "Ove šifre su u tabeli magacionera, a nema ih u šifarniku programa. Označi koje treba dodati – neoznačene se preskaču.");
+      if (izb === null) return;
+      const set = new Set(izb.map(x => x.sifra)); dodaj = dodaj.filter(n => set.has(n.sifra));
+    }
     if (!await ask("Proknjižiti razlike?", "<p>Korekcija za <b>" + raz.length + "</b> sirovina" + (dodaj.length ? " i dodavanje <b>" + dodaj.length + "</b> novih sirovina iz tabele" : "") + ".</p><p class='muted'>Razlika se knjiži na lot sa najvećim stanjem; ako sirovina nema lot, koristi se lot <b>BEZ LOTA</b>. Korekcije se vide u prometu i mogu se stornirati.</p>", "Proknjiži")) return;
     let by = {}; for (const a of S.sir.art) by[a.sifra] = a;
     if (dodaj.length) {
@@ -16400,6 +16441,23 @@ $("#szbirBox").addEventListener("click", async e => {
     if (await sirDodajUnose(today(), l)) { toast("Usaglašeno: " + l.length + " korekcija."); S.zbir.uvoz = null; renderSirZbir(); }
   }
 });
+
+
+/* ---------- izbor artikala kojih nema u šifarniku (pre svakog uvoza) ---------- */
+async function izborNovihSifri(lista, naslov, uvod) {
+  if (!lista.length) return [];
+  const red = (n, i) => '<tr><td style="text-align:center"><input type="checkbox" class="nvS" data-i="' + i + '" checked></td><td class="sif">' + esc(n.sifra) + "</td><td>" + esc(n.naziv || "") + "</td><td>" + esc(n.mera || "") + '</td><td class="num">' + esc(n.kol != null ? fmt(n.kol, false) : "") + "</td></tr>";
+  const html = "<p>" + (uvod || "Ove šifre postoje u fajlu, a nema ih u šifarniku programa. Označi koje treba uvesti – neoznačene se preskaču, a njihovo stanje se ne knjiži.") + "</p>" +
+    '<div class="toolbar" style="margin:0 0 8px"><label class="chk"><input type="checkbox" id="nvAll" checked> označi sve (' + lista.length + ")</label></div>" +
+    '<div class="tbl-wrap" style="max-height:360px"><table><thead><tr><th style="width:34px"></th><th>Šifra</th><th>Naziv iz fajla</th><th>JM</th><th class="num">Stanje</th></tr></thead><tbody>' +
+    lista.map(red).join("") + "</tbody></table></div>";
+  const d = $("#dlg"); d.style.width = "min(900px, 96vw)";
+  const ok = await ask(naslov || "Nove šifre u fajlu", html, "Nastavi", "Odustani");
+  const izb = ok ? [...$$("#dlg .nvS")].filter(x => x.checked).map(x => lista[+x.dataset.i]) : null;
+  d.style.width = "";
+  return izb;
+}
+document.addEventListener("change", e => { if (e.target.id === "nvAll") $$("#dlg .nvS").forEach(x => { x.checked = e.target.checked; }); });
 
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
@@ -17238,7 +17296,13 @@ async function erpUcitaj(file) {
 }
 async function erpKnjizi() {
   const E = S.erp, { red, nove } = erpPoredjenje();
-  const raz = red.filter(x => Math.abs(x.raz) > 1e-9), dod = E.dodaj ? nove : [];
+  const raz = red.filter(x => Math.abs(x.raz) > 1e-9);
+  let dod = E.dodaj ? nove : [];
+  if (dod.length) {
+    const izb = await izborNovihSifri(dod.map(n => ({ sifra: n.sifra, naziv: n.naziv, mera: n.mera, kol: n.q })), "Artikli kojih nema u šifarniku", "Ove šifre su na ERP lager listi, a nema ih u šifarniku programa. Označi koje treba dodati – neoznačene se preskaču.");
+    if (izb === null) return;
+    const set = new Set(izb.map(x => x.sifra)); dod = dod.filter(n => set.has(n.sifra));
+  }
   const mags = [...E.izabrani].sort().join(", ");
   const ok = await ask("Proknjižiti razlike?", "<p>Korekcija za <b>" + raz.length + "</b> artikala" + (dod.length ? " i dodavanje <b>" + dod.length + "</b> novih artikala sa stanjem iz ERP-a" : "") + ", na dan " + esc(dtxt(E.datum)) + ".</p><p>Posle knjiženja stanje u aplikaciji je jednako ERP lager listi za magacine " + esc(mags) + ".</p><p class='muted'>Usklađivanje se čuva u spisku popisa, a korekcije mogu da se storniraju iz prometa.</p>", "Proknjiži");
   if (!ok) return;
