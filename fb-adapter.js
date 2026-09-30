@@ -13,7 +13,7 @@
     ["sirovine", "Magacin sirovina", ["sunos", "szbirno", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
     ["proizvodnja", "Proizvodnja", ["proizvodnja", "plan", "zalihe"]],
     ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "ngrupe"]],
-    ["kontrola", "Kontrola", ["kamb"]],
+    ["kontrola", "Kontrola", ["kamb", "kgal"]],
     ["kuvaona", "Kuvaona", ["izdavanje"]],
     ["artikli", "Artikli", ["artikli"]]
   ];

@@ -496,6 +496,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
 
   <!-- KONTROLA -->
   <section class="view" id="v-kamb"><div id="kambBox"></div></section>
+  <section class="view" id="v-kgal"><div id="kgalBox"></div></section>
 
   <!-- SIROVINE -->
   <section class="view" id="v-sunos"><div id="sunosBox"></div></section>
@@ -13473,7 +13474,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "29.09.d";
+const APP_VERZIJA = "29.09.f";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14031,7 +14032,7 @@ function renderAll() {
   else if (v === "v-zalihe") renderZalihe();
   else if (v === "v-uskl" || v === "v-usklsir") { const bx = v === "v-uskl" ? "#usklBox" : "#usklSirBox", ae = document.activeElement; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderUskl(v === "v-usklsir" ? "sir" : "amb"); }
   else if (v === "v-sprijem") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#sprijemBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirPrijem(); }
-  else if (v === "v-kamb") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#kambBox") && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
+  else if (v === "v-kamb" || v === "v-kgal") { const ae = document.activeElement, bx = v === "v-kgal" ? "#kgalBox" : "#kambBox"; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
   else if (v === "v-szbirno") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#szbirBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirZbir(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
@@ -14051,7 +14052,7 @@ const GRUPE = {
   sirovine: [["sunos", "Unos"], ["szbirno", "Zbirno stanje"], ["sstanje", "Stanje po lotovima"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan"], ["zalihe", "Zalihe"]],
   nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["analitika", "Analitika"], ["ngrupe", "Grupe nabavke"]],
-  kontrola: [["kamb", "Evidencija prijemnog kontrolisanja"]],
+  kontrola: [["kamb", "Ambalaža"], ["kgal", "Galenika"]],
   kuvaona: [["izdavanje", "Etikete izdavanja materijala"]],
   artikli: [["artikli", "Artikli"]]
 };
@@ -15723,6 +15724,16 @@ const ODLUKE = [["Odgovara", "ok"], ["Uslovno primljeno", "usl"], ["Neusaglašen
 function konKlasa(o) { const x = ODLUKE.find(y => y[0] === o); return x ? "k-" + x[1] : ""; }
 function konDocId(datum) { return "amb-" + String(datum || today()).slice(0, 7); }
 function konKbBroj(kb) { const m = String(kb || "").match(/\/(\d+)\s*$/); return m ? parseInt(m[1], 10) : 0; }
+// Galenika: šifre 250xxx i proizvodi sa B3HA / Pantenol Body / Panthenol face mask / Pantenol maska
+function konGalenika(r) {
+  if (String(r.sifra || "").startsWith("250")) return true;
+  const n = norm(r.naziv || "");
+  return /b3ha/.test(n) || /galenika/.test(n) || /jekoderm/.test(n) || /gingival/.test(n) || /easy skin/.test(n)
+    || /pant[eh]?h?enol (body|bodi)/.test(n) || /panthenol face mask/.test(n) || /(pantenol|panthenol) maska/.test(n)
+    || /body lotion/.test(n);
+}
+function konTip() { return document.querySelector("#v-kgal.on") ? "gal" : "amb"; }
+function konBox() { return konTip() === "gal" ? $("#kgalBox") : $("#kambBox"); }
 function konRedovi() {
   const out = [], vezani = new Set();
   for (const [docId, d] of Object.entries(S.kon.docs)) for (const r of (d.stavke || [])) { out.push(Object.assign({ docId }, r)); if (r.ent) vezani.add(r.ent); }
@@ -15785,7 +15796,7 @@ async function konPoStampi(datum, artId, kb, lot) {
   if (Object.keys(p).length) await konIzmeni(r, p);
 }
 function renderKontrola() {
-  const box = $("#kambBox"), F = S.kon.f, R = konRedovi();
+  const tip = konTip(), box = konBox(), F = S.kon.f, R = konRedovi().filter(r => (konGalenika(r) ? "gal" : "amb") === tip);
   const meseci = [...new Set(R.map(r => (r.datum || "").slice(0, 7)).filter(Boolean))].sort().reverse();
   const q = norm(F.q).split(" ").filter(Boolean);
   const vid = R.filter(r => (!F.mes || (r.datum || "").startsWith(F.mes)) &&
@@ -15795,7 +15806,7 @@ function renderKontrola() {
   const br = o => R.filter(r => o === "-" ? !r.odluka : r.odluka === o).length;
   const otvNal = R.filter(r => r.nalog && r.nalog.status === "otvoren").length, uzorkNal = R.filter(r => r.nalog && r.nalog.status === "uzorkovano").length;
   const opcije = sel => '<option value=""' + (sel ? "" : " selected") + ">–</option>" + ODLUKE.map(([o]) => "<option" + (sel === o ? " selected" : "") + ">" + o + "</option>").join("");
-  box.innerHTML = '<div class="toolbar"><h1>Evidencija prijemnog kontrolisanja – ambalaža</h1><button class="btn" id="kNovi">Dodaj red ručno</button><button class="btn" id="kDupl">Duplikati</button><button class="btn dl" id="kXls">Preuzmi Excel</button>' + (konBezOdluke().length ? '<button class="btn danger" id="kCisti" title="Uklanja uvezene redove iz stare evidencije koji nemaju odluku">Ukloni uvezene redove bez odluke (' + konBezOdluke().length + ")</button>" : "") + "</div>" +
+  box.innerHTML = '<div class="toolbar"><h1>Evidencija prijemnog kontrolisanja – ' + (tip === "gal" ? "Galenika" : "ambalaža") + '</h1><button class="btn" id="kNovi">Dodaj red ručno</button><button class="btn" id="kDupl">Duplikati</button><button class="btn dl" id="kXls">Preuzmi Excel</button>' + (konBezOdluke().length ? '<button class="btn danger" id="kCisti" title="Uklanja uvezene redove iz stare evidencije koji nemaju odluku">Ukloni uvezene redove bez odluke (' + konBezOdluke().length + ")</button>" : "") + "</div>" +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">' +
     [["Ukupno prijema", R.length, ""], ["Odgovara", br("Odgovara"), "k-ok"], ["Uslovno primljeno", br("Uslovno primljeno"), "k-usl"], ["Neusaglašeno", br("Neusaglašeno"), "k-neu"], ["Uzorkovano (u ispitivanju)", uzorkNal, uzorkNal ? "k-uzo" : ""], ["Nalozi bez uzorkovanja", otvNal, otvNal ? "k-nal" : ""]].map(([l, v, c]) => '<div class="card ' + c + '" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="kQ" type="search" value="' + esc(F.q) + '" placeholder="naziv, šifra, kontrolni broj, br. prijemnice, proizvođač, lot"></label>' +
@@ -15823,14 +15834,15 @@ function renderKontrola() {
       '<td class="num" style="white-space:nowrap">' + (r.storniran ? "" : '<button class="x" data-kizm="1" title="Izmeni artikal / količinu" aria-label="Izmeni">✎</button>') + (r.virt ? "" : '<button class="x" data-kdel="1" title="Obriši red" aria-label="Obriši">×</button>') + "</td></tr>"; }).join("")
       : '<tr class="empty-row"><td colspan="11">Nema redova za izabrani filter.</td></tr>') + "</tbody></table></div>" +
     '<p class="muted" style="font-size:12px">Svaki ulaz ambalaže sam se pojavi ovde (oznaka „novi ulaz“). Štampa QP18 etikete upisuje kontrolni broj i lot i otvara <b>nalog laboratoriji</b>. ✎ menja artikal ili količinu – izmena se knjiži i na ulazu i u stanju, uz zapis ko je izmenio.</p>';
-  if (!S.downloads) $$("#kambBox .dl").forEach(b => b.hidden = true);
+  if (!S.downloads) $$("#" + box.id + " .dl").forEach(b => b.hidden = true);
   if (S.kon.fokus) { const i = $("#kQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); S.kon.fokus = false; }
 }
 function konRedPoId(id) { return konRedovi().find(r => r.id === id); }
 
 /* ---------- pronalaženje duplikata u evidenciji ---------- */
 function konDuplikati() {
-  const R = konRedovi().filter(r => !r.virt);
+  const tipD = konTip();
+  const R = konRedovi().filter(r => !r.virt && (konGalenika(r) ? "gal" : "amb") === tipD);
   const gr = {}, dod = (k, r) => { if (!k) return; (gr[k] = gr[k] || []).push(r); };
   for (const r of R) {
     if (r.kb) dod("kb|" + String(r.kb).replace(/\s/g, "").toUpperCase(), r);
@@ -15959,8 +15971,8 @@ async function konNalogDlg(r) {
   if (await konIzmeni(r, polja)) { toast(odl ? "Nalog zatvoren – odluka: " + odl : "Nalog sačuvan."); renderKontrola(); }
 }
 
-$("#kambBox").addEventListener("input", e => { if (e.target.id === "kQ") { S.kon.f.q = e.target.value; S.kon.fokus = true; renderKontrola(); } });
-$("#kambBox").addEventListener("change", async e => {
+["#kambBox", "#kgalBox"].forEach(bx => $(bx).addEventListener("input", e => { if (e.target.id === "kQ") { S.kon.f.q = e.target.value; S.kon.fokus = true; renderKontrola(); } }));
+["#kambBox", "#kgalBox"].forEach(bx => $(bx).addEventListener("change", async e => {
   const t = e.target, F = S.kon.f;
   if (t.id === "kMes") { F.mes = t.value; renderKontrola(); return; }
   if (t.id === "kOdl") { F.odl = t.value; renderKontrola(); return; }
@@ -15972,9 +15984,9 @@ $("#kambBox").addEventListener("change", async e => {
     if (v && r.nalog && r.nalog.status === "otvoren") { toast("Nalog nije uzorkovan – otvori nalog laboratoriji i označi UZORKOVANO."); renderKontrola(); return; }
     if (r.provera) polja.provera = ""; if (r.nalog) polja.nalog = Object.assign({}, r.nalog, v ? { status: "zatvoren", zuid: S.uid || "anon", zime: mojeIme(), zt: new Date().toISOString() } : { status: "uzorkovano" }); }
   if (await konIzmeni(r, polja)) { if (f === "odluka") toast("Odluka: " + (v || "–") + " – " + r.naziv); renderKontrola(); }
-});
-$("#kambBox").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.kf) { e.preventDefault(); e.target.blur(); } });
-$("#kambBox").addEventListener("click", async e => {
+}));
+["#kambBox", "#kgalBox"].forEach(bx => $(bx).addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.kf) { e.preventDefault(); e.target.blur(); } }));
+["#kambBox", "#kgalBox"].forEach(bx => $(bx).addEventListener("click", async e => {
   const t = e.target, tr = t.closest("[data-kr]"), r = tr ? konRedPoId(tr.dataset.kr) : null;
   if (r && t.closest("[data-knal]")) { konNalogDlg(r); return; }
   if (r && t.dataset.kizm) { konKorekcija(r); return; }
@@ -15994,8 +16006,9 @@ $("#kambBox").addEventListener("click", async e => {
     toast("Uklonjeno redova: " + l.length); renderKontrola(); return;
   }
   if (t.id === "kXls") {
-    const R = konRedovi().slice().reverse();
-    saveXlsx("Evidencija prijemnog kontrolisanja ambalaza " + today() + ".xlsx", [["Ambalaža", [["Godina", "Br. prijemnice", "Kontrolni broj", "Naziv materijala", "Količina", "JM", "Proizvođač", "Datum prijema", "Šifra", "Odluka", "Napomena", "Nalog laboratoriji", "Izmene"]]
+    const R = konRedovi().filter(r => (konGalenika(r) ? "gal" : "amb") === konTip()).slice().reverse();
+    const tipE = konTip();
+    saveXlsx("Evidencija prijemnog kontrolisanja " + (tipE === "gal" ? "Galenika " : "ambalaza ") + today() + ".xlsx", [[tipE === "gal" ? "Galenika" : "Ambalaža", [["Godina", "Br. prijemnice", "Kontrolni broj", "Naziv materijala", "Količina", "JM", "Proizvođač", "Datum prijema", "Šifra", "Odluka", "Napomena", "Nalog laboratoriji", "Izmene"]]
       .concat(R.map(r => [r.godina || "", r.pr || "", r.kb || "", r.naziv, r.kol != null ? r.kol : "", r.jm || "", r.proiz || "", r.datum ? dtxt(r.datum) : "", r.sifra || "", r.odluka || "", r.nap || "", r.nalog ? (r.nalog.status === "zatvoren" ? "zatvoren" : "otvoren") + (r.nalog.rez ? " – " + r.nalog.rez : "") : "", (r.izmene || []).map(z => dtxt(z.t.slice(0, 10)) + " " + who(z.uid) + ": " + z.opis).join("; ")])), [7, 13, 13, 52, 12, 6, 22, 14, 13, 9, 19, 34, 24, 40]]]);
     return;
   }
@@ -16014,7 +16027,7 @@ $("#kambBox").addEventListener("click", async e => {
     const docId = konDocId(dat), cur = ((S.kon.docs[docId] || {}).stavke || []).concat([o]);
     if (await konSacuvaj(docId, cur)) { toast("Dodat red " + o.kb); renderKontrola(); }
   }
-});
+}));
 
 
 /* =====================================================================
