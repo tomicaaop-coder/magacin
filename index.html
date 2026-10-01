@@ -332,7 +332,7 @@ body.samoPregled main input[type=file]{ display:none; }
 .bzArt .muted{ font-size:12px; }
 .bzNazad{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:9px; width:34px; height:34px; font-size:22px; line-height:1; cursor:pointer; flex:none; }
 .bzEv{ font-size:13px; color:var(--muted); margin-bottom:8px; }
-.bzKol{ display:grid; grid-template-columns:1fr auto; gap:8px; }
+.bzKol{ display:grid; grid-template-columns:1fr auto auto; gap:8px; }
 .bzKol input{ font:700 24px var(--head); text-align:right; padding:12px 14px; }
 .bzKol .btn{ padding:0 18px; font-size:17px; }
 .bzBrzo{ display:flex; gap:8px; margin-top:8px; }
@@ -340,8 +340,25 @@ body.samoPregled main input[type=file]{ display:none; }
 .bzLog{ border-top:1px solid var(--line-2); padding:8px 14px; font-size:12px; color:var(--muted); max-height:96px; overflow:auto; }
 .bzLog b{ color:var(--ink); }
 #bzMic.on{ color:var(--izlaz); }
-@media (max-width: 760px){ #bzWrap{ inset:auto 8px calc(74px + env(safe-area-inset-bottom,0px)) 8px; width:auto; } .bzRez{ max-height:38vh; } }
+@media (max-width: 760px){ #bzWrap{ inset:auto 8px calc(12px + env(safe-area-inset-bottom,0px)) 8px; width:auto; } .bzRez{ max-height:38vh; } }
 @media print{ #bzWrap{ display:none !important; } }
+
+.poNap{ font-size:11px; color:#B8860B; text-align:right; margin-top:2px; line-height:1.3; }
+
+/* ---------- kalkulator količina ---------- */
+.kalkPolje{ position:relative; display:block; }
+.kalkPolje .inp{ width:100%; padding-right:44px; }
+.kalkBtn{ position:absolute; right:6px; top:50%; transform:translateY(-50%); width:32px; height:32px; border:1px solid var(--line); background:var(--surface); border-radius:8px; cursor:pointer; font-size:15px; line-height:1; }
+.kalkBtn:hover{ border-color:var(--brand); }
+td .kalkBtn{ position:static; transform:none; margin-left:4px; width:28px; height:28px; font-size:13px; }
+.kalkZbir{ display:flex; align-items:baseline; justify-content:space-between; border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:10px; background:var(--brand-soft); }
+.kalkZbir b{ font:700 30px var(--head); }
+.kalkUnos{ display:grid; grid-template-columns:1fr auto; gap:8px; }
+.kalkUnos input{ font:600 20px var(--head); text-align:right; }
+.kalkHint{ font-size:12px; color:var(--muted); margin-top:6px; }
+.kalkLista{ list-style:none; margin:10px 0 0; padding:0; max-height:220px; overflow:auto; }
+.kalkLista li{ display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid var(--line-2); }
+.kalkLista li b{ text-align:right; font:600 17px var(--head); }
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -360,16 +377,21 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
 
 #botnav{ display:none; }
 @media (max-width: 760px){
-  body{ padding-bottom:calc(66px + env(safe-area-inset-bottom,0px)); }
-  #botnav{ display:flex; position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--surface); border-top:1px solid var(--line); padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px)); }
+  body{ padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); }
+  #botnav{ display:none !important; position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--surface); border-top:1px solid var(--line); padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px)); }
   #botnav button{ flex:1; border:0; background:none; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px; font-size:11px; font-weight:600; color:var(--muted); border-radius:8px; }
   #botnav button[aria-current="true"]{ color:var(--brand); background:var(--brand-soft); }
-  body:not(.mobmeni) nav.tabs, body:not(.mobmeni) .subnav{ display:none; }
+  nav.tabs{ display:flex; overflow-x:auto; gap:4px; padding:6px 10px 0; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  nav.tabs::-webkit-scrollbar{ display:none; }
+  nav.tabs button{ flex:0 0 auto; font-size:14px; padding:8px 12px; }
+  .subnav{ display:flex; overflow-x:auto; gap:4px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .subnav::-webkit-scrollbar{ display:none; }
+  .subnav button{ flex:0 0 auto; font-size:13px; padding:7px 11px; }
   .bar-in{ padding:8px 12px 0; gap:10px; }
   .brand img{ height:24px; } .brand-name{ font-size:17px; }
   .who{ padding-bottom:8px; }
   main{ padding:12px; }
-  .toast{ bottom:calc(84px + env(safe-area-inset-bottom,0px)); }
+  .toast{ bottom:calc(24px + env(safe-area-inset-bottom,0px)); }
   .toolbar h1{ font-size:22px; width:100%; }
   .search input{ font-size:18px; }
   .hint{ display:none; }
@@ -13480,7 +13502,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "30.09.a";
+const APP_VERZIJA = "01.10.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13689,7 +13711,7 @@ function renderTicket() {
     '<div class="stock"><div class="lbl">Na stanju</div><div class="val ' + (st < 0 || (a.min > 0 && st < a.min) ? "neg" : "") + '">' + esc(fmt(st, false)) + "</div>" + zalihaInfo(a) + "</div></div>" +
     '<div class="ticket-body">' +
     '<div class="seg" role="group" aria-label="Vrsta">' + ["U", "I", "P"].map(v => '<button type="button" data-v="' + v + '" aria-pressed="' + (S.vrsta === v) + '">' + VR[v] + "</button>").join("") + "</div>" +
-    '<div class="row2"><label class="fld">Količina<input class="inp qty" id="qty" inputmode="decimal" autocomplete="off"></label>' +
+    '<div class="row2"><label class="fld">Količina<span class="kalkPolje"><input class="inp qty" id="qty" inputmode="decimal" autocomplete="off"><button type="button" class="kalkBtn" data-kalk="#qty" title="Kalkulator – saberi pakete" aria-label="Kalkulator">🧮</button></span></label>' +
     '<label class="fld">Napomena (nije obavezno)<input class="inp" id="nap" autocomplete="off" placeholder="npr. broj otpremnice"></label></div>' +
     (S.vrsta === "U" ? '<div class="row2" style="grid-template-columns:1fr 200px"><label class="fld">Dobavljač<select class="inp" id="tDob">' + dobOptions(S.tDob, dobavljaciArtikla(a)) + '</select></label>' +
       '<label class="fld">Nabavna cena po ' + esc(jm(a)) + ' (RSD)<input class="inp" id="tCena" inputmode="decimal" autocomplete="off" placeholder="nije obavezno"></label></div><div class="after" id="tCenaInfo"></div>' : "") +
@@ -14078,7 +14100,7 @@ function renderNav(view) {
   const g = grupaOd(view); poslednji[g] = view;
   $$("nav.tabs button").forEach(b => { b.setAttribute("aria-selected", b.dataset.grp === g); b.hidden = !GRUPE[b.dataset.grp].some(([v]) => smeVideti(v)); });
   const sub = GRUPE[g].filter(([v]) => smeVideti(v));
-  const bn = $("#botnav");
+  const bn = null;
   if (bn) bn.innerHTML = MOB.filter(([v]) => smeVideti(v)).map(([v, l, d]) => '<button type="button" data-view="' + v + '" aria-current="' + (v === view) + '"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg><span>' + l + "</span></button>").join("") +
     '<button type="button" id="bnMeni" aria-expanded="' + document.body.classList.contains("mobmeni") + '"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span>Sve</span></button>';
   $("#subnav").innerHTML = sub.length > 1 ? sub.map(([v, l]) => '<button role="tab" data-view="' + v + '" aria-selected="' + (v === view) + '">' + l + (v === "zalihe" && S.zBdg ? '<span class="bdg">' + S.zBdg + "</span>" : "") + "</button>").join("") : "";
@@ -14106,6 +14128,8 @@ document.addEventListener("click", e => {
 window.APP_SHOW = v => show(v);
 window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prava
 window.__trebTest = (l, sir) => trebIzlazDlg(stavkeIzTeksta(l, sir), sir);
+window.__unos = (art, vrsta, kol, nap) => dodajUnose(today(), [{ art, vrsta, kol, nap }]);
+window.__sirUnos = (art, lot, vrsta, kol, nap) => sirDodajUnose(today(), [{ art, lot, vrsta, kol, nap }]);
 window.__trebParse = (l, sir) => stavkeIzTeksta(l, sir);
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
 const q = $("#q");
@@ -14479,15 +14503,16 @@ function renderPopis() {
   const qv = ($("#poQ") || {}).value || "";
   const svi = popisArtikli();
   let izbr = 0, sraz = 0;
-  for (const a of svi) { const x = st[a.id]; if (x && x.kol != null) { izbr++; if (Math.abs(x.kol - r[a.id].s) > 1e-9) sraz++; } }
+  for (const a of svi) { const p = popisIzbrojano(a); if (p) { izbr++; if (Math.abs(p.kol - r[a.id].s) > 1e-9) sraz++; } }
   let g = null, rows = "";
   for (const a of svi) {
-    const x = st[a.id] || {}; const counted = x.kol != null;
+    const x = st[a.id] || {}; const pi = popisIzbrojano(a), counted = !!pi;
     if (samo && counted) continue;
     if (q.length && !q.every(w => (a._n || (a._n = norm(a.sifra + " " + a.naziv + " " + a.grupa))).includes(w))) continue;
     if (a.grupa !== g) { g = a.grupa; rows += '<tr class="grp"><td colspan="6">' + esc(g) + "</td></tr>"; }
-    const ev = r[a.id].s, raz = counted ? r3(x.kol - ev) : null;
-    rows += "<tr><td class=\"sif\">" + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="num">' + esc(fmt(ev, false)) + '</td><td class="num"><input class="inp poin" data-po="' + a.id + '" inputmode="decimal" autocomplete="off" value="' + (counted ? esc(String(x.kol).replace(".", ",")) : "") + '"></td>' +
+    const ev = r[a.id].s, raz = counted ? r3(pi.kol - ev) : null;
+    rows += "<tr><td class=\"sif\">" + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="num">' + esc(fmt(ev, false)) + '</td><td class="num"><input class="inp poin" data-po="' + a.id + '" inputmode="decimal" autocomplete="off" value="' + (counted ? esc(String(pi.kol).replace(".", ",")) : "") + '"><button type="button" class="kalkBtn" data-kalk="[data-po=\'' + a.id + '\']" title="Kalkulator" aria-label="Kalkulator">🧮</button>' + (counted ? popisNapomena(pi) : "") + "</td>"
+       +
       '<td class="num ' + (raz > 0 ? "raz-p" : raz < 0 ? "raz-m" : "") + '" data-raz="' + a.id + '">' + (raz === null ? "" : raz === 0 ? "✓" : (raz > 0 ? "+" : "") + esc(fmt(raz, false))) + "</td>" +
       '<td><select class="inp" data-por="' + a.id + '" style="padding:4px 6px"' + (raz ? "" : " hidden") + ">" + ["Kalo", "Oštećenje", "Greška u knjiženju", "Ostalo"].map(o => "<option" + ((x.razlog || "Kalo") === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></td></tr>";
   }
@@ -14500,9 +14525,36 @@ function renderPopis() {
   if (foc) { const f = document.querySelector('[data-po="' + foc + '"]'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }
   else if (S.poFocusQ) { $("#poQ").focus(); S.poFocusQ = false; }
 }
+
+/* promet artikla posle trenutka brojanja – menja i evidenciju i izbrojano */
+function popisPromet(artId, odT) {
+  if (!odT) return { ul: 0, iz: 0, neto: 0 };
+  let ul = 0, iz = 0;
+  for (const e of S.entries) {
+    if (e.art !== artId || e.storno || !e.t || e.t <= odT) continue;
+    if (e.vrsta === "U") ul = r3(ul + e.kol);
+    else if (e.vrsta === "I") iz = r3(iz + e.kol);
+    else if (e.vrsta === "P") ul = r3(ul + e.kol);
+  }
+  return { ul, iz, neto: r3(ul - iz) };
+}
+// izbrojana količina ispravljena za promet nastao posle brojanja
+function popisIzbrojano(a) {
+  const x = (S.popis.stavke || {})[a.id];
+  if (!x || x.kol == null) return null;
+  const p = popisPromet(a.id, x.t);
+  return { osn: x.kol, p, kol: r3(x.kol + p.neto), t: x.t, razlog: x.razlog };
+}
+function popisNapomena(p) {
+  if (!p || (!p.p.ul && !p.p.iz)) return "";
+  const d = [];
+  if (p.p.ul) d.push("primljeno " + fmt(p.p.ul, false));
+  if (p.p.iz) d.push("trebovano " + fmt(p.p.iz, false));
+  return '<div class="poNap">' + d.join(" · ") + " u toku popisa</div>";
+}
 function updPoSum() {
-  const r = obracun(S.popis.datum), st = S.popis.stavke || {}; let iz = 0, sr = 0;
-  for (const a of popisArtikli()) { const x = st[a.id]; if (x && x.kol != null) { iz++; if (Math.abs(x.kol - r[a.id].s) > 1e-9) sr++; } }
+  const r = obracun(S.popis.datum); let iz = 0, sr = 0;
+  for (const a of popisArtikli()) { const p = popisIzbrojano(a); if (p) { iz++; if (Math.abs(p.kol - r[a.id].s) > 1e-9) sr++; } }
   if ($("#poIz")) { $("#poIz").textContent = iz; $("#poSr").textContent = sr; }
 }
 async function popisUpis(id, patch) {
@@ -14523,7 +14575,7 @@ $("#popisBox").addEventListener("change", e => {
   const t = e.target;
 
   const id = e.target.dataset.po;
-  if (id) { const v = e.target.value.trim(), k = parseQty(v); popisUpis(id, { kol: v && !isNaN(k) && k >= 0 ? r3(k) : null }); return; }
+  if (id) { const v = e.target.value.trim(), k = parseQty(v); popisUpis(id, v && !isNaN(k) && k >= 0 ? { kol: r3(k), t: new Date().toISOString() } : { kol: null, t: null }); renderPopis(); return; }
   const rid_ = e.target.dataset.por; if (rid_) popisUpis(rid_, { razlog: e.target.value });
 });
 $("#popisBox").addEventListener("keydown", e => {
@@ -14545,9 +14597,10 @@ $("#popisBox").addEventListener("click", async e => {
     const stavke = [], lista = [], grp = "po" + rid();
     let plus = 0, minus = 0;
     for (const a of popisArtikli()) {
-      const x = st[a.id]; if (!x || x.kol == null) continue;
-      const ev = r[a.id].s, raz = r3(x.kol - ev), razlog = raz ? (x.razlog || "Kalo") : "";
-      stavke.push({ art: a.id, sifra: a.sifra, naziv: a.naziv, evid: ev, izbr: x.kol, raz, razlog });
+      const p = popisIzbrojano(a); if (!p) continue;
+      const ev = r[a.id].s, raz = r3(p.kol - ev), razlog = raz ? (p.razlog || "Kalo") : "";
+      stavke.push({ art: a.id, sifra: a.sifra, naziv: a.naziv, evid: ev, izbr: p.kol, raz, razlog,
+        osn: p.osn !== p.kol ? p.osn : undefined, ulaz: p.p.ul || undefined, izlaz: p.p.iz || undefined });
       if (raz) { lista.push({ art: a.id, vrsta: "K", kol: raz, nap: "Popis " + dtxt(P.datum) + " – " + razlog, grp }); if (raz > 0) plus++; else minus++; }
     }
     if (!stavke.length) { toast("Nije upisana nijedna izbrojana količina."); return; }
@@ -15381,10 +15434,10 @@ function renderSirUnos() {
       (lot.length ? lot.filter(o => Math.abs(o.kol) > 1e-9 || X !== "I").map(o => '<tr data-slot="' + esc(o.lot) + '" style="cursor:pointer' + (S.sir.lotSel === o.lot ? ";background:var(--brand-soft)" : "") + '"><td><b>' + esc(o.lot) + "</b></td><td>" + (o.proiz ? esc(dtxt(o.proiz)) : "–") + '</td><td class="' + rokKlasa(o.vaz) + '">' + esc(rokTxt(o.vaz)) + '</td><td class="num">' + esc(fmt(o.kol, false)) + "</td></tr>").join("") : '<tr class="empty-row"><td colspan="4">Nema lotova.</td></tr>') + "</tbody></table></div>" +
       '<div class="seg" role="radiogroup" style="display:flex;gap:6px;margin-bottom:10px">' + ["U", "I", "K"].map(v => '<button type="button" class="btn' + (X === v ? " primary" : "") + '" data-sv="' + v + '" style="flex:1">' + SVR[v] + "</button>").join("") + "</div>" +
       '<div class="form">' +
-      (X === "U" ? '<div class="row2"><label class="fld">Lot / serija<input class="inp" id="sLot" value="' + esc(S.sir.lotSel && !lot.some(o => o.lot === S.sir.lotSel && o.kol > 0) ? S.sir.lotSel : "") + '"></label><label class="fld">Količina (' + esc(a.mera || "") + ')<input class="inp" id="sKol" inputmode="decimal"></label></div>' +
+      (X === "U" ? '<div class="row2"><label class="fld">Lot / serija<input class="inp" id="sLot" value="' + esc(S.sir.lotSel && !lot.some(o => o.lot === S.sir.lotSel && o.kol > 0) ? S.sir.lotSel : "") + '"></label><label class="fld">Količina (' + esc(a.mera || "") + ')<span class="kalkPolje"><input class="inp" id="sKol" inputmode="decimal"><button type="button" class="kalkBtn" data-kalk="#sKol" title="Kalkulator – saberi pakete" aria-label="Kalkulator">🧮</button></span></label></div>' +
         '<div class="row2"><label class="fld">Datum proizvodnje<input class="inp" type="date" id="sPro"></label><label class="fld">Važi do<input class="inp" type="date" id="sVaz"></label></div>' +
         '<div class="row2"><label class="fld">Dobavljač<select class="inp" id="sDob"><option value="">–</option>' + (S.dob.items || []).slice().sort((x, y) => x.naziv.localeCompare(y.naziv)).map(d => '<option value="' + esc(d.id) + '"' + (a.dob === d.id ? " selected" : "") + ">" + esc(d.naziv) + "</option>").join("") + '</select></label><label class="fld">Nabavna cena po ' + esc(a.mera || "JM") + ' (RSD)<input class="inp" id="sCena" inputmode="decimal"></label></div>'
-        : '<div class="row2"><label class="fld">Lot<select class="inp" id="sLotS">' + (X === "I" ? saSt : lot).map(o => '<option value="' + esc(o.lot) + '"' + (S.sir.lotSel === o.lot ? " selected" : "") + ">" + esc(o.lot) + " · " + esc(fmt(o.kol, false)) + (o.vaz ? " · do " + esc(dtxt(o.vaz)) : "") + "</option>").join("") + '</select></label><label class="fld">' + (X === "K" ? "Korekcija (+ / −)" : "Količina (" + esc(a.mera || "") + ")") + '<input class="inp" id="sKol" inputmode="decimal"></label></div>') +
+        : '<div class="row2"><label class="fld">Lot<select class="inp" id="sLotS">' + (X === "I" ? saSt : lot).map(o => '<option value="' + esc(o.lot) + '"' + (S.sir.lotSel === o.lot ? " selected" : "") + ">" + esc(o.lot) + " · " + esc(fmt(o.kol, false)) + (o.vaz ? " · do " + esc(dtxt(o.vaz)) : "") + "</option>").join("") + '</select></label><label class="fld">' + (X === "K" ? "Korekcija (+ / −)" : "Količina (" + esc(a.mera || "") + ")") + '<span class="kalkPolje"><input class="inp" id="sKol" inputmode="decimal"><button type="button" class="kalkBtn" data-kalk="#sKol" title="Kalkulator – saberi pakete" aria-label="Kalkulator">🧮</button></span></label></div>') +
       '<div class="row2"><label class="fld">Datum<input class="inp" type="date" id="sDat" value="' + today() + '"></label><label class="fld">Napomena<input class="inp" id="sNap" placeholder="' + (X === "I" ? "npr. broj trebovanja" : "npr. broj otpremnice") + '"></label></div>' +
       '<button class="btn primary big" id="sKnjizi" style="width:100%">Proknjiži ' + SVR[X].toLowerCase() + "</button></div></div>"
       : '<div class="ticket empty">Izaberi sirovinu. Ulaz se knjiži sa lotom, datumom proizvodnje i rokom važenja; izlaz sa lota (predlaže se lot kome rok prvi ističe).</div>') +
@@ -15648,7 +15701,23 @@ function sirPopisRedovi() {
   for (const o of st.values()) { if (!S.sir.byId[o.art]) continue; if (!P.sve && Math.abs(o.kol) < 1e-9 && P.izbr[sirKljuc(o.art, o.lot)] == null) continue; red.push({ k: sirKljuc(o.art, o.lot), art: o.art, lot: o.lot, vaz: o.vaz, proiz: o.proiz, ev: o.kol }); }
   for (const d of (P.dodati || [])) { const k = sirKljuc(d.art, d.lot); if (!red.some(r => r.k === k)) red.push({ k, art: d.art, lot: d.lot, vaz: d.vaz, proiz: d.proiz, ev: 0, nov: true }); }
   red.sort((a, b) => { const A = S.sir.byId[a.art], B = S.sir.byId[b.art]; return A.sifra < B.sifra ? -1 : A.sifra > B.sifra ? 1 : (a.vaz || "") < (b.vaz || "") ? -1 : 1; });
-  return red.map(r => { const v = P.izbr[r.k]; return Object.assign(r, { izbr: v == null ? null : v, raz: v == null ? (P.nula ? -r.ev : 0) : r3(v - r.ev) }); });
+  return red.map(r => {
+    const v = P.izbr[r.k];
+    if (v == null) return Object.assign(r, { izbr: null, raz: P.nula ? -r.ev : 0 });
+    const pr = sirPopisPromet(r.art, r.lot, (P.vreme || {})[r.k]);
+    const izbr = r3(v + pr.neto);
+    return Object.assign(r, { izbr, osn: v, pr, raz: r3(izbr - r.ev) });
+  });
+}
+// promet lota posle trenutka brojanja
+function sirPopisPromet(art, lot, odT) {
+  if (!odT) return { ul: 0, iz: 0, neto: 0 };
+  let ul = 0, iz = 0;
+  for (const e of S.sir.entries) {
+    if (e.storno || e.art !== art || sirKljuc(art, e.lot) !== sirKljuc(art, lot) || !e.t || e.t <= odT) continue;
+    if (e.vrsta === "U") ul = r3(ul + e.kol); else if (e.vrsta === "I") iz = r3(iz + e.kol);
+  }
+  return { ul, iz, neto: r3(ul - iz) };
 }
 function renderSirPopis() {
   const box = $("#spopisBox"), P = S.sir.popis;
@@ -15669,7 +15738,7 @@ function renderSirPopis() {
     '<details class="card" style="margin-bottom:12px;padding:10px 14px"><summary style="cursor:pointer"><b>Dodaj lot pronađen na popisu</b> (lot kojeg nema u evidenciji)</summary><div class="form" style="margin-top:10px"><div class="row2"><label class="fld">Sirovina (šifra ili naziv)<input class="inp" id="spnA" list="spnDL"></label><label class="fld">Lot<input class="inp" id="spnL"></label></div><datalist id="spnDL">' + S.sir.art.map(a => '<option value="' + esc(a.sifra + " · " + a.naziv) + '"></option>').join("") + '</datalist><div class="row2"><label class="fld">Važi do<input class="inp" type="date" id="spnV"></label><label class="fld">Izbrojano<input class="inp" id="spnK" inputmode="decimal"></label></div><div><button class="btn" id="spnOk">Dodaj u popis</button></div></div></details>' +
     '<div class="tbl-wrap" style="max-height:620px"><table><thead><tr><th>Šifra</th><th>Sirovina</th><th>Lot</th><th>Važi do</th><th class="num">Evidencija</th><th class="num">Izbrojano</th><th class="num">Razlika</th></tr></thead><tbody>' +
     (vid.length ? vid.slice(0, 1500).map(r => { const a = S.sir.byId[r.art], isti = prev === r.art; prev = r.art;
-      return "<tr>" + '<td class="sif">' + (isti ? "" : esc(a.sifra)) + "</td><td>" + (isti ? "" : esc(a.naziv)) + "</td><td><b>" + esc(r.lot || "(bez lota)") + "</b>" + (r.nov ? ' <span class="tag P">novi</span>' : "") + '</td><td class="' + rokKlasa(r.vaz) + '">' + (r.vaz ? esc(dtxt(r.vaz)) : "–") + '</td><td class="num">' + esc(fmt(r.ev, false)) + " " + esc(a.mera || "") + '</td><td class="num"><input class="inp minin" style="width:110px" data-spk="' + esc(r.k) + '" inputmode="decimal" value="' + (r.izbr != null ? esc(String(r.izbr).replace(".", ",")) : "") + '"></td><td class="num ' + (r.raz > 0 ? "raz-p" : r.raz < 0 ? "raz-m" : "") + '">' + (Math.abs(r.raz) > 1e-9 ? (r.raz > 0 ? "+" : "") + esc(fmt(r.raz, false)) : (r.izbr != null ? "✓" : "")) + "</td></tr>"; }).join("")
+      return "<tr>" + '<td class="sif">' + (isti ? "" : esc(a.sifra)) + "</td><td>" + (isti ? "" : esc(a.naziv)) + "</td><td><b>" + esc(r.lot || "(bez lota)") + "</b>" + (r.nov ? ' <span class="tag P">novi</span>' : "") + '</td><td class="' + rokKlasa(r.vaz) + '">' + (r.vaz ? esc(dtxt(r.vaz)) : "–") + '</td><td class="num">' + esc(fmt(r.ev, false)) + " " + esc(a.mera || "") + '</td><td class="num"><input class="inp minin" style="width:110px" data-spk="' + esc(r.k) + '" inputmode="decimal" value="' + (r.izbr != null ? esc(String(r.izbr).replace(".", ",")) : "") + '">' + (r.pr && (r.pr.ul || r.pr.iz) ? '<div class="poNap">' + [r.pr.ul ? "primljeno " + fmt(r.pr.ul, false) : "", r.pr.iz ? "trebovano " + fmt(r.pr.iz, false) : ""].filter(Boolean).join(" · ") + " u toku popisa</div>" : "") + '</td><td class="num ' + (r.raz > 0 ? "raz-p" : r.raz < 0 ? "raz-m" : "") + '">' + (Math.abs(r.raz) > 1e-9 ? (r.raz > 0 ? "+" : "") + esc(fmt(r.raz, false)) : (r.izbr != null ? "✓" : "")) + "</td></tr>"; }).join("")
       : '<tr class="empty-row"><td colspan="7">Nema lotova za prikaz.</td></tr>') + "</tbody></table></div>";
   if (!S.downloads) $$("#spopisBox .dl").forEach(b => b.hidden = true);
   if (S.sir.popFokus) {
@@ -15685,7 +15754,7 @@ function sirPopisnaLista(X, sve) {
 }
 $("#spopisBox").addEventListener("click", async e => {
   const t = e.target, P = S.sir.popis;
-  if (t.id === "spStart") { S.sir.popis = { datum: $("#spDat").value || today(), sve: $("#spObim").value === "sve", izbr: {}, dodati: [], nula: false, t: new Date().toISOString() }; sirPopisSacuvaj(); renderSirPopis(); return; }
+  if (t.id === "spStart") { S.sir.popis = { datum: $("#spDat").value || today(), sve: $("#spObim").value === "sve", izbr: {}, vreme: {}, dodati: [], nula: false, t: new Date().toISOString() }; sirPopisSacuvaj(); renderSirPopis(); return; }
   if (t.id === "spLista") { sirPopisnaLista($("#spDat").value || today(), $("#spObim").value === "sve"); return; }
   if (!P) return;
   if (t.id === "spOtkazi") { if (!await ask("Otkazati popis?", "<p>Upisane količine biće odbačene. Stanje se ne menja.</p>", "Otkaži popis", "Nastavi popis", true)) return; S.sir.popis = null; sirPopisSacuvaj(); renderSirPopis(); return; }
@@ -15694,7 +15763,7 @@ $("#spopisBox").addEventListener("click", async e => {
     const v = $("#spnA").value.trim(), s = v.split(" · ")[0].trim(), a = S.sir.bySif[s] || S.sir.art.find(x => norm(x.naziv) === norm(v));
     const lot = $("#spnL").value.trim(), k = parseQty($("#spnK").value);
     if (!a) { toast("Izaberi sirovinu sa liste."); return; } if (!lot) { toast("Upiši lot."); return; } if (!(k >= 0)) { toast("Upiši izbrojanu količinu."); return; }
-    P.dodati.push({ art: a.id, lot, vaz: $("#spnV").value || "" }); P.izbr[sirKljuc(a.id, lot)] = r3(k); sirPopisSacuvaj(); toast("Dodat lot " + lot + " – " + a.naziv); renderSirPopis(); return;
+    P.dodati.push({ art: a.id, lot, vaz: $("#spnV").value || "" }); P.izbr[sirKljuc(a.id, lot)] = r3(k); P.vreme = P.vreme || {}; P.vreme[sirKljuc(a.id, lot)] = new Date().toISOString(); sirPopisSacuvaj(); toast("Dodat lot " + lot + " – " + a.naziv); renderSirPopis(); return;
   }
   if (t.id === "spKnjizi") {
     const R = sirPopisRedovi().filter(r => Math.abs(r.raz) > 1e-9);
@@ -15708,7 +15777,12 @@ $("#spopisBox").addEventListener("click", async e => {
 });
 $("#spopisBox").addEventListener("change", e => {
   const t = e.target, P = S.sir.popis; if (!P || !t.isConnected) return;
-  if (t.dataset.spk) { const v = t.value.trim(); if (v === "") delete P.izbr[t.dataset.spk]; else { const k = parseQty(v); if (!(k >= 0)) { toast("Neispravna količina."); return; } P.izbr[t.dataset.spk] = r3(k); } sirPopisSacuvaj(); renderSirPopis(); return; }
+  if (t.dataset.spk) {
+    const v = t.value.trim(); P.vreme = P.vreme || {};
+    if (v === "") { delete P.izbr[t.dataset.spk]; delete P.vreme[t.dataset.spk]; }
+    else { const k = parseQty(v); if (!(k >= 0)) { toast("Neispravna količina."); return; } P.izbr[t.dataset.spk] = r3(k); P.vreme[t.dataset.spk] = new Date().toISOString(); }
+    sirPopisSacuvaj(); renderSirPopis(); return;
+  }
   if (t.id === "spSamo") { P.samoRaz = t.checked; sirPopisSacuvaj(); renderSirPopis(); }
   if (t.id === "spNula") { P.nula = t.checked; sirPopisSacuvaj(); renderSirPopis(); }
 });
@@ -16235,7 +16309,7 @@ function brziHtml() {
     telo = '<div class="bzArt"><button class="bzNazad" id="bzNazad" aria-label="Nazad na pretragu">‹</button><div><b>' + esc(a.naziv) + '</b><div class="muted">' + esc(a.sifra || "") + (a.mera ? " · " + esc(a.mera) : "") + "</div></div></div>" +
       (B.sir && lotovi.length ? '<label class="fld">Lot / serija<select class="inp bzLot" id="bzLot">' + lotovi.map(o => '<option value="' + esc(o.lot) + '"' + (o.lot === lotSel ? " selected" : "") + ">" + esc(o.lot) + " · " + esc(fmt(o.kol, false)) + (o.vaz ? " · do " + esc(dtxt(o.vaz)) : "") + "</option>").join("") + "</select></label>" : "") +
       '<div class="bzEv">Po evidenciji: <b>' + esc(fmt(ev, false)) + "</b> " + esc(a.mera || "") + (izb == null ? "" : ' · izbrojano <b>' + esc(fmt(izb, false)) + "</b>" + (raz ? ' <span class="' + (raz > 0 ? "raz-p" : "raz-m") + '">' + (raz > 0 ? "+" : "") + esc(fmt(raz, false)) + "</span>" : " ✓")) + "</div>" +
-      '<div class="bzKol"><input class="inp" id="bzKol" inputmode="decimal" placeholder="Izbrojana količina" autocomplete="off" value="' + (izb == null ? "" : esc(String(izb).replace(".", ","))) + '"><button class="btn primary" id="bzUpisi">Upiši</button></div>' +
+      '<div class="bzKol"><input class="inp" id="bzKol" inputmode="decimal" placeholder="Izbrojana količina" autocomplete="off" value="' + (izb == null ? "" : esc(String(izb).replace(".", ","))) + '"><button class="btn" data-kalk="#bzKol" title="Kalkulator" aria-label="Kalkulator">🧮</button><button class="btn primary" id="bzUpisi">Upiši</button></div>' +
       '<div class="bzBrzo">' + [["=", "ev"], ["0", "0"]].map(([l, v]) => '<button class="btn" data-bzq="' + v + '">' + (v === "ev" ? "koliko i evidencija" : "nula") + "</button>").join("") + "</div>";
   } else {
     telo = '<div class="search bzSearch"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
@@ -16273,11 +16347,11 @@ async function brziUpisi() {
   if (B.sir) {
     const lot = ($("#bzLot") && $("#bzLot").value) || B.lot || "";
     if (!lot) { toast("Izaberi lot."); return; }
-    S.sir.popis.izbr[sirKljuc(a.id, lot)] = r3(k); sirPopisSacuvaj();
+    S.sir.popis.izbr[sirKljuc(a.id, lot)] = r3(k); S.sir.popis.vreme = S.sir.popis.vreme || {}; S.sir.popis.vreme[sirKljuc(a.id, lot)] = new Date().toISOString(); sirPopisSacuvaj();
     B.poslednji.unshift({ naziv: a.naziv, kol: r3(k), lot });
     if (document.querySelector("#v-spopis.on")) renderSirPopis();
   } else {
-    await popisUpis(a.id, { kol: r3(k) });
+    await popisUpis(a.id, { kol: r3(k), t: new Date().toISOString() });
     B.poslednji.unshift({ naziv: a.naziv, kol: r3(k) });
     if (document.querySelector("#v-popis.on")) renderPopis();
   }
@@ -16636,6 +16710,62 @@ document.addEventListener("change", e => {
   if (t.id === "trebAmbF" && t.files[0]) { const f = t.files[0]; t.value = ""; trebUcitajFajl(f, false, "#trebAmbM"); return; }
   if (t.id === "trebSirF" && t.files[0]) { const f = t.files[0]; t.value = ""; trebUcitajFajl(f, true, "#sTrebM"); return; }
 });
+
+
+/* =====================================================================
+   KALKULATOR KOLIČINA – sabiranje paketa pre unosa (ulaz / izlaz, popis)
+   ===================================================================== */
+S.kalk = { cilj: null, stavke: [], unos: "" };
+function kalkZbir() { return r3(S.kalk.stavke.reduce((s, x) => s + x, 0)); }
+function kalkHtml() {
+  const K = S.kalk, z = kalkZbir();
+  return '<div class="kalkBox">' +
+    '<div class="kalkZbir"><span class="muted">Zbir</span><b>' + esc(fmt(z, false)) + "</b></div>" +
+    '<div class="kalkUnos"><input class="inp" id="kalkI" inputmode="decimal" placeholder="npr. 12 x 500 ili 250" autocomplete="off" value="' + esc(K.unos) + '"><button class="btn primary" id="kalkDodaj">Dodaj</button></div>' +
+    '<div class="kalkHint">Možeš upisati i množenje: <b>12 x 500</b> = 6000. Enter dodaje stavku.</div>' +
+    (K.stavke.length ? '<ul class="kalkLista">' + K.stavke.map((x, i) => "<li><span>" + (i + 1) + ".</span><b>" + esc(fmt(x, false)) + '</b><button class="x" data-kalkdel="' + i + '" aria-label="Obriši">×</button></li>').join("") + "</ul>" : '<p class="muted" style="font-size:13px;margin:10px 0 0">Još nema stavki.</p>') +
+    "</div>";
+}
+function kalkRender() { const el = $("#kalkTelo"); if (el) { el.innerHTML = kalkHtml(); const i = $("#kalkI"); if (i) i.focus(); } }
+function kalkIzraz(t) {
+  t = String(t || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (!t) return null;
+  const m = t.match(/^([\d.,\s]+)\s*[x*×]\s*([\d.,\s]+)$/);
+  if (m) { const a = parseQty(m[1]), b = parseQty(m[2]); return (a > 0 && b > 0) ? r3(a * b) : null; }
+  const v = parseQty(t); return v > 0 ? r3(v) : null;
+}
+async function kalkOtvori(ciljSel) {
+  S.kalk = { cilj: ciljSel, stavke: [], unos: "" };
+  const trenutno = $(ciljSel) ? parseQty($(ciljSel).value) : 0;
+  if (trenutno > 0) S.kalk.stavke.push(r3(trenutno));
+  const ok = await ask("Kalkulator količine", '<div id="kalkTelo">' + kalkHtml() + "</div>", "Upiši zbir", "Odustani");
+  const z = kalkZbir();
+  if (!ok) return;
+  const el = $(ciljSel); if (!el) return;
+  el.value = String(z).replace(".", ",");
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+  el.focus();
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-kalk]");
+  if (b) { e.preventDefault(); kalkOtvori(b.dataset.kalk); return; }
+  if (e.target.closest("#kalkDodaj")) {
+    const v = kalkIzraz(($("#kalkI") || {}).value);
+    if (v == null) { toast("Upiši broj ili npr. 12 x 500."); return; }
+    S.kalk.stavke.push(v); S.kalk.unos = ""; kalkRender(); return;
+  }
+  const d = e.target.closest("[data-kalkdel]");
+  if (d) { S.kalk.stavke.splice(+d.dataset.kalkdel, 1); kalkRender(); }
+});
+document.addEventListener("input", e => { if (e.target.id === "kalkI") S.kalk.unos = e.target.value; });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.target.id !== "kalkI") return;
+  e.preventDefault(); e.stopPropagation();
+  const v = kalkIzraz(e.target.value);
+  if (v == null) { toast("Upiši broj ili npr. 12 x 500."); return; }
+  S.kalk.stavke.push(v); S.kalk.unos = ""; kalkRender();
+}, true);
 
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
