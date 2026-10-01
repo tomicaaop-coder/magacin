@@ -289,6 +289,7 @@ td.raz-p{ color:var(--ulaz); font-weight:600; } td.raz-m{ color:var(--izlaz); fo
 .knal.zat{ color:var(--muted); } .knal.nov{ color:var(--muted); border-style:dashed; }
 .card.k-nal{ border-left:5px solid var(--brand); }
 .ktab .kin{ padding:5px 8px; font-size:13px; }
+tr.krit td{ background:rgba(184,50,42,.09); } tr.upoz td{ background:rgba(217,164,0,.12); }
 .ktab{ font-size:13px; }
 .ktab th, .ktab td{ padding:6px 7px; }
 .ktab td:nth-child(4){ min-width:230px; }
@@ -423,6 +424,11 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   <section class="view on" id="v-unos">
     <div class="unos">
       <div>
+        <div class="toolbar" style="margin:0 0 10px">
+          <label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="trebAmbF" accept=".pdf,application/pdf" hidden></label>
+          <label class="btn" style="cursor:pointer">Slikaj trebovanje<input type="file" id="trebAmbF" accept="image/*" capture="environment" hidden></label>
+          <span id="trebAmbM" class="muted" style="font-size:12px"></span>
+        </div>
         <div class="search">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
           <input id="q" type="search" placeholder="Šifra ili deo naziva artikla" autocomplete="off" aria-label="Pretraga artikala" aria-controls="rez">
@@ -13474,7 +13480,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "29.09.f";
+const APP_VERZIJA = "30.09.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14099,6 +14105,8 @@ document.addEventListener("click", e => {
 });
 window.APP_SHOW = v => show(v);
 window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prava
+window.__trebTest = (l, sir) => trebIzlazDlg(stavkeIzTeksta(l, sir), sir);
+window.__trebParse = (l, sir) => stavkeIzTeksta(l, sir);
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
 const q = $("#q");
 q.addEventListener("input", () => {
@@ -15363,7 +15371,8 @@ function renderSirUnos() {
   if (a && X === "I" && (!S.sir.lotSel || !saSt.some(o => o.lot === S.sir.lotSel))) { const p = saSt.find(o => !o.vaz || o.vaz >= today()) || saSt[0]; S.sir.lotSel = p ? p.lot : null; }
   const rez = sirPretraga(S.sir.q || "");
   const danas = S.sir.entries.filter(e => e.datum === today()).slice(-25).reverse();
-  box.innerHTML = '<div class="toolbar"><h1>Magacin sirovina – ulaz / izlaz</h1><button class="btn" id="sEtDan" style="margin-left:auto" title="Etikete IDENTIFIKOVANO za današnje ulaze sirovina">Etikete prijema (QP18)</button><label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="sTrebF" accept=".pdf,application/pdf" hidden></label></div>' +
+  box.innerHTML = '<div class="toolbar"><h1>Magacin sirovina – ulaz / izlaz</h1><button class="btn" id="sEtDan" style="margin-left:auto" title="Etikete IDENTIFIKOVANO za današnje ulaze sirovina">Etikete prijema (QP18)</button><label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="trebSirF" accept=".pdf,application/pdf" hidden></label>' +
+    '<label class="btn" style="cursor:pointer">Slikaj trebovanje<input type="file" id="trebSirF" accept="image/*" capture="environment" hidden></label><span id="sTrebM" class="muted" style="font-size:12px"></span></div>' +
     (S.sir.treb ? sirTrebHtml() : "") +
     '<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)"><div><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sQ" type="search" placeholder="Šifra ili naziv sirovine" value="' + esc(S.sir.q || "") + '" autocomplete="off"></div>' +
     '<ul class="results" style="list-style:none;padding:0;margin:10px 0">' + (rez.length ? rez.map(r => '<li><button type="button" class="res' + (a && a.id === r.id ? " on" : "") + '" data-sa="' + r.id + '" style="display:grid;grid-template-columns:70px 1fr auto;gap:10px;width:100%;text-align:left;border:1px solid var(--line-2);background:' + (a && a.id === r.id ? "var(--brand-soft)" : "var(--surface)") + ';border-radius:8px;padding:8px 12px;margin-bottom:4px;cursor:pointer"><span class="sif">' + esc(r.sifra) + "</span><span>" + esc(r.naziv) + '</span><span class="num" style="font-weight:600">' + esc(fmt(sirUkupno(r.id), false)) + " " + esc(r.mera || "") + "</span></button></li>").join("") : (S.sir.q ? '<li class="muted">Nema sirovine za taj upit.</li>' : '<li class="muted">Upiši šifru ili deo naziva.</li>')) + "</ul></div>" +
@@ -15427,7 +15436,7 @@ async function sirUcitajTreb(f) {
 }
 $("#sunosBox").addEventListener("input", e => { if (e.target.id === "sQ") { const sk = e.target.value.trim().match(/^(\d{6})\|(.+)$/); if (sk && S.sir.bySif[sk[1]]) { const a = S.sir.bySif[sk[1]]; S.sir.sel = a.id; S.sir.q = a.sifra; S.sir.lotSel = sk[2]; S.sir.vrsta = "I"; renderSirUnos(); const k = $("#sKol"); if (k) k.focus(); return; } S.sir.q = e.target.value; const r = sirPretraga(S.sir.q); if (r.length === 1 && r[0].id !== S.sir.sel) { S.sir.sel = r[0].id; S.sir.lotSel = null; } S.sir.fokus = true; renderSirUnos(); } });
 $("#sunosBox").addEventListener("change", e => {
-  if (e.target.id === "sTrebF" && e.target.files[0]) { sirUcitajTreb(e.target.files[0]); e.target.value = ""; }
+
   if (e.target.id === "sLotS") S.sir.lotSel = e.target.value;
 });
 $("#sunosBox").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id === "sKol") { e.preventDefault(); sirKnjizi(); } });
@@ -16498,6 +16507,135 @@ async function izborNovihSifri(lista, naslov, uvod) {
   return izb;
 }
 document.addEventListener("change", e => { if (e.target.id === "nvAll") $$("#dlg .nvS").forEach(x => { x.checked = e.target.checked; }); });
+
+
+/* =====================================================================
+   IZLAZ PO TREBOVANJU – iz PDF-a ili sa fotografije papirnog trebovanja
+   Posle prepoznavanja otvara se prozor za ispravke (količina, lot) i izbor
+   šta se knjiži, a šta ne.
+   ===================================================================== */
+S.treb2 = null;
+async function ucitajTesseract(msgSel) {
+  if (window.Tesseract) return window.Tesseract;
+  const m = msgSel ? $(msgSel) : null; if (m) m.textContent = "Učitavam prepoznavanje teksta…";
+  await new Promise((res, rej) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
+    sc.onload = res; sc.onerror = () => rej(new Error("Prepoznavanje teksta nije dostupno – proveri internet vezu."));
+    document.head.appendChild(sc);
+  });
+  return window.Tesseract;
+}
+// slika -> linije teksta
+async function linijeIzSlike(file, msgSel) {
+  const T = await ucitajTesseract(msgSel), m = msgSel ? $(msgSel) : null;
+  const url = URL.createObjectURL(file);
+  try {
+    const r = await T.recognize(url, "srp_latn+eng", {
+      logger: p => { if (m && p.status === "recognizing text") m.textContent = "Čitam sliku… " + Math.round((p.progress || 0) * 100) + "%"; }
+    });
+    const d = r.data;
+    if (d.lines && d.lines.length) return d.lines.map(l => l.text.replace(/\s+/g, " ").trim()).filter(Boolean);
+    return String(d.text || "").split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+  } finally { URL.revokeObjectURL(url); }
+}
+// prepoznavanje stavki iz teksta trebovanja (šifra + količina, po potrebi lot)
+function stavkeIzTeksta(linije, sir) {
+  const naj = s => sir ? S.sir.bySif[s] : (S.bySif && S.bySif[s]);
+  const out = []; let zagl = { broj: "", datum: "", proizvod: { sifra: "", naziv: "" } };
+  for (const ln0 of linije) {
+    const ln = String(ln0).replace(/[|]/g, " ").replace(/\s+/g, " ").trim(); if (!ln) continue;
+    let m;
+    if ((m = ln.match(/TREBOVANJE\s*br\.?\s*(\S+)/i))) zagl.broj = m[1];
+    if ((m = ln.match(/(\d{1,2}[.\/]\d{1,2}[.\/]\d{4})/)) && !zagl.datum) zagl.datum = m[1];
+    if ((m = ln.match(/\b(\d{6})\s*\/\s*([A-ZŠĐČĆŽ][^\d]{4,})$/i)) && !zagl.proizvod.sifra) zagl.proizvod = { sifra: m[1], naziv: m[2].trim() };
+    const sm = ln.match(/\b(\d{6})\b/); if (!sm) continue;
+    const sif = sm[1], a = naj(sif); if (!a) { if (!/\d{1,3}([.,]\d+)?\s*(KG|KOM|GR|G|L|M)?\s*$/i.test(ln)) continue; }
+    const brojevi = (ln.match(/\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{1,4})?/g) || []).filter(x => x.replace(/\D/g, "") !== sif);
+    let kol = null;
+    for (let i = brojevi.length - 1; i >= 0; i--) { const v = brojPoFormatu(brojevi[i], formatBrojeva(ln)); if (v > 0) { kol = v; break; } }
+    const lm = ln.match(/\b([A-Z0-9][A-Z0-9\-\/\.]{3,})\b(?=[^0-9]*\d)/i);
+    out.push({ sifra: sif, naziv: a ? a.naziv : ln.replace(sif, "").trim(), art: a ? a.id : "", kol: kol, lot: sir && lm && lm[1] !== sif ? lm[1] : "", tekst: ln });
+  }
+  return { zagl, stavke: out };
+}
+/* ---------- prozor za ispravke i knjiženje ---------- */
+function trebRedHtml(r, i, sir) {
+  const a = r.art ? (sir ? S.sir.byId[r.art] : S.byId[r.art]) : null;
+  const lots = sir && a ? sirLotovi(a.id).filter(o => Math.abs(o.kol) > 1e-9) : [];
+  const st = a ? (sir ? sirUkupno(a.id) : trenutno(a.id)) : null;
+  const malo = a && r.kol > 0 && st != null && r.kol > st + 1e-9;
+  return '<tr class="' + (a ? (malo ? "upoz" : "") : "krit") + '"><td style="text-align:center"><input type="checkbox" class="tbS" data-i="' + i + '"' + (a && r.kol > 0 ? " checked" : "") + (a ? "" : " disabled") + "></td>" +
+    '<td class="sif">' + esc(r.sifra) + "</td><td>" + (a ? esc(a.naziv) : '<span class="warn">nije u šifarniku – preskače se</span><div class="muted" style="font-size:11px">' + esc(r.tekst || "") + "</div>") + "</td>" +
+    '<td class="num">' + (st == null ? "" : esc(fmt(st, false)) + " " + esc((a && a.mera) || "")) + "</td>" +
+    '<td><input class="inp" data-tk="' + i + '" inputmode="decimal" style="width:100px" value="' + (r.kol != null ? esc(String(r3(r.kol)).replace(".", ",")) : "") + '"></td>' +
+    (sir ? '<td>' + (lots.length ? '<select class="inp" data-tl="' + i + '" style="max-width:190px">' + lots.map(o => '<option value="' + esc(o.lot) + '"' + (sirKljuc(r.art, o.lot) === sirKljuc(r.art, r.lot) ? " selected" : "") + ">" + esc(o.lot) + " · " + esc(fmt(o.kol, false)) + (o.vaz ? " · do " + esc(dtxt(o.vaz)) : "") + "</option>").join("") + "</select>"
+      : '<input class="inp" data-tl="' + i + '" style="width:130px" value="' + esc(r.lot || "") + '">') + "</td>" : "") +
+    '<td class="muted" style="font-size:11px">' + (malo ? "traži se više nego što je na stanju" : "") + "</td></tr>";
+}
+async function trebIzlazDlg(T, sir) {
+  const naslov = "Izlaz po trebovanju" + (T.zagl.broj ? " " + T.zagl.broj : "") + (sir ? " – sirovine" : " – ambalaža");
+  const html = '<div class="form"><div class="row2"><label class="fld">Datum izlaza<input class="inp" type="date" id="tbD" value="' + today() + '"></label>' +
+    '<label class="fld">Napomena<input class="inp" id="tbN" value="' + esc("Trebovanje " + (T.zagl.broj || "") + (T.zagl.proizvod.naziv ? " – " + T.zagl.proizvod.sifra + " " + T.zagl.proizvod.naziv : "")) + '"></label></div>' +
+    '<p class="muted" style="font-size:12px;margin:0">Proveri i po potrebi ispravi količine' + (sir ? " i lotove" : "") + ". Označeno se knjiži kao izlaz, neoznačeno se preskače. Artikli kojih nema u šifarniku se ne mogu knjižiti.</p>" +
+    '<div class="tbl-wrap" style="max-height:400px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="tbAll" checked></th><th>Šifra</th><th>Artikal</th><th class="num">Na stanju</th><th>Izlaz</th>' + (sir ? "<th>Lot</th>" : "") + "<th></th></tr></thead><tbody>" +
+    T.stavke.map((r, i) => trebRedHtml(r, i, sir)).join("") + "</tbody></table></div></div>";
+  const d = $("#dlg"); d.style.width = "min(1000px, 96vw)";
+  const ok = await ask(naslov, html, "Proknjiži izlaz", "Odustani");
+  if (!ok) { d.style.width = ""; return; }
+  const dat = $("#tbD").value || today(), nap = $("#tbN").value.trim();
+  const izb = [];
+  for (const cb of $$("#dlg .tbS")) {
+    if (!cb.checked) continue;
+    const i = +cb.dataset.i, r = T.stavke[i];
+    const kol = parseQty((document.querySelector('#dlg [data-tk="' + i + '"]') || {}).value || "");
+    const lotEl = document.querySelector('#dlg [data-tl="' + i + '"]');
+    if (!(kol > 0) || !r.art) continue;
+    izb.push({ art: r.art, kol: r3(kol), lot: lotEl ? lotEl.value.trim() : "" });
+  }
+  d.style.width = "";
+  if (!izb.length) { toast("Nije označena nijedna stavka."); return; }
+  const grp = "tr" + rid();
+  if (sir) {
+    const l = izb.map(x => ({ art: x.art, lot: x.lot, vrsta: "I", kol: x.kol, nap, grp }));
+    if (await sirDodajUnose(dat, l)) { toast("Proknjižen izlaz sirovina: " + l.length + " stavki"); if (typeof renderSirUnos === "function") renderSirUnos(); }
+  } else {
+    const l = izb.map(x => ({ art: x.art, vrsta: "I", kol: x.kol, nap, grp }));
+    if (await dodajUnose(dat, l)) { toast("Proknjižen izlaz ambalaže: " + l.length + " stavki"); renderAll(); }
+  }
+}
+async function trebUcitajFajl(file, sir, msgSel) {
+  const m = msgSel ? $(msgSel) : null;
+  try {
+    const slika = /^image\//.test(file.type) || /\.(jpe?g|png|heic|webp)$/i.test(file.name);
+    let T;
+    if (slika) {
+      if (m) m.textContent = "Čitam sliku…";
+      const lin = await linijeIzSlike(file, msgSel);
+      const r = stavkeIzTeksta(lin, sir);
+      T = { zagl: r.zagl, stavke: r.stavke };
+      if (!T.stavke.length) { if (m) m.textContent = "Na slici nisu prepoznate šifre artikala. Slikaj ravno, sa bliže i po dnevnom svetlu."; return; }
+    } else {
+      const r = parseTrebovanje(await pdfStavke(await file.arrayBuffer()));
+      if (!r.stavke.length) { if (m) m.textContent = "U PDF-u nisu pronađeni materijali."; return; }
+      const st = [];
+      for (const s of r.stavke) {
+        const a = sir ? S.sir.bySif[s.sifra] : (S.bySif && S.bySif[s.sifra]);
+        if (sir && s.lotovi.length) { for (const l of s.lotovi) st.push({ sifra: s.sifra, naziv: s.naziv, art: a ? a.id : "", kol: l.kol, lot: l.lot }); }
+        else st.push({ sifra: s.sifra, naziv: s.naziv, art: a ? a.id : "", kol: s.kol, lot: "" });
+      }
+      T = { zagl: { broj: r.broj, datum: r.datum, proizvod: r.proizvod }, stavke: st };
+    }
+    if (m) m.textContent = "";
+    await trebIzlazDlg(T, sir);
+  } catch (e) { console.error(e); if (m) m.textContent = "Fajl nije moguće pročitati: " + (e.message || e); else toast("Fajl nije moguće pročitati."); }
+}
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "tbAll") { $$("#dlg .tbS").forEach(x => { if (!x.disabled) x.checked = t.checked; }); return; }
+  if (t.id === "trebAmbF" && t.files[0]) { const f = t.files[0]; t.value = ""; trebUcitajFajl(f, false, "#trebAmbM"); return; }
+  if (t.id === "trebSirF" && t.files[0]) { const f = t.files[0]; t.value = ""; trebUcitajFajl(f, true, "#sTrebM"); return; }
+});
 
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
