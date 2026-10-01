@@ -85,6 +85,12 @@
     id: async () => ja.uid,
     me: async () => ({ id: ja.uid, name: ja.ime || ja.email, avatarUrl: null }),
     canEdit: async () => ja.uloge.includes("admin"),
+    list: async () => {
+      try {
+        const sn = await fs.collection("korisnici").get();
+        return sn.docs.filter(d => d.data().odobren).map(d => ({ id: d.id, ime: d.data().ime || d.data().email || d.id, admin: (d.data().uloge || []).includes("admin") }));
+      } catch (e) { return []; }
+    },
     profiles: async ids => {
       const out = {};
       await Promise.all(ids.map(async id => { try { const s = await fs.collection("korisnici").doc(id).get(); if (s.exists) out[id] = { id, name: s.data().ime || s.data().email }; } catch (e) {} }));

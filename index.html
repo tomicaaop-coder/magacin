@@ -263,6 +263,7 @@ td.raz-p{ color:var(--ulaz); font-weight:600; } td.raz-m{ color:var(--izlaz); fo
 .obX{ border:0; background:none; font-size:20px; line-height:1; color:var(--muted); cursor:pointer; padding:2px 6px; }
 #obStack{ position:fixed; top:calc(84px + env(safe-area-inset-top,0px)); right:16px; z-index:60; display:flex; flex-direction:column; gap:10px; width:min(400px, calc(100vw - 32px)); pointer-events:none; }
 .obCard{ pointer-events:auto; display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-left:6px solid var(--ulaz); border-radius:12px; padding:12px 12px 12px 14px; box-shadow:0 12px 32px rgba(0,0,0,.22); cursor:pointer; animation:obIn .35s ease-out; font-size:14px; }
+.obCard.poruka .obIk{ background:#2F6FB5; }
 .obCard.min{ border-left-color:var(--izlaz); }
 .obCard b{ font-family:var(--head); font-size:17px; }
 .obIk{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font:700 24px var(--head); color:#fff; background:var(--ulaz); }
@@ -359,6 +360,27 @@ td .kalkBtn{ position:static; transform:none; margin-left:4px; width:28px; heigh
 .kalkLista{ list-style:none; margin:10px 0 0; padding:0; max-height:220px; overflow:auto; }
 .kalkLista li{ display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid var(--line-2); }
 .kalkLista li b{ text-align:right; font:600 17px var(--head); }
+
+/* ---------- interne poruke ---------- */
+#msgBtn{ position:relative; }
+#msgBtn .bdg{ position:absolute; top:-4px; right:-4px; }
+#msgWrap{ position:fixed; inset:auto 16px 16px auto; z-index:72; width:min(420px, calc(100vw - 32px)); }
+.msgBox{ background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:0 18px 46px rgba(0,0,0,.28); overflow:hidden; display:flex; flex-direction:column; max-height:min(620px, 80vh); }
+.msgHead{ display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--brand); color:#fff; font:600 16px var(--head); }
+.msgHead .obX{ margin-left:auto; color:#fff; font-size:22px; }
+.msgTelo{ padding:12px 14px; overflow:auto; }
+.msgHead2{ display:flex; align-items:center; gap:10px; margin-bottom:8px; font:600 16px var(--head); }
+.msgAkc{ display:grid; grid-template-columns:1fr auto; gap:8px; }
+.msgLista{ list-style:none; margin:12px 0 0; padding:0; }
+.msgLista button{ display:grid; gap:2px; width:100%; text-align:left; border:1px solid var(--line-2); background:var(--surface); border-radius:10px; padding:9px 12px; margin-bottom:6px; font:inherit; color:var(--ink); cursor:pointer; }
+.msgLista span{ font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.msgTok{ display:flex; flex-direction:column; gap:6px; max-height:38vh; overflow:auto; padding:2px; }
+.msgB{ max-width:85%; padding:8px 11px; border-radius:12px; font-size:14px; line-height:1.35; white-space:pre-wrap; }
+.msgB.ja{ align-self:flex-end; background:var(--brand); color:#fff; border-bottom-right-radius:4px; }
+.msgB.on{ align-self:flex-start; background:var(--bg); border:1px solid var(--line-2); border-bottom-left-radius:4px; }
+.msgT{ display:block; font-size:10.5px; opacity:.75; margin-top:3px; }
+.msgUnos{ display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:10px; align-items:end; }
+@media (max-width: 760px){ #msgWrap{ inset:auto 8px calc(12px + env(safe-area-inset-bottom,0px)) 8px; width:auto; } }
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -434,7 +456,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button role="tab" data-grp="kuvaona" aria-selected="false">Kuvaona</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
-    <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
+    <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><button type="button" id="msgBtn" class="obBtn" aria-label="Interne poruke" title="Interne poruke"></button><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
   </div>
   <div class="subnav" id="subnav" role="tablist" aria-label="Podmeni"></div>
 </header>
@@ -13502,7 +13524,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "01.10.a";
+const APP_VERZIJA = "01.10.c";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13622,7 +13644,7 @@ async function dodajUnose(datum, lista) {
   const preIspod = new Set(lista.map(x => x.art).filter(id => { const a = S.byId[id]; return a && a.min > 0 && trenutno(id) < a.min; }));
   const docId = datum + "__" + safeSeg(S.uid);
   const t0 = new Date().toISOString();
-  const nove = lista.map(x => { const st = { id: rid(), t: t0, art: x.art, vrsta: x.vrsta, kol: r3(x.kol), uid: S.uid || "anon" }; if (x.nap) st.nap = x.nap; if (x.grp) st.grp = x.grp; if (x.dob) st.dob = x.dob; if (x.cena > 0) st.cena = Math.round(x.cena * 10000) / 10000; return st; });
+  const nove = lista.map(x => { const st = { id: rid(), t: t0, art: x.art, vrsta: x.vrsta, kol: r3(x.kol), uid: S.uid || "anon" }; if (x.nap) st.nap = x.nap; if (x.grp) st.grp = x.grp; if (x.dob) st.dob = x.dob; if (x.cena > 0) st.cena = Math.round(x.cena * 10000) / 10000; if (x.ev) st.ev = String(x.ev); if (x.lot) st.lot = x.lot; return st; });
   try {
     await write(async () => {
       const cur = S.docs[docId];
@@ -13703,7 +13725,7 @@ function renderTicket() {
   const a = S.byId[S.sel];
   if (!a) { t.className = "ticket empty"; t.innerHTML = S.art.length ? "Izaberi artikal iz pretrage." : "Šifarnik je prazan. Uvezi artikle iz Excel tabele na kartici <b>Artikli</b>."; return; }
   const keep = { qty: $("#qty") ? $("#qty").value : "", nap: $("#nap") ? $("#nap").value : "", f: document.activeElement && document.activeElement.id };
-  if (S.tArt !== a.id) { S.tArt = a.id; S.tDob = podrazumevaniDob(a); S.tCena = null; }
+  if (S.tArt !== a.id) { S.tArt = a.id; S.tDob = podrazumevaniDob(a); S.tCena = null; S.tEv = null; }
   const st = trenutno(a.id);
   t.className = "ticket";
   t.innerHTML =
@@ -13714,7 +13736,9 @@ function renderTicket() {
     '<div class="row2"><label class="fld">Količina<span class="kalkPolje"><input class="inp qty" id="qty" inputmode="decimal" autocomplete="off"><button type="button" class="kalkBtn" data-kalk="#qty" title="Kalkulator – saberi pakete" aria-label="Kalkulator">🧮</button></span></label>' +
     '<label class="fld">Napomena (nije obavezno)<input class="inp" id="nap" autocomplete="off" placeholder="npr. broj otpremnice"></label></div>' +
     (S.vrsta === "U" ? '<div class="row2" style="grid-template-columns:1fr 200px"><label class="fld">Dobavljač<select class="inp" id="tDob">' + dobOptions(S.tDob, dobavljaciArtikla(a)) + '</select></label>' +
-      '<label class="fld">Nabavna cena po ' + esc(jm(a)) + ' (RSD)<input class="inp" id="tCena" inputmode="decimal" autocomplete="off" placeholder="nije obavezno"></label></div><div class="after" id="tCenaInfo"></div>' : "") +
+      '<label class="fld">Nabavna cena po ' + esc(jm(a)) + ' (RSD)<input class="inp" id="tCena" inputmode="decimal" autocomplete="off" placeholder="nije obavezno"></label></div><div class="after" id="tCenaInfo"></div>' +
+      '<div class="row2" style="grid-template-columns:200px 1fr"><label class="fld">Evidencioni broj<input class="inp" id="tEv" inputmode="numeric" autocomplete="off" value="' + esc(S.tEv != null ? S.tEv : sledeciEv(S.dUnos)) + '"></label>' +
+      '<div class="fld"><span style="font-size:12px;color:var(--muted)">LOT za etiketu</span><div class="inp" id="tLotPrev" style="background:var(--bg);color:var(--muted)">' + esc(predlogLota(S.dUnos, S.tEv != null ? S.tEv : sledeciEv(S.dUnos))) + "</div></div></div>" : "") +
     '<div class="after" id="after"></div>' +
     '<button type="button" class="submit" id="upisi" data-v="' + S.vrsta + '">Upiši ' + VR[S.vrsta].toLowerCase() + "</button></div>";
   $("#qty").value = keep.qty; $("#nap").value = keep.nap;
@@ -13729,6 +13753,14 @@ function osveziCenu(a) {
   const inf = $("#tCenaInfo");
   if (inf) inf.innerHTML = pc ? "Poslednja cena kod ovog dobavljača: <b>" + esc(fmtC(pc.cena)) + "</b>" + (pc.datum ? " (" + esc(dtxt(pc.datum)) + ")" : " (ERP)") + (pa && pa.dob !== S.tDob && pa.cena !== pc.cena ? " · kod " + esc(dobNaziv(pa.dob)) + ": " + esc(fmtC(pa.cena)) : "")
     : pa ? "Kod ovog dobavljača nema ranije cene · poslednja kod " + esc(dobNaziv(pa.dob)) + ": <b>" + esc(fmtC(pa.cena)) + "</b>" : "";
+}
+// sledeći slobodan evidencioni broj: poslednji iz evidencije kontrole + 1, uz već dodeljene brojeve na ulazima
+function sledeciEv(datum) {
+  const god = String(datum || today()).slice(0, 4);
+  let m = 0;
+  try { m = konMaxBroj(god) || 0; } catch (e) {}
+  for (const e of S.entries) { if (e.storno || e.vrsta !== "U" || !e.ev || String(e.datum).slice(0, 4) !== god) continue; const n = parseInt(e.ev, 10); if (n > m) m = n; }
+  return m + 1;
 }
 function updAfter() {
   const a = S.byId[S.sel]; const el = $("#after"); if (!a || !el) return;
@@ -13753,12 +13785,16 @@ async function submit() {
   }
   const btn = $("#upisi"); btn.disabled = true;
   let extra = null;
-  if (S.vrsta === "U") { const c = parseQty($("#tCena") ? $("#tCena").value : ""); extra = { dob: S.tDob || undefined, cena: c > 0 ? c : undefined }; }
+  if (S.vrsta === "U") {
+    const c = parseQty($("#tCena") ? $("#tCena").value : "");
+    const evv = ($("#tEv") && $("#tEv").value.trim()) || String(sledeciEv(S.dUnos));
+    extra = { dob: S.tDob || undefined, cena: c > 0 ? c : undefined, ev: evv || undefined, lot: evv ? predlogLota(S.dUnos, evv) : undefined };
+  }
   const ok = await dodajUnos(S.dUnos, a.id, S.vrsta, k, $("#nap").value.trim(), extra);
   btn.disabled = false;
   if (ok) {
     toast(VR[S.vrsta] + " " + fmt(k, false) + " – " + a.naziv);
-    S.sel = null; $("#q").value = ""; S.hits = []; renderRez(); renderTicket(); $("#q").focus();
+    S.tEv = null; S.sel = null; $("#q").value = ""; S.hits = []; renderRez(); renderTicket(); $("#q").focus();
   }
 }
 function renderSide() {
@@ -14114,6 +14150,7 @@ function show(view) {
   document.body.classList.remove("mobmeni");
   renderNav(view);
   try { osveziPravo(); } catch (e) {}
+  try { msgBadge(); } catch (e) {}
   $$(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + view));
   renderAll();
   if (view === "unos") $("#q").focus();
@@ -14165,7 +14202,8 @@ $("#ticket").addEventListener("click", e => {
   const s = e.target.closest(".seg button"); if (s) { S.vrsta = s.dataset.v; renderTicket(); $("#qty").focus(); return; }
   if (e.target.id === "upisi") submit();
 });
-$("#ticket").addEventListener("input", e => { if (e.target.id === "qty") updAfter(); if (e.target.id === "tCena") S.tCena = e.target.value; });
+$("#ticket").addEventListener("input", e => {
+  if (e.target.id === "tEv") { S.tEv = e.target.value.trim(); const p = $("#tLotPrev"); if (p) p.textContent = predlogLota(S.dUnos, S.tEv); return; } if (e.target.id === "qty") updAfter(); if (e.target.id === "tCena") S.tCena = e.target.value; });
 $("#ticket").addEventListener("change", e => { if (e.target.id === "tDob") { S.tDob = e.target.value; S.tCena = null; osveziCenu(S.byId[S.sel]); } });
 $("#ticket").addEventListener("keydown", e => {
   if ((e.target.id === "qty" || e.target.id === "nap" || e.target.id === "tCena") && e.key === "Enter") { e.preventDefault(); submit(); }
@@ -14957,11 +14995,15 @@ document.addEventListener("change", e => {   // „označi sve“ u maski za eti
 async function qp18Dlg(lista, datum) {
   // evidencioni broj se uvek uzima iz evidencije prijemnog kontrolisanja: poslednji + 1
   let sledeci = 0; try { sledeci = konMaxBroj(String(datum || today()).slice(0, 4)); } catch (e) {}
+  // artikli koji su pri ulazu već dobili evidencioni broj zadržavaju taj broj
+  let slobodan = sledeci; for (const it of lista) { const n = parseInt(it.ev, 10); if (n > slobodan) slobodan = n; }
+  const evPredlog = []; let sl = slobodan;
+  for (const it of lista) { const n = parseInt(it.ev, 10); if (n > 0) evPredlog.push(n); else evPredlog.push(++sl); }
   const red = (it, i) => { const a = it.a || S.byId[it.art] || {};
     return '<tr><td style="text-align:center"><input type="checkbox" class="qpS" data-i="' + i + '" checked></td>' +
       '<td style="max-width:190px"><b style="font-size:12px">' + esc(a.naziv || "") + '</b><div class="muted" style="font-size:11px">' + esc(a.sifra || "") + "</div></td>" +
-      '<td><input class="inp" data-q="ev" data-i="' + i + '" style="width:70px" inputmode="numeric" value="' + (sledeci ? sledeci + 1 + i : "") + '"></td>' +
-      '<td><input class="inp" data-q="lot" data-i="' + i + '" style="width:118px" value="' + esc(it.lot || predlogLota(datum || today(), sledeci + 1 + i)) + '"></td>' +
+      '<td><input class="inp" data-q="ev" data-i="' + i + '" style="width:70px" inputmode="numeric" value="' + esc(evPredlog[i] || "") + '"></td>' +
+      '<td><input class="inp" data-q="lot" data-i="' + i + '" style="width:118px" value="' + esc(it.lot || predlogLota(datum || today(), evPredlog[i])) + '"></td>' +
       '<td><input class="inp" data-q="kol" data-i="' + i + '" style="width:80px" inputmode="decimal" value="' + esc(it.kol ? String(r3(it.kol)).replace(".", ",") : "") + '"></td>' +
       '<td><input class="inp" data-q="pak" data-i="' + i + '" style="width:60px"></td>' +
       '<td><input class="inp" data-q="dob" data-i="' + i + '" style="width:140px" value="' + esc(it.dob || "") + '"></td>' +
@@ -15027,8 +15069,14 @@ async function naloziUpit(zaNalog, lista, dat) {
 $("#qpPrijem").addEventListener("click", () => {
   const X = $("#dPrijem").value || today(); const l = prijemList(X);
   if (!l.length) { toast("Tog dana nije bilo ulaza."); return; }
-  const dobDana = {}; for (const e of S.entries) if (!e.storno && e.datum === X && e.vrsta === "U" && e.dob) dobDana[e.art] = e.dob;
-  qp18Dlg(l.map(([id, k]) => ({ art: id, kol: k, dob: dobDana[id] ? dobNaziv(dobDana[id]) : (S.byId[id] && S.byId[id].dob ? dobNaziv(S.byId[id].dob) : "") })), X);
+  const dobDana = {}, evDana = {}, lotDana = {};
+  for (const e of S.entries) {
+    if (e.storno || e.datum !== X || e.vrsta !== "U") continue;
+    if (e.dob) dobDana[e.art] = e.dob;
+    if (e.ev) evDana[e.art] = e.ev;
+    if (e.lot) lotDana[e.art] = e.lot;
+  }
+  qp18Dlg(l.map(([id, k]) => ({ art: id, kol: k, ev: evDana[id] || "", lot: lotDana[id] || "", dob: dobDana[id] ? dobNaziv(dobDana[id]) : (S.byId[id] && S.byId[id].dob ? dobNaziv(S.byId[id].dob) : "") })), X);
 });
 
 function trebIso(d) { const m = String(d || "").match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/); return m ? m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0") : ""; }
@@ -16767,6 +16815,114 @@ document.addEventListener("keydown", e => {
   S.kalk.stavke.push(v); S.kalk.unos = ""; kalkRender();
 }, true);
 
+
+/* =====================================================================
+   INTERNE PORUKE – razmena poruka između korisnika i zahtev za pomoć administratoru
+   Svaki korisnik ima svoj dokument poruke/{uid}; slanje upisuje poruku
+   primaocu i kopiju pošiljaocu.
+   ===================================================================== */
+S.msg = { stavke: {}, otvoren: false, sel: null, korisnici: [], ucitani: false };
+function msgLista() {
+  return Object.entries(S.msg.stavke || {}).map(([id, m]) => Object.assign({ id }, m))
+    .sort((a, b) => String(b.t || "").localeCompare(String(a.t || "")));
+}
+function msgNeprocitano() { return msgLista().filter(m => !m.poslato && !m.procitano).length; }
+function msgPartner(m) { return m.poslato ? { id: m.za, ime: m.zaIme || "Administrator" } : { id: m.od, ime: m.odIme || "Korisnik" }; }
+function msgRazgovori() {
+  const g = {};
+  for (const m of msgLista()) {
+    const p = msgPartner(m), k = p.id || "admin";
+    const o = g[k] || (g[k] = { id: k, ime: p.ime, poruke: [], nepr: 0, t: "" });
+    o.poruke.push(m); if (!m.poslato && !m.procitano) o.nepr++;
+    if (!o.t || String(m.t) > o.t) o.t = m.t;
+    if (p.ime && p.ime !== "Korisnik") o.ime = p.ime;
+  }
+  return Object.values(g).sort((a, b) => String(b.t).localeCompare(String(a.t)));
+}
+async function msgUcitajKorisnike() {
+  if (S.msg.ucitani || !S.user || !S.user.list) return;
+  try { S.msg.korisnici = (await S.user.list()).filter(u => u.id !== S.uid); S.msg.ucitani = true; renderMsg(); } catch (e) {}
+}
+async function msgPosalji(zaId, zaIme, tekst, pomoc) {
+  tekst = String(tekst || "").trim(); if (!tekst) { toast("Upiši poruku."); return false; }
+  const t = new Date().toISOString(), id = rid();
+  const primaoci = pomoc ? S.msg.korisnici.filter(u => u.admin) : [{ id: zaId, ime: zaIme }];
+  if (!primaoci.length) { toast("Administrator nije pronađen."); return false; }
+  try {
+    for (const p of primaoci) {
+      await S.db.doc("poruke/" + p.id).update({ stavke: { [id]: { od: S.uid || "anon", odIme: mojeIme(), tekst, t, pomoc: pomoc || undefined } } });
+    }
+    const kopija = { poslato: true, za: pomoc ? "admin" : zaId, zaIme: pomoc ? "Administrator" : zaIme, tekst, t, pomoc: pomoc || undefined };
+    S.msg.stavke[id] = kopija;
+    await S.db.doc("poruke/" + (S.uid || "anon")).update({ stavke: { [id]: kopija } });
+    toast(pomoc ? "Poruka poslata administratoru." : "Poruka poslata – " + zaIme);
+    return true;
+  } catch (e) { dbErr(e); return false; }
+}
+async function msgOznaciProcitane(partnerId) {
+  const izmene = {};
+  for (const m of msgLista()) if (!m.poslato && !m.procitano && (m.od === partnerId || (partnerId === "admin" && m.pomoc))) { izmene[m.id] = Object.assign({}, m, { procitano: true }); delete izmene[m.id].id; S.msg.stavke[m.id] = izmene[m.id]; }
+  if (!Object.keys(izmene).length) return;
+  try { await S.db.doc("poruke/" + (S.uid || "anon")).update({ stavke: izmene }); } catch (e) {}
+}
+function msgVreme(t) {
+  if (!t) return "";
+  const d = String(t).slice(0, 10), h = String(t).slice(11, 16);
+  return (d === today() ? "danas" : dtxt(d)) + " " + h;
+}
+function renderMsg() {
+  let el = $("#msgWrap");
+  if (!S.msg.otvoren) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "msgWrap"; document.body.appendChild(el); }
+  const raz = msgRazgovori(), sel = S.msg.sel;
+  let telo;
+  if (sel) {
+    const r = raz.find(x => x.id === sel) || { ime: sel === "admin" ? "Administrator" : (S.msg.korisnici.find(u => u.id === sel) || {}).ime || "Korisnik", poruke: [] };
+    telo = '<div class="msgHead2"><button class="bzNazad" id="msgNazad" aria-label="Nazad">‹</button><b>' + esc(r.ime) + "</b></div>" +
+      '<div class="msgTok">' + (r.poruke.length ? r.poruke.slice().reverse().map(m => '<div class="msgB ' + (m.poslato ? "ja" : "on") + '">' + esc(m.tekst) + '<span class="msgT">' + esc(msgVreme(m.t)) + (m.pomoc ? " · pomoć" : "") + "</span></div>").join("") : '<p class="muted" style="font-size:13px">Nema poruka.</p>') + "</div>" +
+      '<div class="msgUnos"><textarea class="inp" id="msgT" rows="2" placeholder="Napiši poruku…"></textarea><button class="btn primary" id="msgPosalji">Pošalji</button></div>';
+  } else {
+    telo = '<div class="msgAkc"><button class="btn primary" id="msgPomoc">Pošalji pomoć administratoru</button><button class="btn" id="msgNova">Nova poruka</button></div>' +
+      (raz.length ? '<ul class="msgLista">' + raz.map(r => '<li><button type="button" data-msgr="' + esc(r.id) + '"><b>' + esc(r.ime) + (r.nepr ? ' <span class="bdg">' + r.nepr + "</span>" : "") + "</b><span>" + esc((r.poruke[0] || {}).tekst || "") + '</span><span class="msgT">' + esc(msgVreme(r.t)) + "</span></button></li>").join("") + "</ul>"
+        : '<p class="muted" style="font-size:13px;margin:12px 2px">Još nema poruka. Pošalji prvu kolegi ili administratoru.</p>');
+  }
+  el.innerHTML = '<div class="msgBox" role="dialog" aria-label="Interne poruke"><div class="msgHead"><b>Poruke</b><button class="obX" id="msgZatvori" aria-label="Zatvori">×</button></div><div class="msgTelo">' + telo + "</div></div>";
+  if (sel) { const t = $("#msgT"); if (t) t.focus(); const tok = $(".msgTok"); if (tok) tok.scrollTop = tok.scrollHeight; }
+}
+function msgBadge() {
+  const b = $("#msgBtn"); if (!b) return;
+  const n = msgNeprocitano();
+  b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>' + (n ? '<span class="bdg">' + n + "</span>" : "");
+  b.title = n ? n + " nepročitanih poruka" : "Interne poruke";
+}
+document.addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("#msgBtn")) { S.msg.otvoren = !S.msg.otvoren; S.msg.sel = null; msgUcitajKorisnike(); renderMsg(); return; }
+  if (t.closest("#msgZatvori")) { S.msg.otvoren = false; renderMsg(); return; }
+  if (t.closest("#msgNazad")) { S.msg.sel = null; renderMsg(); return; }
+  const r = t.closest("[data-msgr]");
+  if (r) { S.msg.sel = r.dataset.msgr; renderMsg(); msgOznaciProcitane(S.msg.sel).then(msgBadge); return; }
+  if (t.closest("#msgPomoc")) { S.msg.sel = "admin"; renderMsg(); return; }
+  if (t.closest("#msgNova")) {
+    await msgUcitajKorisnike();
+    const l = S.msg.korisnici;
+    const v = await ask("Nova poruka", '<div class="form"><label class="fld">Kome<select class="inp" id="msgKome"><option value="admin">Administrator (pomoć)</option>' + l.map(u => '<option value="' + esc(u.id) + '">' + esc(u.ime) + (u.admin ? " (admin)" : "") + "</option>").join("") + '</select></label><label class="fld">Poruka<textarea class="inp" id="msgNT" rows="3"></textarea></label></div>', "Pošalji");
+    if (!v) return;
+    const id = $("#msgKome").value, ime = id === "admin" ? "Administrator" : (l.find(u => u.id === id) || {}).ime || "";
+    if (await msgPosalji(id, ime, $("#msgNT").value, id === "admin")) { S.msg.sel = id; renderMsg(); }
+    return;
+  }
+  if (t.closest("#msgPosalji")) {
+    const id = S.msg.sel, l = S.msg.korisnici;
+    const ime = id === "admin" ? "Administrator" : (l.find(u => u.id === id) || {}).ime || (msgRazgovori().find(x => x.id === id) || {}).ime || "";
+    if (await msgPosalji(id, ime, ($("#msgT") || {}).value, id === "admin")) renderMsg();
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "msgT") { e.preventDefault(); const b = $("#msgPosalji"); if (b) b.click(); }
+  if (e.key === "Escape" && S.msg.otvoren) { S.msg.otvoren = false; renderMsg(); }
+});
+
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
 async function skeniraj() {
@@ -17797,7 +17953,7 @@ function obPrikazi(n) {
   obBedz();
   const st = $("#obStack");
   const el = document.createElement("div"); el.className = "obCard " + n.tip; el.setAttribute("role", "alert");
-  el.innerHTML = '<div class="obIk">' + (n.tip === "min" ? "!" : "+") + '</div><div><b>' + esc(n.naslov) + "</b><div>" + esc(n.tekst) + '</div></div><button class="obX" aria-label="Zatvori">×</button>';
+  el.innerHTML = '<div class="obIk">' + (n.tip === "min" ? "!" : n.tip === "poruka" ? "✉" : "+") + '</div><div><b>' + esc(n.naslov) + "</b><div>" + esc(n.tekst) + '</div></div><button class="obX" aria-label="Zatvori">×</button>';
   el.onclick = ev => { if (ev.target.classList.contains("obX")) { el.remove(); return; } el.remove(); show(n.tip === "min" ? "zalihe" : "unos"); };
   st.prepend(el); while (st.children.length > 4) st.lastChild.remove();
   setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 400); }, n.tip === "min" ? 15000 : 9000);
@@ -18001,6 +18157,17 @@ async function start() {
   db.collection("porudzbenice").limit(1000).onSnapshot(s => { S.porudz = s.docs.map(d => Object.assign({ _id: d.id }, d.data())).sort((a, b) => a.t < b.t ? 1 : -1); renderAll(); }, fail);
   db.collection("planovi").limit(500).onSnapshot(s => { S.planovi = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); if ($("#v-plan").classList.contains("on")) { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#planBox") && /INPUT|SELECT/.test(ae.tagName))) renderPlan(); } }, fail);
   db.doc("potrosnja/mesecna").onSnapshot(s => { S.real = s.exists ? s.data() : null; S.cache = {}; renderAll(); }, fail);
+  db.doc("poruke/" + (S.uid || "anon")).onSnapshot(d => {
+    const prosle = S.msg.stavke || {};
+    S.msg.stavke = (d.exists ? d.data().stavke : {}) || {};
+    for (const [id, m] of Object.entries(S.msg.stavke)) {
+      if (m.poslato || m.procitano || prosle[id] || !S.msg._spreman) continue;
+      try { obPrikazi({ tip: "poruka", t: m.t, naslov: (m.pomoc ? "Pomoć – " : "Poruka – ") + (m.odIme || ""), tekst: m.tekst, tag: "msg" + id }); } catch (e) {}
+      try { ntfyPosalji("prijem", "Poruka – " + (m.odIme || ""), m.tekst); } catch (e) {}
+    }
+    S.msg._spreman = true;
+    msgBadge(); if (S.msg.otvoren) renderMsg();
+  }, () => {});
   db.collection("kontrola").limit(500).onSnapshot(s => { const d = {}; for (const x of s.docs) d[x.id] = x.data(); S.kon.docs = d; renderAll(); }, fail);
   db.doc("sirovine/sifarnik").onSnapshot(s => { const it = s.exists ? (s.data().items || []) : []; S.sir.art = it; S.sir.byId = Object.fromEntries(it.map(x => [x.id, x])); S.sir.bySif = Object.fromEntries(it.map(x => [x.sifra, x])); S.sir.cache = null; renderAll(); }, fail);
   db.doc("sirovine/pocetno").onSnapshot(s => { S.sir.poc = s.exists ? s.data() : { datum: null, lotovi: [] }; S.sir.cache = null; renderAll(); }, fail);
