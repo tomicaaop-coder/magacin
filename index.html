@@ -381,6 +381,22 @@ td .kalkBtn{ position:static; transform:none; margin-left:4px; width:28px; heigh
 .msgT{ display:block; font-size:10.5px; opacity:.75; margin-top:3px; }
 .msgUnos{ display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:10px; align-items:end; }
 @media (max-width: 760px){ #msgWrap{ inset:auto 8px calc(12px + env(safe-area-inset-bottom,0px)) 8px; width:auto; } }
+
+.msgObav{ margin-top:10px; padding-top:10px; border-top:1px solid var(--line-2); }
+
+/* ---------- pomoćnik ---------- */
+#msgBot{ font:700 17px var(--head); }
+.pomScroll{ max-height:min(60vh, 520px); overflow:auto; }
+.pomB{ padding:10px 12px; border-radius:12px; margin-bottom:8px; font-size:14px; line-height:1.45; }
+.pomB.bot{ background:var(--bg); border:1px solid var(--line-2); }
+.pomB.ja{ background:var(--brand); color:#fff; margin-left:auto; max-width:85%; }
+.pomOl{ margin:8px 0 8px 18px; padding:0; }
+.pomOl li{ margin-bottom:4px; }
+.pomTeme{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.pomTeme .btn{ font-size:12.5px; padding:5px 10px; }
+.pomUnos{ display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:10px; position:sticky; bottom:0; background:var(--surface); padding-top:6px; }
+.pomAkc{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+.pomAkc .btn{ font-size:13px; }
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -456,7 +472,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button role="tab" data-grp="kuvaona" aria-selected="false">Kuvaona</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
-    <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><button type="button" id="msgBtn" class="obBtn" aria-label="Interne poruke" title="Interne poruke"></button><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
+    <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><button type="button" id="msgBtn" class="obBtn" aria-label="Interne poruke" title="Interne poruke"></button><button type="button" id="msgBot" class="obBtn" aria-label="Pomoć" title="Pomoć – pomoćnik za program">?</button><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
   </div>
   <div class="subnav" id="subnav" role="tablist" aria-label="Podmeni"></div>
 </header>
@@ -13524,7 +13540,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "01.10.c";
+const APP_VERZIJA = "01.10.e";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14167,6 +14183,7 @@ window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prav
 window.__trebTest = (l, sir) => trebIzlazDlg(stavkeIzTeksta(l, sir), sir);
 window.__unos = (art, vrsta, kol, nap) => dodajUnose(today(), [{ art, vrsta, kol, nap }]);
 window.__sirUnos = (art, lot, vrsta, kol, nap) => sirDodajUnose(today(), [{ art, lot, vrsta, kol, nap }]);
+window.__S = () => S;
 window.__trebParse = (l, sir) => stavkeIzTeksta(l, sir);
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
 const q = $("#q");
@@ -16841,16 +16858,26 @@ function msgRazgovori() {
 }
 async function msgUcitajKorisnike() {
   if (S.msg.ucitani || !S.user || !S.user.list) return;
-  try { S.msg.korisnici = (await S.user.list()).filter(u => u.id !== S.uid); S.msg.ucitani = true; renderMsg(); } catch (e) {}
+  try {
+    const l = await S.user.list();
+    const ja = l.find(u => u.id === S.uid); if (ja) S.jaAdmin = !!ja.admin;
+    S.msg.korisnici = l.filter(u => u.id !== S.uid); S.msg.ucitani = true; renderMsg();
+  } catch (e) {}
 }
+// lična ntfy tema primaoca – obaveštenje stiže samo njemu
+function msgKanal(uid) { return "lk-" + String(uid || "").replace(/[^A-Za-z0-9]/g, "").slice(-12).toLowerCase(); }
+function msgMojaTema() { const n = window.NTFY; return n && n.tema ? n.tema + "-" + msgKanal(S.uid) : ""; }
 async function msgPosalji(zaId, zaIme, tekst, pomoc) {
   tekst = String(tekst || "").trim(); if (!tekst) { toast("Upiši poruku."); return false; }
   const t = new Date().toISOString(), id = rid();
-  const primaoci = pomoc ? S.msg.korisnici.filter(u => u.admin) : [{ id: zaId, ime: zaIme }];
-  if (!primaoci.length) { toast("Administrator nije pronađen."); return false; }
+  let primaoci = pomoc ? S.msg.korisnici.filter(u => u.admin) : [{ id: zaId, ime: zaIme }];
+  if (pomoc && !primaoci.length && S.jaAdmin) primaoci = [{ id: S.uid, ime: mojeIme() }];   // jedini administrator si ti
+  if (!primaoci.length) { toast("Administrator nije pronađen – javi se nekom od administratora."); return false; }
   try {
     for (const p of primaoci) {
       await S.db.doc("poruke/" + p.id).update({ stavke: { [id]: { od: S.uid || "anon", odIme: mojeIme(), tekst, t, pomoc: pomoc || undefined } } });
+      // obaveštenje na telefon ide samo primaocu, na njegovu ličnu temu
+      try { if (window.ntfyPosalji) window.ntfyPosalji(msgKanal(p.id), (pomoc ? "Pomoć – " : "Poruka – ") + mojeIme(), tekst, pomoc ? 4 : 3, ["envelope"]); } catch (e) {}
     }
     const kopija = { poslato: true, za: pomoc ? "admin" : zaId, zaIme: pomoc ? "Administrator" : zaIme, tekst, t, pomoc: pomoc || undefined };
     S.msg.stavke[id] = kopija;
@@ -16882,7 +16909,11 @@ function renderMsg() {
       '<div class="msgTok">' + (r.poruke.length ? r.poruke.slice().reverse().map(m => '<div class="msgB ' + (m.poslato ? "ja" : "on") + '">' + esc(m.tekst) + '<span class="msgT">' + esc(msgVreme(m.t)) + (m.pomoc ? " · pomoć" : "") + "</span></div>").join("") : '<p class="muted" style="font-size:13px">Nema poruka.</p>') + "</div>" +
       '<div class="msgUnos"><textarea class="inp" id="msgT" rows="2" placeholder="Napiši poruku…"></textarea><button class="btn primary" id="msgPosalji">Pošalji</button></div>';
   } else {
-    telo = '<div class="msgAkc"><button class="btn primary" id="msgPomoc">Pošalji pomoć administratoru</button><button class="btn" id="msgNova">Nova poruka</button></div>' +
+    const tema = msgMojaTema(), dozv = ("Notification" in window) ? Notification.permission : "nije podržano";
+    telo = '<div class="msgAkc"><button class="btn primary" id="msgBot">Pomoć – pitaj pomoćnika</button><button class="btn" id="msgNova">Nova poruka</button></div>' +
+      '<div class="muted" style="font-size:12px;margin-top:6px">Pomoćnik zna kako program radi i odmah daje uputstvo. Ako ne pomogne, iz njega se poziva administrator.</div>' +
+      '<div class="msgObav">' + (dozv === "default" ? '<button class="btn" id="msgDoz">Uključi obaveštenja na ovom uređaju</button>' : dozv === "denied" ? '<span class="warn">Obaveštenja su blokirana u podešavanjima pregledača.</span>' : "") +
+      (tema ? '<div class="muted" style="font-size:12px;margin-top:6px">Obaveštenja na telefon: u aplikaciji <b>ntfy</b> pretplati se na temu <b id="msgTema">' + esc(tema) + '</b> <button class="x" id="msgKopiraj" title="Kopiraj temu">⧉</button><br>Na tu temu stižu samo <b>tvoje</b> poruke.</div>' : "") + "</div>" +
       (raz.length ? '<ul class="msgLista">' + raz.map(r => '<li><button type="button" data-msgr="' + esc(r.id) + '"><b>' + esc(r.ime) + (r.nepr ? ' <span class="bdg">' + r.nepr + "</span>" : "") + "</b><span>" + esc((r.poruke[0] || {}).tekst || "") + '</span><span class="msgT">' + esc(msgVreme(r.t)) + "</span></button></li>").join("") + "</ul>"
         : '<p class="muted" style="font-size:13px;margin:12px 2px">Još nema poruka. Pošalji prvu kolegi ili administratoru.</p>');
   }
@@ -16902,6 +16933,8 @@ document.addEventListener("click", async e => {
   if (t.closest("#msgNazad")) { S.msg.sel = null; renderMsg(); return; }
   const r = t.closest("[data-msgr]");
   if (r) { S.msg.sel = r.dataset.msgr; renderMsg(); msgOznaciProcitane(S.msg.sel).then(msgBadge); return; }
+  if (t.closest("#msgDoz")) { try { await Notification.requestPermission(); } catch (er) {} renderMsg(); return; }
+  if (t.closest("#msgKopiraj")) { const tm = ($("#msgTema") || {}).textContent || ""; try { await navigator.clipboard.writeText(tm); toast("Tema kopirana: " + tm); } catch (er) { toast("Tema: " + tm); } return; }
   if (t.closest("#msgPomoc")) { S.msg.sel = "admin"; renderMsg(); return; }
   if (t.closest("#msgNova")) {
     await msgUcitajKorisnike();
@@ -16921,6 +16954,137 @@ document.addEventListener("click", async e => {
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "msgT") { e.preventDefault(); const b = $("#msgPosalji"); if (b) b.click(); }
   if (e.key === "Escape" && S.msg.otvoren) { S.msg.otvoren = false; renderMsg(); }
+});
+
+
+/* =====================================================================
+   POMOĆNIK – prvi nivo pomoći u samom programu.
+   Prepoznaje pitanje po ključnim rečima, objasni korak po korak i odvede
+   na pravu karticu. Ako ne zna ili korisniku ne pomogne, poruka ide administratoru.
+   ===================================================================== */
+const POMOC_BAZA = [
+  { id: "ulaz", k: "ulaz unos primio prijem materijala knjiženje ulaza uneti kolicinu ulaza prijem robe", n: "Unos ulaza (prijem) ambalaže",
+    o: "Ulaz se knjiži na kartici Magacin ambalaže → Unos.",
+    s: ["Pronađi artikal: kucaj šifru ili deo naziva, ili skeniraj kod kamerom.", "Izaberi karticu <b>Ulaz</b>.", "Upiši količinu – ako sabiraš pakete, klikni 🧮 i saberi ih kalkulatorom.", "Proveri <b>evidencioni broj</b> – sam se predlaže kao prvi slobodan iz evidencije kontrole, a ispod se vidi LOT za etiketu.", "Klikni <b>Upiši</b>. Unos se odmah vidi u desnoj koloni i može se stornirati klikom na ×."], v: "unos" },
+  { id: "izlaz", k: "izlaz trebovanje izdavanje utrošak potrošnja skidanje sa stanja", n: "Izlaz po trebovanju",
+    o: "Izlaz možeš upisati ručno ili ga pročitati sa trebovanja.",
+    s: ["Ručno: Unos → nađi artikal → kartica <b>Izlaz</b> → količina → Upiši.", "Sa papira: Unos → <b>Slikaj trebovanje</b> (telefon slika papir).", "Iz ERP-a: Unos → <b>Izlaz po trebovanju (PDF)</b>.", "Otvara se prozor sa prepoznatim stavkama – ispravi količine, označi šta se knjiži i klikni <b>Proknjiži izlaz</b>."], v: "unos" },
+  { id: "etikete", k: "etiketa etikete qp18 identifikaciona nalepnica stampa štampa labela identifikovano", n: "Identifikacione etikete QP18",
+    o: "Etikete se prave sa kartice Prijem, za sve što je tog dana primljeno.",
+    s: ["Magacin ambalaže → <b>Prijem</b>, izaberi datum.", "Klikni <b>Identifikaciona etiketa (QP18)</b>.", "Čekiraj artikle za koje praviš etikete.", "Proveri evidencioni broj i LOT (sami se predlažu, mogu se ispraviti).", "<b>Štampaj</b> štampa direktno, <b>Preuzmi PDF</b> pravi fajl.", "Posle toga te program pita za svaki artikal da li da napravi nalog laboratoriji."], v: "prijem" },
+  { id: "evbroj", k: "evidencioni broj lot kontrolni broj numeracija redni broj naloga", n: "Evidencioni broj i LOT",
+    o: "Evidencioni broj se nastavlja na poslednji broj iz evidencije prijemnog kontrolisanja (deo iza kose crte).",
+    s: ["Pri ulazu se sam predloži prvi slobodan broj.", "LOT se sastavlja kao <b>DDMMYY/evidencioni broj</b>, npr. 011026/517.", "Ako promeniš broj ili datum, LOT se sam prilagodi.", "Isti broj ide na etiketu i u evidenciju kontrole kao kontrolni broj."], v: "prijem" },
+  { id: "nalog", k: "nalog laboratoriji laboratorija uzorkovano uzorak odluka kontrola kvaliteta odgovara neusaglašeno uslovno", n: "Nalog laboratoriji i odluka",
+    o: "Nalog se pravi iz maske za etikete i vodi se na kartici Kontrola.",
+    s: ["U maski za etikete klikni <b>Kreiraj nalog laboratoriji</b> ili odgovori na pitanje posle štampe.", "Nalog se pojavi u Kontrola → Ambalaža (ili Galenika) sa statusom <b>otvoren</b>.", "Kad kontrola uzme uzorak, otvori nalog i klikni <b>Označi UZORKOVANO</b> (žuto).", "Tek posle toga može odluka: Odgovara, Uslovno primljeno ili Neusaglašeno.", "Nalog se može i odštampati, format A5."], v: "kamb" },
+  { id: "popis", k: "popis popisivanje brojanje inventar izbrojano razlika kalo", n: "Popis",
+    o: "Popis se radi po artiklu (ambalaža) ili po lotu (sirovine).",
+    s: ["Magacin ambalaže → <b>Popis ambalaže</b> → Započni popis.", "Upisuj izbrojane količine; Enter prelazi na sledeći artikal.", "Na telefonu koristi <b>Brzo popisivanje</b> – pretraga kucanjem, glasom ili skenerom.", "Ako u toku popisa bude ulaza ili izlaza, program sam ispravi izbrojano i ispiše napomenu.", "Na kraju klikni <b>Proknjiži popis</b> – korekcije se vide u prometu."], v: "popis" },
+  { id: "uskl", k: "usklađivanje usaglašavanje upis lager lista erp razlike stanje ne slaže galenika druga lista", n: "Usklađivanje sa UPIS-om",
+    o: "Lager lista iz ERP-a se poredi sa stanjem u programu, po šifri.",
+    s: ["Magacin ambalaže → <b>Usklađivanje sa UPIS-om</b> → učitaj lager-listu (PDF ili Excel).", "Ako imaš drugu listu (Galenika, šifre 250xxx), klikni <b>Dodaj još jednu listu</b>.", "Vidiš razlike po artiklu; biraš magacine koji se porede.", "Šifre kojih nema u programu prikažu se za izbor – označiš šta se uvozi.", "<b>Proknjiži razlike</b> ispravlja stanje; promet ostaje sačuvan."], v: "uskl" },
+  { id: "sirovine", k: "sirovine lot lotovi rok trajanja serija zbirno stanje magacioner tabela", n: "Magacin sirovina",
+    o: "Sirovine se vode po lotovima, sa rokom trajanja.",
+    s: ["<b>Unos</b> – ulaz sa lotom i rokom, izlaz po lotu (FEFO: prvo ističe, prvo izlazi).", "<b>Zbirno stanje</b> – jedan red po sirovini, bez lotova; tu se radi usaglašavanje sa Excel tabelom magacionera (po šifri).", "<b>Stanje po lotovima</b> – svaki lot sa stanjem i rokom.", "<b>Rokovi trajanja</b> – šta je isteklo i šta ističe."], v: "sunos" },
+  { id: "nabavka", k: "nabavka zahtev porudžbenica porudzbenica dobavljač cena analitika minimum poručivanje", n: "Nabavka",
+    o: "Nabavka ide kroz zahteve i porudžbenice.",
+    s: ["<b>Zahtevi</b> – program predlaže šta treba poručiti po potrošnji i minimumu; količine se zaokružuju na pakovanje.", "Iz zahteva se pravi <b>porudžbenica</b> po dobavljaču.", "<b>Dobavljači</b> – podaci i rokovi isporuke.", "<b>Analitika</b> – cene i troškovi, po magacinu."], v: "zahtevi" },
+  { id: "prava", k: "pravo prava uloga uloge pristup ne vidim karticu zaključano samo pregled administrator korisnici", n: "Prava pristupa",
+    o: "Svaki korisnik vidi samo menije koje mu je dodelio administrator.",
+    s: ["Za svaki glavni meni postoji: nema pristup, samo pregled ili unos i izmene.", "Ako ti traka kaže „Pristup samo za pregled“, možeš da gledaš ali ne i da upisuješ.", "Ako ti kartica uopšte ne postoji, nemaš pravo na nju.", "Izmenu prava radi administrator u <b>Korisnici</b>."] },
+  { id: "obavestenja", k: "obaveštenje notifikacija zvono ntfy telefon zvuk poruka ne stiže", n: "Obaveštenja",
+    o: "Obaveštenja stižu u program, na uređaj i na telefon preko aplikacije ntfy.",
+    s: ["Klikni zvono → uključi vrste obaveštenja i zvuk.", "Za obaveštenja uređaja dozvoli notifikacije u pregledaču.", "Za telefon: instaliraj <b>ntfy</b> i pretplati se na teme koje je dao administrator.", "Za lične poruke pretplati se na svoju temu – piše u prozoru <b>Poruke</b>."] },
+  { id: "skener", k: "skener kamera bar kod qr skeniranje citanje koda", n: "Skeniranje koda",
+    o: "Na etiketi su QR i bar kod šifre artikla.",
+    s: ["U polju za pretragu klikni ikonicu kamere i usmeri je na kod.", "Kod sirovina se iz koda čita i lot.", "Ako kamera ne radi, proveri da li je sajt otvoren preko https i da li je dozvoljen pristup kameri."] },
+  { id: "excel", k: "excel izvoz tabela preuzmi fajl stampanje izveštaj", n: "Izvoz u Excel i štampa",
+    o: "Skoro svaka tabela ima dugme Preuzmi Excel, a prijem i popis se mogu štampati.",
+    s: ["Klikni <b>Preuzmi Excel</b> na kartici koju gledaš.", "Za štampu koristi dugme Štampaj ili Ctrl+P."] },
+  { id: "poruke", k: "poruka poruke dopisivanje chat kolega administrator pomoc pisanje javljanje koverta", n: "Interne poruke",
+    o: "Poruke se šalju iz koverte u zaglavlju.",
+    s: ["Klikni ✉ u zaglavlju.", "<b>Nova poruka</b> – izaberi kolegu i napiši poruku.", "<b>Pomoć – pitaj pomoćnika</b> otvara mene; ako ne pomognem, pozivamo administratora.", "Nova poruka javlja se obaveštenjem; za telefon se pretplati na svoju temu u aplikaciji ntfy (piše u prozoru Poruke)."] },
+  { id: "greska", k: "ne radi greška zamrzlo puca neće da upiše upis nije uspeo problem", n: "Nešto ne radi",
+    o: "Najčešće pomaže osvežavanje i provera veze.",
+    s: ["Pritisni <b>Ctrl + Shift + R</b> (na telefonu zatvori i ponovo otvori aplikaciju).", "Proveri gore desno da li piše <b>Povezano</b>.", "Ako piše da upis nije uspeo, verovatno nemaš pravo izmene na toj kartici.", "Ako se ponavlja, pošalji poruku administratoru sa opisom šta si radio."] }
+];
+S.pom = { tok: [], otvoren: false };
+const POMOC_STOP = new Set("kako koja koji koje kada kad gde sta zasto zato treba hocu zelim molim moze mogu nemogu ima nije nema ovo ono tako sada posle pre program aplikacija klik dugme moj moja nesto neko ali pa jos sam jesam bih bi ste smo".split(" "));
+function pomocNadji(q) {
+  const w = norm(q).split(/[^a-z0-9]+/).filter(x => x.length > 2 && !POMOC_STOP.has(x));
+  if (!w.length) return [];
+  const koren = x => x.slice(0, Math.max(4, Math.min(x.length, Math.ceil(x.length * 0.7))));
+  return POMOC_BAZA.map(t => {
+    const kt = norm(t.k + " " + t.n).split(/[^a-z0-9]+/).filter(Boolean);
+    let sc = 0;
+    for (const x of w) {
+      const kx = koren(x);
+      for (const y of kt) {
+        if (y === x) { sc += 4; break; }
+        if (y.length > 3 && x.length > 3 && (y.startsWith(kx) || x.startsWith(koren(y)))) { sc += 2; break; }
+      }
+    }
+    return { t, sc };
+  }).filter(x => x.sc >= 2).sort((a, b) => b.sc - a.sc).map(x => x.t);
+}
+function pomocOdgovor(t) {
+  return "<b>" + esc(t.n) + "</b><br>" + t.o + "<ol class='pomOl'>" + t.s.map(x => "<li>" + x + "</li>").join("") + "</ol>" +
+    (t.v ? '<button class="btn" data-pomv="' + t.v + '">Otvori karticu</button>' : "");
+}
+function pomocDodaj(ko, html) { S.pom.tok.push({ ko, html }); renderPomoc(); }
+function renderPomoc() {
+  const el = $("#pomTelo"); if (!el) return;
+  el.innerHTML = S.pom.tok.map(p => '<div class="pomB ' + p.ko + '">' + p.html + "</div>").join("") +
+    '<div class="pomUnos"><input class="inp" id="pomQ" placeholder="Opiši problem ili pitanje…" autocomplete="off"><button class="btn primary" id="pomSalji">Pitaj</button></div>' +
+    '<div class="pomAkc"><button class="btn" id="pomTeme">Spisak tema</button><button class="btn" id="pomAdmin">Nije pomoglo – pozovi administratora</button></div>';
+  const i = $("#pomQ"); if (i) i.focus();
+  const sc = $("#pomScroll"); if (sc) sc.scrollTop = sc.scrollHeight;
+}
+function pomocTeme() {
+  return "Evo o čemu sve mogu da pomognem:<div class='pomTeme'>" + POMOC_BAZA.map(t => '<button class="btn" data-pomt="' + t.id + '">' + esc(t.n) + "</button>").join("") + "</div>";
+}
+async function pomocOtvori() {
+  S.pom = { tok: [{ ko: "bot", html: "Zdravo " + esc(mojeIme().split(" ")[0]) + "! Ja sam pomoćnik za ovaj program. Opiši problem svojim rečima – na primer „kako da odštampam etiketu“ ili „ne mogu da upišem izlaz“. Ako ne budem znao, poslaćemo poruku administratoru." }], otvoren: true };
+  const d = $("#dlg"); d.style.width = "min(680px, 96vw)";
+  const p = ask("Pomoć", '<div id="pomScroll" class="pomScroll"><div id="pomTelo"></div></div>', "Zatvori", null);
+  renderPomoc();
+  await p;
+  d.style.width = ""; S.pom.otvoren = false;
+}
+function pomocPitaj(q) {
+  q = String(q || "").trim(); if (!q) return;
+  pomocDodaj("ja", esc(q));
+  const r = pomocNadji(q);
+  if (!r.length) {
+    pomocDodaj("bot", "Nisam siguran da znam odgovor na to. " + pomocTeme() + "<br>Ako nije ništa od toga, klikni <b>Nije pomoglo – pozovi administratora</b> i poslaću mu tvoje pitanje.");
+    return;
+  }
+  pomocDodaj("bot", pomocOdgovor(r[0]) + (r.length > 1 ? "<div class='pomTeme'>Možda i ovo: " + r.slice(1, 4).map(t => '<button class="btn" data-pomt="' + t.id + '">' + esc(t.n) + "</button>").join("") + "</div>" : ""));
+}
+document.addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("#msgBot")) { pomocOtvori(); return; }
+  if (t.closest("#pomSalji")) { const i = $("#pomQ"); if (i) { pomocPitaj(i.value); i.value = ""; } return; }
+  if (t.closest("#pomTeme")) { pomocDodaj("bot", pomocTeme()); return; }
+  const tema = t.closest("[data-pomt]");
+  if (tema) { const x = POMOC_BAZA.find(y => y.id === tema.dataset.pomt); if (x) pomocDodaj("bot", pomocOdgovor(x)); return; }
+  const v = t.closest("[data-pomv]");
+  if (v) { const dd = $("#dlg"); if (dd && dd.open) dd.close(); S.pom.otvoren = false; setTimeout(() => show(v.dataset.pomv), 20); return; }
+  if (t.closest("#pomAdmin")) {
+    const pitanja = S.pom.tok.filter(x => x.ko === "ja").map(x => x.html.replace(/<[^>]+>/g, "")).join(" · ");
+    const d = $("#dlg"); if (d && d.open) { d.close(); await new Promise(r => setTimeout(r, 40)); }   // sačekaj da se zatvori prethodni prozor
+    S.pom.otvoren = false;
+    await msgUcitajKorisnike();
+    const ok = await ask("Pozovi administratora", '<div class="form"><p class="muted" style="margin:0">Pomoćnik nije rešio problem, pa poruka ide administratorima. Dopuni opis ako treba.</p><label class="fld">Poruka<textarea class="inp" id="pomAT" rows="4">' + esc(pitanja ? "Pomoćnik nije pomogao. Pitanje: " + pitanja : "") + "</textarea></label></div>", "Pošalji administratoru");
+    if (!ok) return;
+    const tekstA = ($("#pomAT") || {}).value || "";
+    if (await msgPosalji("admin", "Administrator", tekstA, true)) { S.msg.otvoren = true; S.msg.sel = "admin"; renderMsg(); }
+
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.id === "pomQ") { e.preventDefault(); pomocPitaj(e.target.value); e.target.value = ""; }
 });
 
 /* skeniranje kamerom */
@@ -17922,7 +18086,7 @@ $("#planBox").addEventListener("keydown", e => { if (e.target.id === "plKol" && 
    OBAVEŠTENJA – prijem materijala i pad ispod minimuma, u realnom vremenu
    ===================================================================== */
 const OB = { lista: [], neprocitano: 0, videni: null, ispod: null, spremno: false, audio: null };
-const obPref = (() => { let p = {}; try { p = JSON.parse(localStorage.getItem("obPref") || "{}"); } catch (e) {} return Object.assign({ prijem: true, min: true, zvuk: true, moji: false, sistem: true }, p); })();
+const obPref = (() => { let p = {}; try { p = JSON.parse(localStorage.getItem("obPref") || "{}"); } catch (e) {} return Object.assign({ prijem: true, min: true, zvuk: true, moji: false, sistem: true, poruke: true }, p); })();
 function obSacuvajPref() { try { localStorage.setItem("obPref", JSON.stringify(obPref)); } catch (e) {} }
 try { OB.lista = JSON.parse(localStorage.getItem("obLista") || "[]").slice(0, 60); } catch (e) {}
 function obZvuk(tip) {
@@ -17942,9 +18106,11 @@ document.addEventListener("pointerdown", () => { try { const C = OB.audio || (OB
 async function obSistem(naslov, tekst, tag) {
   if (!obPref.sistem || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
-    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    let reg = null;
+    try { reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); } catch (er) { reg = null; }
     const opt = { body: tekst, tag, renotify: true, icon: "icon-192.png", badge: "icon-192.png", vibrate: [200, 100, 200] };
-    if (reg) await reg.showNotification(naslov, opt); else new Notification(naslov, opt);
+    if (reg && reg.showNotification) { try { await reg.showNotification(naslov, opt); return; } catch (er) {} }
+    new Notification(naslov, opt);
   } catch (e) {}
 }
 function obPrikazi(n) {
@@ -17997,7 +18163,7 @@ function obPanel() {
   OB.neprocitano = 0; obBedz();
   const dozvola = !("Notification" in window) ? "nije podržano" : Notification.permission === "granted" ? "uključena" : Notification.permission === "denied" ? "blokirana u pregledaču" : "nije uključena";
   p.innerHTML = '<div class="obHead"><b>Obaveštenja</b><button class="obX" id="obZat" aria-label="Zatvori">×</button></div>' +
-    '<div class="obSet">' + [["prijem", "prijem materijala"], ["min", "pad ispod minimuma"], ["zvuk", "zvuk"], ["moji", "i moji unosi"], ["sistem", "obaveštenja uređaja"]].map(([k, l]) => '<label class="chk"><input type="checkbox" data-obp="' + k + '"' + (obPref[k] ? " checked" : "") + "> " + l + "</label>").join("") +
+    '<div class="obSet">' + [["prijem", "prijem materijala"], ["min", "pad ispod minimuma"], ["poruke", "nove poruke"], ["zvuk", "zvuk"], ["moji", "i moji unosi"], ["sistem", "obaveštenja uređaja"]].map(([k, l]) => '<label class="chk"><input type="checkbox" data-obp="' + k + '"' + (obPref[k] ? " checked" : "") + "> " + l + "</label>").join("") +
     '<div class="muted" style="font-size:12px;width:100%">Obaveštenja uređaja: <b>' + dozvola + "</b>" + (("Notification" in window) && Notification.permission === "default" ? ' <button class="btn" id="obDoz" style="padding:3px 10px;font-size:12px">Uključi</button>' : "") + ' <button class="btn" id="obTest" style="padding:3px 10px;font-size:12px">Probaj zvuk</button></div></div>' +
     '<div class="obList">' + (OB.lista.length ? OB.lista.map(n => '<div class="obRow ' + n.tip + '"><span class="obDot"></span><div><b>' + esc(n.naslov) + '</b><div>' + esc(n.tekst) + '</div><span class="muted" style="font-size:11px">' + esc(new Date(n.t).toLocaleString("sr-Latn-RS", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) + "</span></div></div>").join("") : '<div class="muted" style="padding:14px">Još nema obaveštenja.</div>') + "</div>" +
     (OB.lista.length ? '<div style="padding:8px 12px;border-top:1px solid var(--line)"><button class="btn" id="obObrisi" style="font-size:12px;padding:4px 10px">Obriši spisak</button></div>' : "");
@@ -18161,9 +18327,8 @@ async function start() {
     const prosle = S.msg.stavke || {};
     S.msg.stavke = (d.exists ? d.data().stavke : {}) || {};
     for (const [id, m] of Object.entries(S.msg.stavke)) {
-      if (m.poslato || m.procitano || prosle[id] || !S.msg._spreman) continue;
+      if (m.poslato || m.procitano || prosle[id] || !S.msg._spreman || !obPref.poruke) continue;
       try { obPrikazi({ tip: "poruka", t: m.t, naslov: (m.pomoc ? "Pomoć – " : "Poruka – ") + (m.odIme || ""), tekst: m.tekst, tag: "msg" + id }); } catch (e) {}
-      try { ntfyPosalji("prijem", "Poruka – " + (m.odIme || ""), m.tekst); } catch (e) {}
     }
     S.msg._spreman = true;
     msgBadge(); if (S.msg.otvoren) renderMsg();

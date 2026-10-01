@@ -115,6 +115,7 @@
       await fetch(n.server.replace(/\/+$/, ""), { method: "POST", body: JSON.stringify({ topic: n.tema + "-" + kanal, title: naslov, message: poruka, priority: prioritet || 3, tags: tagovi || [], click: location.href.split("#")[0] }) });
     } catch (e) {}
   };
+  window.ntfyMojaTema = () => { const n = window.NTFY; return n && n.tema && ja ? n.tema + "-lk-" + String(ja.uid).replace(/[^A-Za-z0-9]/g, "").slice(-12).toLowerCase() : ""; };
   kapija.then(() => fs.doc("sistem/ntfy").onSnapshot(d => { const x = d.exists ? d.data() : null; window.NTFY = x && x.tema ? x : null; }, () => {}));
 
   window.PRAVO = v => {
@@ -319,7 +320,7 @@
       } catch (err) { alert("Promena nije sačuvana: " + err.message); }
     });
     const info = () => { const n = window.NTFY; const el = w.querySelector("#fbNInfo"); if (!el) return;
-      el.innerHTML = n && n.tema ? "Na telefonu: instaliraj aplikaciju <b>ntfy</b> (Google Play / App Store), pa se pretplati na teme:<br><b>" + esc(n.tema) + "-prijem</b> (prijem materijala) i <b>" + esc(n.tema) + "-minimum</b> (pad ispod minimuma), server " + esc(n.server) + "." : "ntfy nije podešen."; };
+      el.innerHTML = n && n.tema ? "Za lične poruke svako se pretplaćuje na svoju temu (piše u prozoru Poruke). Na telefonu: instaliraj aplikaciju <b>ntfy</b> (Google Play / App Store), pa se pretplati na teme:<br><b>" + esc(n.tema) + "-prijem</b> (prijem materijala) i <b>" + esc(n.tema) + "-minimum</b> (pad ispod minimuma), server " + esc(n.server) + "." : "ntfy nije podešen."; };
     info();
     w.addEventListener("click", async e => {
       const t = e.target;
