@@ -13640,7 +13640,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "02.10.e";
+const APP_VERZIJA = "02.10.f";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -17348,12 +17348,7 @@ function renderPregled() {
   pgAnimiraj(box, ned);
 }
 function pgAnimiraj(root, ned) {
-  $$(".brojac", root).forEach(el => {
-    const cilj = parseFloat(el.dataset.do || "0"); let t0 = null;
-    const k = t => { if (!t0) t0 = t; const p = Math.min(1, (t - t0) / 800), e = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(cilj * e).toLocaleString("sr-RS"); if (p < 1) requestAnimationFrame(k); };
-    requestAnimationFrame(k);
-  });
+  $$(".brojac", root).forEach(el => { delete el.dataset.ok; animBroj(el); });
   $$(".luk", root).forEach(c => {
     const r = 47, o = 2 * Math.PI * r, deo = parseFloat(c.dataset.deo), pom = parseFloat(c.dataset.pom || "0");
     c.setAttribute("stroke-dasharray", o); c.setAttribute("stroke-dashoffset", o);
@@ -17426,6 +17421,21 @@ function plocica(o) {
     (info.length ? '<div class="tile-info"><dl>' + info.map(x => "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>").join("") + "</dl></div>" : "") +
     spark + "</article>";
 }
+/* brojevi na pločicama se prebroje čim se pojave, na bilo kojoj kartici */
+function animBroj(el) {
+  if (el.dataset.ok) return; el.dataset.ok = "1";
+  const cilj = parseFloat(el.dataset.do || "0");
+  if (!(Math.abs(cilj) > 0)) { el.textContent = "0"; return; }
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = cilj.toLocaleString("sr-RS"); return; }
+  let t0 = null;
+  const k = t => { if (!t0) t0 = t; const p = Math.min(1, (t - t0) / 800), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(cilj * e).toLocaleString("sr-RS"); if (p < 1) requestAnimationFrame(k); };
+  requestAnimationFrame(k);
+}
+function animBrojace(root) { $$(".brojac", root || document).forEach(animBroj); }
+new MutationObserver(() => animBrojace()).observe(document.documentElement, { childList: true, subtree: true });
+addEventListener("DOMContentLoaded", () => animBrojace());
+
 /* opis koji se pojavi na prelaz mišem (računar) ili na dodir (telefon) */
 let infoEl = null, infoT = null;
 function infoPrikazi(cilj) {
