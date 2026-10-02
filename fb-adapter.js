@@ -9,6 +9,7 @@
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
   const FB_VERZIJA = "26.09.c";
   const MENIJI = [
+    ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
     ["sirovine", "Magacin sirovina", ["sunos", "szbirno", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
     ["proizvodnja", "Proizvodnja", ["proizvodnja", "plan", "zalihe"]],

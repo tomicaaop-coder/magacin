@@ -19,30 +19,37 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --bg:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#16202A; --muted:#5B6875; --line:#D5DCE3; --line-2:#E6EBF0;
-  --brand:#EE7D00; --brand-ink:#9A4F00; --brand-soft:#FDEBD6;
-  --ulaz:#1E7A4C; --ulaz-soft:#E1F2E8; --izlaz:#B8322A; --izlaz-soft:#F8E3E1; --povrat:#1F5FA8; --povrat-soft:#E2EBF7;
+  --bg:#F2F3F0; --surface:#FFFFFF; --surface-2:#F7F8F5; --ink:#14181C; --muted:#6C7A86; --line:#DFE2DD; --line-2:#ECEEEA;
+  --brand:#EE7D00; --brand-ink:#A65600; --brand-soft:#FDEBD6;
+  --ulaz:#2E7D4F; --ulaz-soft:#DCEFE3; --izlaz:#B8322A; --izlaz-soft:#F7DEDB; --povrat:#1F5FA8; --povrat-soft:#E2EBF7;
+  --warn:#C9811A; --warn-soft:#FBEED3;
+  --rail:#102027; --rail-2:#17313B; --rail-ink:#C8D7DD;
   --focus:#2B6CB0;
-  --head:"Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --head:"Barlow Condensed", "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
   --body:"IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --num:"IBM Plex Mono", ui-monospace, "Courier New", monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#11171D; --surface:#19222B; --surface-2:#1F2A34; --ink:#E6ECF1; --muted:#9AA8B5; --line:#2E3B47; --line-2:#26323D;
-    --brand:#FF9A2E; --brand-ink:#FFB866; --brand-soft:#3A2A17;
-    --ulaz:#4CC38A; --ulaz-soft:#17332A; --izlaz:#F07167; --izlaz-soft:#3A1F1F; --povrat:#6FA8F0; --povrat-soft:#1A2B40;
+    --bg:#0C1418; --surface:#121D22; --surface-2:#16242A; --ink:#E9EDF0; --muted:#95A3AD; --line:#22343C; --line-2:#1A2A31;
+    --brand:#FF9A2E; --brand-ink:#FFB866; --brand-soft:#3A2409;
+    --ulaz:#4CC38A; --ulaz-soft:#10301F; --izlaz:#F07167; --izlaz-soft:#331512; --povrat:#6FA8F0; --povrat-soft:#1A2B40;
+    --warn:#E0A33C; --warn-soft:#32260C;
+    --rail:#081014; --rail-2:#102027; --rail-ink:#BFD4DC;
     --focus:#7FB2F0; color-scheme: dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#11171D; --surface:#19222B; --surface-2:#1F2A34; --ink:#E6ECF1; --muted:#9AA8B5; --line:#2E3B47; --line-2:#26323D;
-  --brand:#FF9A2E; --brand-ink:#FFB866; --brand-soft:#3A2A17;
-  --ulaz:#4CC38A; --ulaz-soft:#17332A; --izlaz:#F07167; --izlaz-soft:#3A1F1F; --povrat:#6FA8F0; --povrat-soft:#1A2B40;
+  --bg:#0C1418; --surface:#121D22; --surface-2:#16242A; --ink:#E9EDF0; --muted:#95A3AD; --line:#22343C; --line-2:#1A2A31;
+  --brand:#FF9A2E; --brand-ink:#FFB866; --brand-soft:#3A2409;
+  --ulaz:#4CC38A; --ulaz-soft:#10301F; --izlaz:#F07167; --izlaz-soft:#331512; --povrat:#6FA8F0; --povrat-soft:#1A2B40;
+  --warn:#E0A33C; --warn-soft:#32260C;
+  --rail:#081014; --rail-2:#102027; --rail-ink:#BFD4DC;
   --focus:#7FB2F0; color-scheme: dark;
 }
 :root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
@@ -51,30 +58,41 @@ html{ scroll-padding-top:env(safe-area-inset-top,0px); }
 body{ margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 var(--body); -webkit-font-smoothing:antialiased; }
 button,input,select{ font:inherit; color:inherit; }
 :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
-.num{ font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
+.num{ font-family:var(--num); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
+td.sif, .sif{ font-family:var(--num); }
 .muted{ color:var(--muted); }
 h1,h2,h3{ font-family:var(--head); font-weight:600; letter-spacing:.01em; margin:0; }
 
 /* ---------- top bar ---------- */
-.bar{ position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--surface); }
-.bar-in{ border-bottom:4px solid var(--brand); }
-.bar-in{ max-width:1440px; margin:0 auto; display:flex; align-items:center; gap:22px; padding:10px 20px 0; flex-wrap:wrap; }
+.bar{ position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--surface); color:var(--ink); }
+.bar-in{ border-bottom:0; }
+.bar-in{ max-width:1440px; margin:0 auto; display:flex; align-items:center; gap:18px; padding:10px 20px; flex-wrap:wrap; }
 .brand{ display:flex; align-items:center; gap:14px; padding-bottom:10px; }
 .brand img{ height:30px; width:auto; display:block; }
-.brand-name{ font-family:var(--head); font-size:20px; font-weight:600; line-height:1; }
-.brand-name small{ display:block; font-family:var(--body); font-size:12px; font-weight:400; color:var(--muted); margin-top:3px; }
-nav.tabs{ display:flex; gap:2px; align-self:flex-end; overflow-x:auto; }
+.brand-name{ font-family:var(--head); font-size:21px; font-weight:600; line-height:1; letter-spacing:.3px; }
+.brand-name small{ display:block; font-family:var(--body); font-size:11.5px; font-weight:400; color:var(--muted); margin-top:3px; }
+.baner{ position:relative; background:#0A2A6B; overflow:hidden; min-height:92px; padding-bottom:22px; display:flex; flex-direction:column; justify-content:center; }
+.baner::before{ content:""; position:absolute; inset:0; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201440%20170%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22p%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230A2A6B%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23143F93%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22o%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%220%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23F08A08%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%23FFA92B%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23EE7D00%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%221440%22%20height%3D%22170%22%20fill%3D%22url%28%23p%29%22%2F%3E%3Cpath%20d%3D%22M0%2096C180%2066%20330%20128%20560%20116%20820%20103%20980%2058%201180%2072c120%208%20190%2030%20260%2044v54H0z%22%20fill%3D%22%230E3781%22%2F%3E%3Cpath%20d%3D%22M0%20126C210%2096%20360%20158%20620%20142%20880%20126%201050%2096%201250%20106c90%205%20140%2016%20190%2026v38H0z%22%20fill%3D%22url%28%23o%29%22%2F%3E%3Cpath%20d%3D%22M0%20148C230%20124%20420%20168%20680%20156%20940%20144%201120%20124%201300%20132c60%203%20100%209%20140%2015v23H0z%22%20fill%3D%22%23FFB44D%22%20opacity%3D%22.55%22%2F%3E%3Cpath%20d%3D%22M0%20118C210%2090%20380%20150%20640%20134%20900%20118%201080%2092%201280%20102%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.18%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E");
+  background-size:100% 54px; background-position:bottom center; background-repeat:no-repeat; }
+.baner > *{ position:relative; z-index:1; max-width:1440px; margin:0 auto; }
+nav.tabs{ display:flex; gap:3px; width:100%; padding:10px 20px 4px; overflow-x:auto; scrollbar-width:none; }
+nav.tabs::-webkit-scrollbar{ display:none; }
 nav.tabs button{ border:0; background:none; padding:9px 16px 11px; font-family:var(--head); font-size:16px; font-weight:600; color:var(--muted); cursor:pointer; border-radius:6px 6px 0 0; white-space:nowrap; }
-nav.tabs button:hover{ color:var(--ink); background:var(--surface-2); }
-nav.tabs button[aria-selected="true"]{ color:#fff; background:var(--brand); }
+nav.tabs button{ color:rgba(255,255,255,.88); border-radius:11px; padding:8px 13px; transition:background .18s, color .18s, transform .18s; }
+nav.tabs button:hover{ color:#fff; background:rgba(255,255,255,.16); transform:translateY(-1px); }
+nav.tabs button[aria-selected="true"]{ background:#fff; color:#0B2B6B; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+nav.tabs button[aria-selected="true"] .ik{ opacity:1; color:var(--brand); }
+
 .bdg{ display:inline-block; min-width:20px; padding:0 6px; margin-left:6px; border-radius:10px; background:var(--izlaz); color:#fff; font-family:var(--body); font-size:11px; font-weight:600; line-height:18px; text-align:center; vertical-align:2px; }
-.subnav{ background:var(--brand-soft); display:flex; gap:4px; padding:6px max(20px, calc((100% - 1440px) / 2 + 20px)); overflow-x:auto; }
+.subnav{ background:transparent; display:flex; gap:3px; padding:2px 20px 10px; overflow-x:auto; scrollbar-width:none; }
+.subnav::-webkit-scrollbar{ display:none; }
 .subnav:empty{ display:none; }
-.subnav button{ border:0; background:none; padding:6px 14px; border-radius:6px; font-family:var(--head); font-size:15px; font-weight:600; color:var(--brand-ink); cursor:pointer; white-space:nowrap; }
-.subnav button:hover{ background:color-mix(in srgb, var(--brand) 15%, transparent); }
+.subnav button{ border:0; background:none; padding:6px 12px; border-radius:8px; font-family:var(--body); font-size:13.5px; font-weight:500; color:rgba(255,255,255,.78); cursor:pointer; white-space:nowrap; }
+.subnav button:hover{ background:rgba(255,255,255,.14); color:#fff; }
 #subnav button .bdg{ vertical-align:1px; }
-.subnav button[aria-selected="true"]{ background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
-.who{ margin-left:auto; display:flex; align-items:center; gap:10px; padding-bottom:10px; font-size:13px; color:var(--muted); }
+.subnav button[aria-selected="true"]{ background:rgba(255,255,255,.2); color:#fff; box-shadow:inset 0 -2px 0 var(--brand); }
+.who{ margin-left:auto; display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); }
 .who img{ width:26px; height:26px; border-radius:50%; }
 .status-dot{ width:8px; height:8px; border-radius:50%; background:var(--muted); display:inline-block; }
 .status-dot.ok{ background:var(--ulaz); }
@@ -85,8 +103,9 @@ main{ max-width:1440px; margin:0 auto; padding:20px; }
 .notice{ background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--brand); padding:14px 16px; border-radius:6px; margin-bottom:16px; }
 
 /* ---------- common controls ---------- */
-.btn{ display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--surface); padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:500; }
-.btn:hover{ border-color:var(--muted); }
+.btn{ display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--surface); padding:8px 14px; border-radius:9px; cursor:pointer; font-weight:500; transition:border-color .16s, transform .14s, background .16s; }
+.btn:hover{ border-color:var(--brand); transform:translateY(-1px); }
+.btn:active{ transform:scale(.97); }
 .btn.primary{ background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
 .btn.primary:hover{ filter:brightness(1.05); }
 .btn.danger{ color:var(--izlaz); }
@@ -101,9 +120,9 @@ label.chk{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; use
 .fld > .inp{ font-size:14px; color:var(--ink); }
 
 /* ---------- tables ---------- */
-.tbl-wrap{ background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:auto; }
+.tbl-wrap{ background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:auto; }
 table{ border-collapse:collapse; width:100%; }
-th{ position:sticky; top:0; background:var(--surface-2); font-family:var(--head); font-size:14px; font-weight:600; text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; z-index:1; }
+th{ position:sticky; top:0; background:var(--surface-2); font-family:var(--body); font-size:12.5px; font-weight:600; color:var(--muted); text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; z-index:1; }
 td{ padding:5px 10px; border-bottom:1px solid var(--line-2); vertical-align:middle; }
 tr.grp td{ background:var(--brand-soft); color:var(--brand-ink); font-family:var(--head); font-weight:600; font-size:15px; padding:7px 10px; border-bottom:1px solid var(--line); }
 td.sif{ color:var(--muted); font-variant-numeric:tabular-nums; width:80px; }
@@ -112,7 +131,7 @@ td.stanje{ font-weight:600; background:color-mix(in srgb, var(--ulaz-soft) 55%, 
 tr.neakt td{ opacity:.55; }
 .empty-row td{ text-align:center; color:var(--muted); padding:22px; }
 
-.tag{ display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; }
+.tag{ display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:500; }
 .tag.U{ background:var(--ulaz-soft); color:var(--ulaz); }
 .tag.I{ background:var(--izlaz-soft); color:var(--izlaz); }
 .tag.P{ background:var(--povrat-soft); color:var(--povrat); }
@@ -247,6 +266,8 @@ td.raz-p{ color:var(--ulaz); font-weight:600; } td.raz-m{ color:var(--izlaz); fo
 
 /* ---------- obaveštenja ---------- */
 .who{ position:relative; }
+.bar .obBtn{ border-color:var(--line); color:var(--ink); background:var(--surface); }
+.bar .obBtn:hover{ border-color:var(--brand); background:var(--brand-soft); }
 .obBtn{ position:relative; border:1px solid var(--line); background:var(--surface); color:var(--muted); width:38px; height:38px; border-radius:50%; display:grid; place-items:center; cursor:pointer; }
 .obBtn:hover{ color:var(--ink); }
 .obBtn .obN{ display:none; position:absolute; top:-5px; right:-6px; min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:var(--izlaz); color:#fff; font:700 11px/19px var(--body); }
@@ -397,6 +418,81 @@ td .kalkBtn{ position:static; transform:none; margin-left:4px; width:28px; heigh
 .pomUnos{ display:grid; grid-template-columns:1fr auto; gap:8px; margin-top:10px; position:sticky; bottom:0; background:var(--surface); padding-top:6px; }
 .pomAkc{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
 .pomAkc .btn{ font-size:13px; }
+
+/* ---------- komandna tabla (Pregled) ---------- */
+.mreza{ display:grid; gap:14px; }
+.mreza.k4{ grid-template-columns:repeat(4,1fr); }
+.mreza.k3{ grid-template-columns:repeat(3,1fr); }
+.mreza.k2{ grid-template-columns:1.5fr 1fr; }
+.odvoji{ margin-top:14px; }
+.card.tile{ position:relative; overflow:hidden; padding-bottom:54px; }
+.card.tile .oznaka,.card.tile .vred,.card.tile .trend{ position:relative; z-index:1; }
+.oznaka{ font-size:12.5px; color:var(--muted); }
+.vred{ font:600 32px/1.05 var(--head); margin:6px 0 3px; display:flex; align-items:baseline; gap:7px; }
+.vred small{ font:500 13px var(--body); color:var(--muted); }
+.trend{ font-size:12.5px; display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:999px; }
+.t-up{ background:var(--ulaz-soft); color:var(--ulaz); } .t-dn{ background:var(--izlaz-soft); color:var(--izlaz); } .t-fl{ background:var(--line-2); color:var(--muted); }
+.spark{ position:absolute; right:0; bottom:0; left:0; height:40px; opacity:.75; }
+.spark rect{ transform-origin:bottom; animation:rast .7s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes rast{ from{ transform:scaleY(0) } to{ transform:scaleY(1) } }
+.prsten{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.prsten svg circle{ transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.3,1); }
+.legenda{ display:grid; gap:7px; font-size:13px; flex:1; min-width:170px; }
+.legenda div{ display:flex; align-items:center; gap:8px; }
+.legenda .tacka{ width:9px; height:9px; border-radius:3px; }
+.legenda b{ margin-left:auto; }
+.traka-bg{ height:9px; border-radius:5px; background:var(--line-2); overflow:hidden; }
+.traka-bg i{ display:block; height:100%; border-radius:5px; width:0; transition:width 1s cubic-bezier(.2,.8,.3,1); }
+.pil{ display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:12.5px; font-weight:500; white-space:nowrap; }
+.pil .tacka{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+.dnevnik li{ display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:start; }
+.dnevnik li b{ align-self:center; }
+.pil.p-ok{ background:var(--ulaz-soft); color:var(--ulaz); } .pil.p-ne{ background:var(--izlaz-soft); color:var(--izlaz); }
+.pil.p-uz{ background:var(--warn-soft); color:var(--warn); } .pil.p-ot{ background:var(--line-2); color:var(--muted); } .pil.p-br{ background:var(--brand-soft); color:var(--brand-ink); }
+.card .zag{ display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.card .zag h2{ margin:0; display:flex; align-items:center; gap:7px; }
+.card .zag .vise{ margin-left:auto; font-size:12.5px; color:var(--muted); background:none; border:0; cursor:pointer; border-bottom:1px dashed var(--line); }
+.card .zag .vise:hover{ color:var(--brand); border-color:var(--brand); }
+.view.on{ animation:ulazEkran .3s cubic-bezier(.2,.7,.3,1); }
+@keyframes ulazEkran{ from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+@media (max-width:1100px){ .mreza.k4{ grid-template-columns:repeat(2,1fr) } .mreza.k3,.mreza.k2{ grid-template-columns:1fr } }
+@media (prefers-reduced-motion:reduce){ .view.on,.spark rect{ animation:none } .traka-bg i,.prsten svg circle{ transition:none } }
+
+.ik{ flex:none; opacity:.85; }
+.oznaka{ display:flex; align-items:center; gap:6px; }
+.card.tile{ transition:border-color .18s, transform .18s, box-shadow .18s; }
+@media (hover:hover){
+  .card.tile:hover{ border-color:var(--brand); transform:translateY(-2px); box-shadow:0 10px 24px rgba(16,32,39,.10); }
+  .card.tile:hover .spark{ opacity:1; }
+  .card.tile .tile-info{ position:absolute; left:0; right:0; bottom:0; background:var(--surface); border-top:1px solid var(--line-2);
+    padding:8px 16px 10px; transform:translateY(102%); transition:transform .22s cubic-bezier(.2,.8,.3,1); }
+  .card.tile:hover .tile-info, .card.tile:focus-visible .tile-info, .card.tile:focus-within .tile-info{ transform:none; }
+  .card.tile .tile-info{ box-shadow:0 -8px 18px rgba(16,32,39,.08); }
+  .card.tile:hover .trend, .card.tile:focus-within .trend{ opacity:0; transition:opacity .15s; }
+  .card.tile:hover .spark, .card.tile:focus-within .spark{ opacity:0; }
+}
+.tile-info dl{ margin:0; display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:12.5px; }
+.tile-info dt{ color:var(--muted); } .tile-info dd{ margin:0; font-family:var(--num); }
+@media (hover:none){ .card.tile{ padding-bottom:12px; } .card.tile .spark{ position:static; height:30px; margin-top:8px; opacity:1; } .tile-info{ margin-top:8px; border-top:1px solid var(--line-2); padding-top:7px; } }
+.info-oblak{ position:fixed; z-index:60; background:var(--rail); color:#fff; border-radius:9px; padding:8px 11px; font-size:12.5px; line-height:1.45;
+  max-width:280px; box-shadow:0 10px 26px rgba(0,0,0,.28); opacity:0; pointer-events:none; transform:translateY(4px); transition:opacity .15s, transform .15s; }
+.info-oblak.on{ opacity:1; transform:none; }
+nav.tabs button .ik{ margin-right:6px; vertical-align:-3px; opacity:.9; }
+/* telefon: jednostavnije i krupnije */
+@media (max-width:760px){
+  .mreza.k4{ grid-template-columns:1fr 1fr; gap:10px; }
+  .mreza.k3,.mreza.k2{ grid-template-columns:1fr; }
+  .card{ padding:13px 14px; }
+  .vred{ font-size:27px; }
+  .oznaka{ font-size:12px; }
+  .trend{ font-size:11.5px; }
+  .prsten{ gap:12px; justify-content:center; }
+  .dnevnik li{ grid-template-columns:auto 1fr; }
+  .dnevnik li b{ grid-column:2; text-align:right; }
+  nav.tabs button{ font-size:15px; padding:9px 12px; }
+  .subnav button{ font-size:14px; padding:8px 12px; }
+  .btn{ padding:10px 14px; }
+}
 /* ---------- modal / toast ---------- */
 dialog{ border:1px solid var(--line); border-radius:12px; padding:0; background:var(--surface); color:var(--ink); width:min(480px, 92vw); }
 dialog::backdrop{ background:rgba(10,15,20,.45); }
@@ -409,7 +505,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
 @media (prefers-reduced-motion: reduce){ .toast{ transition:none; } }
 
 .split{ display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:20px; align-items:start; }
-.card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
 .card h2{ font-size:18px; margin-bottom:10px; }
 .card p{ margin:0 0 10px; color:var(--muted); font-size:13px; }
 
@@ -462,9 +558,13 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
 <body>
 <header class="bar">
   <div class="bar-in">
-    <div class="brand"><img src="data:image/png;base64,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" alt="Nevena"><div class="brand-name">Magacin ambalaže<small id="danas"></small></div></div>
+    <div class="brand"><img src="data:image/png;base64,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" alt="Nevena"><div class="brand-name">NEVENA doo<small id="danas"></small></div></div>
+    <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><button type="button" id="msgBtn" class="obBtn" aria-label="Interne poruke" title="Interne poruke"></button><button type="button" id="msgBot" class="obBtn" aria-label="Pomoć" title="Pomoć – pomoćnik za program">?</button><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
+  </div>
+  <div class="baner">
     <nav class="tabs" role="tablist" aria-label="Glavni meni">
-      <button role="tab" data-grp="magacin" aria-selected="true">Magacin ambalaže</button>
+      <button role="tab" data-grp="pregled" aria-selected="true">Pregled</button>
+      <button role="tab" data-grp="magacin" aria-selected="false">Magacin ambalaže</button>
       <button role="tab" data-grp="sirovine" aria-selected="false">Magacin sirovina</button>
       <button role="tab" data-grp="proizvodnja" aria-selected="false">Proizvodnja</button>
       <button role="tab" data-grp="nabavka" aria-selected="false">Nabavka</button>
@@ -472,16 +572,16 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <button role="tab" data-grp="kuvaona" aria-selected="false">Kuvaona</button>
       <button role="tab" data-grp="artikli" aria-selected="false">Artikli</button>
     </nav>
-    <div class="who"><button type="button" id="obBtn" class="obBtn" aria-label="Obaveštenja" title="Obaveštenja"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="obN">0</span></button><div id="obPanel" hidden></div><button type="button" id="msgBtn" class="obBtn" aria-label="Interne poruke" title="Interne poruke"></button><button type="button" id="msgBot" class="obBtn" aria-label="Pomoć" title="Pomoć – pomoćnik za program">?</button><span class="status-dot" id="dot"></span><span id="conn">Povezivanje…</span><img id="av" alt="" hidden><span class="nm-me" id="me"></span></div>
+    <div class="subnav" id="subnav" role="tablist" aria-label="Podmeni"></div>
   </div>
-  <div class="subnav" id="subnav" role="tablist" aria-label="Podmeni"></div>
 </header>
 
 <main>
   <div class="notice" id="noDb" hidden>Baza podataka nije dostupna u ovom prikazu. Otvori aplikaciju preko njenog claude.ai linka da bi unosi bili sačuvani i vidljivi svima.</div>
 
   <!-- UNOS -->
-  <section class="view on" id="v-unos">
+  <section class="view on" id="v-pregled"><div id="pregledBox"></div></section>
+  <section class="view" id="v-unos">
     <div class="unos">
       <div>
         <div class="toolbar" style="margin:0 0 10px">
@@ -13540,7 +13640,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "01.10.e";
+const APP_VERZIJA = "02.10.e";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14113,6 +14213,7 @@ function renderAll() {
   else if (v === "v-uskl" || v === "v-usklsir") { const bx = v === "v-uskl" ? "#usklBox" : "#usklSirBox", ae = document.activeElement; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderUskl(v === "v-usklsir" ? "sir" : "amb"); }
   else if (v === "v-sprijem") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#sprijemBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirPrijem(); }
   else if (v === "v-kamb" || v === "v-kgal") { const ae = document.activeElement, bx = v === "v-kgal" ? "#kgalBox" : "#kambBox"; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
+  else if (v === "v-pregled") renderPregled();
   else if (v === "v-szbirno") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#szbirBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirZbir(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
@@ -14128,6 +14229,7 @@ function renderAll() {
   else if (v === "v-artikli") { renderArtikli(); renderNeprac(); }
 }
 const GRUPE = {
+  pregled: [["pregled", "Danas"]],
   magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"], ["popis", "Popis ambalaže"], ["uskl", "Usklađivanje sa UPIS-om"]],
   sirovine: [["sunos", "Unos"], ["szbirno", "Zbirno stanje"], ["sstanje", "Stanje po lotovima"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan"], ["zalihe", "Zalihe"]],
@@ -14136,7 +14238,7 @@ const GRUPE = {
   kuvaona: [["izdavanje", "Etikete izdavanja materijala"]],
   artikli: [["artikli", "Artikli"]]
 };
-const poslednji = { magacin: "unos", sirovine: "sunos", proizvodnja: "proizvodnja", nabavka: "zahtevi", kontrola: "kamb", kuvaona: "izdavanje", artikli: "artikli" };
+const poslednji = { pregled: "pregled", magacin: "unos", sirovine: "sunos", proizvodnja: "proizvodnja", nabavka: "zahtevi", kontrola: "kamb", kuvaona: "izdavanje", artikli: "artikli" };
 function grupaOd(view) { for (const g in GRUPE) if (GRUPE[g].some(x => x[0] === view)) return g; return "magacin"; }
 const smeVideti = v => !window.DOZVOLE || window.DOZVOLE(v);
 function grupaPogleda(v) { for (const g in GRUPE) if (GRUPE[g].some(([x]) => x === v)) return g; return "magacin"; }
@@ -14147,19 +14249,21 @@ function osveziPravo() {
   document.body.classList.toggle("samoPregled", !smeUpis(v));
 }
 const MOB = [["unos", "Ulaz / izlaz", "M4 12h16M12 4v16"], ["proizvodnja", "Proizvodnja", "M3 20h18M6 20V9l5 3V9l5 3V5h3v15"], ["stanje", "Zalihe", "M4 6h16M4 12h16M4 18h10"], ["prijem", "Dnevni ulaz", "M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"]];
-function prviDozvoljen() { for (const [v] of MOB) if (smeVideti(v)) return v; for (const g in GRUPE) for (const [v] of GRUPE[g]) if (smeVideti(v)) return v; return "unos"; }
+function prviDozvoljen() { if (smeVideti("pregled")) return "pregled"; for (const [v] of MOB) if (smeVideti(v)) return v; for (const g in GRUPE) for (const [v] of GRUPE[g]) if (smeVideti(v)) return v; return "unos"; }
+const GRP_IK = { pregled: "pregled", magacin: "magacin", sirovine: "sirovine", proizvodnja: "proizvodnja", nabavka: "nabavka", kontrola: "kontrola", kuvaona: "kuvaona", artikli: "artikli" };
 function renderNav(view) {
   const g = grupaOd(view); poslednji[g] = view;
   $$("nav.tabs button").forEach(b => { b.setAttribute("aria-selected", b.dataset.grp === g); b.hidden = !GRUPE[b.dataset.grp].some(([v]) => smeVideti(v)); });
+  $$("nav.tabs button").forEach(b => { if (!b.dataset.ik) { b.dataset.ik = "1"; b.innerHTML = ikona(GRP_IK[b.dataset.grp] || "lista", 16) + b.innerHTML; } });
   const sub = GRUPE[g].filter(([v]) => smeVideti(v));
   const bn = null;
   if (bn) bn.innerHTML = MOB.filter(([v]) => smeVideti(v)).map(([v, l, d]) => '<button type="button" data-view="' + v + '" aria-current="' + (v === view) + '"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg><span>' + l + "</span></button>").join("") +
     '<button type="button" id="bnMeni" aria-expanded="' + document.body.classList.contains("mobmeni") + '"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span>Sve</span></button>';
   $("#subnav").innerHTML = sub.length > 1 ? sub.map(([v, l]) => '<button role="tab" data-view="' + v + '" aria-selected="' + (v === view) + '">' + l + (v === "zalihe" && S.zBdg ? '<span class="bdg">' + S.zBdg + "</span>" : "") + "</button>").join("") : "";
   const pb = document.querySelector('nav.tabs button[data-grp="proizvodnja"]');
-  if (pb) pb.innerHTML = "Proizvodnja" + (S.zBdg ? '<span class="bdg" title="Artikli za poručivanje">' + S.zBdg + "</span>" : "");
+  if (pb) pb.innerHTML = ikona("proizvodnja", 16) + "Proizvodnja" + (S.zBdg ? '<span class="bdg" title="Artikli za poručivanje">' + S.zBdg + "</span>" : "");
   const nb = document.querySelector('nav.tabs button[data-grp="nabavka"]'); const nz = (S.zahtevi || []).length;
-  if (nb) nb.innerHTML = "Nabavka" + (nz ? '<span class="bdg" style="background:var(--povrat)" title="Stavki u zahtevu za nabavku">' + nz + "</span>" : "");
+  if (nb) nb.innerHTML = ikona("nabavka", 16) + "Nabavka" + (nz ? '<span class="bdg" style="background:var(--povrat)" title="Stavki u zahtevu za nabavku">' + nz + "</span>" : "");
 }
 function show(view) {
   if (!smeVideti(view)) view = prviDozvoljen();
@@ -15597,7 +15701,9 @@ function renderSirStanje() {
   $("#sstanjeBox").innerHTML = '<div class="toolbar"><h1>Magacin sirovina – stanje po lotovima</h1><button class="btn dl" id="sXls">Preuzmi Excel</button><label class="btn" style="cursor:pointer">Uvoz lager liste po serijama (PDF)<input type="file" id="sLagF" accept=".pdf,application/pdf" hidden></label></div>' +
     (S.sir.uvoz ? sirUvozHtml() : "") +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">' +
-    [["Sirovina na stanju", new Set(sve.map(o => o.art)).size], ["Lotova na stanju", sve.length], ["Istekao rok", ist], ["Ističe u 90 dana", uskoro]].map(([l, v], i) => '<div class="card" style="padding:10px 14px' + (i === 2 && v ? ";border-left:4px solid var(--izlaz)" : i === 3 && v ? ";border-left:4px solid var(--brand)" : "") + '"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+    [["Sirovina na stanju", new Set(sve.map(o => o.art)).size, "sirovine", ""], ["Lotova na stanju", sve.length, "kutija", ""], ["Istekao rok", ist, "minimum", ist ? "var(--izlaz)" : ""], ["Ističe u 90 dana", uskoro, "sat", uskoro ? "var(--warn)" : ""]]
+      .map(([l, v, ik, boja]) => plocica({ ik, naslov: l, broj: v, boja2: boja,
+        info: [["Lotova ukupno", sve.length + ""], ["Istekli", ist + ""], ["Ističu 90 dana", uskoro + ""]] })).join("") + "</div>" +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="sSQ" type="search" value="' + esc(S.sir.sq || "") + '" placeholder="šifra ili naziv"></label><label class="fld">Prikaz<select class="inp" id="sPrikaz">' +
     [["stanje", "sa stanjem"], ["istekli", "istekao rok"], ["istice", "ističe u 90 dana"], ["svi", "svi lotovi"]].map(([v, l]) => '<option value="' + v + '"' + (P === v ? " selected" : "") + ">" + l + "</option>").join("") + "</select></label></div>" +
     '<div class="tbl-wrap" style="max-height:640px"><table><thead><tr><th>Šifra / lot</th><th>Sirovina</th><th>Proizvedeno</th><th>Važi do</th><th class="num">Stanje</th><th>JM</th></tr></thead><tbody>' +
@@ -15956,7 +16062,9 @@ function renderKontrola() {
   const opcije = sel => '<option value=""' + (sel ? "" : " selected") + ">–</option>" + ODLUKE.map(([o]) => "<option" + (sel === o ? " selected" : "") + ">" + o + "</option>").join("");
   box.innerHTML = '<div class="toolbar"><h1>Evidencija prijemnog kontrolisanja – ' + (tip === "gal" ? "Galenika" : "ambalaža") + '</h1><button class="btn" id="kNovi">Dodaj red ručno</button><button class="btn" id="kDupl">Duplikati</button><button class="btn dl" id="kXls">Preuzmi Excel</button>' + (konBezOdluke().length ? '<button class="btn danger" id="kCisti" title="Uklanja uvezene redove iz stare evidencije koji nemaju odluku">Ukloni uvezene redove bez odluke (' + konBezOdluke().length + ")</button>" : "") + "</div>" +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">' +
-    [["Ukupno prijema", R.length, ""], ["Odgovara", br("Odgovara"), "k-ok"], ["Uslovno primljeno", br("Uslovno primljeno"), "k-usl"], ["Neusaglašeno", br("Neusaglašeno"), "k-neu"], ["Uzorkovano (u ispitivanju)", uzorkNal, uzorkNal ? "k-uzo" : ""], ["Nalozi bez uzorkovanja", otvNal, otvNal ? "k-nal" : ""]].map(([l, v, c]) => '<div class="card ' + c + '" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+    [["Ukupno prijema", R.length, "", "lab", ""], ["Odgovara", br("Odgovara"), "k-ok", "kontrola", "var(--ulaz)"], ["Uslovno primljeno", br("Uslovno primljeno"), "k-usl", "kontrola", "#7B3FB5"], ["Neusaglašeno", br("Neusaglašeno"), "k-neu", "minimum", "var(--izlaz)"], ["Uzorkovano (u ispitivanju)", uzorkNal, uzorkNal ? "k-uzo" : "", "sat", "var(--warn)"], ["Nalozi bez uzorkovanja", otvNal, otvNal ? "k-nal" : "", "lab", ""]]
+      .map(([l, v, c, ik, boja]) => plocica({ ik, naslov: l, broj: v, klasa: c, boja2: boja,
+        info: [["Udeo", (R.length ? Math.round((v / R.length) * 100) : 0) + "%"], ["Od ukupno", R.length + " prijema"]] })).join("") + "</div>" +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="kQ" type="search" value="' + esc(F.q) + '" placeholder="naziv, šifra, kontrolni broj, br. prijemnice, proizvođač, lot"></label>' +
     '<label class="fld">Mesec<select class="inp" id="kMes"><option value="">svi</option>' + meseci.map(m => '<option value="' + m + '"' + (F.mes === m ? " selected" : "") + ">" + m.slice(5) + "/" + m.slice(0, 4) + "</option>").join("") + "</select></label>" +
     '<label class="fld">Odluka<select class="inp" id="kOdl"><option value="">sve</option><option value="-"' + (F.odl === "-" ? " selected" : "") + '>čeka odluku</option>' +
@@ -17087,6 +17195,264 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.id === "pomQ") { e.preventDefault(); pomocPitaj(e.target.value); e.target.value = ""; }
 });
 
+
+/* =====================================================================
+   PREGLED – komandna tabla: pločice sa mini-grafikonima, prsten kontrole,
+   rokovi sirovina, dnevnik i predlog nabavke. Sve iz stvarnih podataka.
+   ===================================================================== */
+function pgDani(n) {
+  const out = [], d = new Date(today() + "T12:00:00");
+  for (let i = n - 1; i >= 0; i--) { const x = new Date(d); x.setDate(d.getDate() - i); out.push(x.toISOString().slice(0, 10)); }
+  return out;
+}
+function pgPoDanu(vrsta, dani) {
+  const m = {}; for (const d of dani) m[d] = 0;
+  for (const e of S.entries) { if (e.storno || e.vrsta !== vrsta || !(e.datum in m)) continue; m[e.datum]++; }
+  return dani.map(d => m[d]);
+}
+function pgPoNedeljama(n) {
+  const dani = pgDani(n * 7), out = [];
+  for (let i = 0; i < n; i++) out.push(pgPoDanu("I", dani.slice(i * 7, i * 7 + 7)).reduce((a, b) => a + b, 0));
+  return out;
+}
+function pgStanje() {
+  const r = obracun(today()), sa = [], ispod = [];
+  for (const a of S.art) {
+    if (a.izbacen || !a.aktivan) continue;
+    const s = (r[a.id] || { s: 0 }).s;
+    if (Math.abs(s) > 1e-9) sa.push(a);
+    if (a.min > 0 && s < a.min) ispod.push({ a, s, min: a.min });
+  }
+  ispod.sort((x, y) => (x.s / x.min) - (y.s / y.min));
+  return { sa, ispod, r };
+}
+function pgKontrola() {
+  const R = (typeof konRedovi === "function" ? konRedovi() : []);
+  const b = { ok: 0, usl: 0, neu: 0, uzo: 0, otv: 0, uk: R.length };
+  for (const x of R) {
+    if (x.odluka === "Odgovara") b.ok++;
+    else if (x.odluka === "Uslovno primljeno") b.usl++;
+    else if (x.odluka === "Neusaglašeno") b.neu++;
+    if (x.nalog && x.nalog.status === "uzorkovano") b.uzo++;
+    else if (x.nalog && x.nalog.status === "otvoren") b.otv++;
+  }
+  return b;
+}
+function pgRokovi() {
+  const T = today(), d90 = new Date(T + "T12:00:00"); d90.setDate(d90.getDate() + 90);
+  const d30 = new Date(T + "T12:00:00"); d30.setDate(d30.getDate() + 30);
+  const g90 = d90.toISOString().slice(0, 10), g30 = d30.toISOString().slice(0, 10);
+  const b = { istekli: 0, m30: 0, m90: 0, uroku: 0 };
+  if (!S.sir || !S.sir.entries) return b;
+  for (const o of sirStanje().values()) {
+    if (Math.abs(o.kol) < 1e-9 || !S.sir.byId[o.art]) continue;
+    if (!o.vaz) { b.uroku++; continue; }
+    if (o.vaz < T) b.istekli++; else if (o.vaz <= g30) b.m30++; else if (o.vaz <= g90) b.m90++; else b.uroku++;
+  }
+  return b;
+}
+function pgDanas() {
+  const T = today(), out = [];
+  for (const e of S.entries) {
+    if (e.storno || e.datum !== T) continue;
+    const a = S.byId[e.art] || {};
+    out.push({ vrsta: e.vrsta, naziv: a.naziv || "?", kol: e.kol, mera: a.mera || "", t: (e.t || "").slice(11, 16), ko: who(e.uid), nap: e.nap || "", ev: e.ev || "" });
+  }
+  return out.reverse().slice(0, 8);
+}
+function pgSpark(v, boja) {
+  const max = Math.max.apply(null, v.concat([1])), w = 120 / v.length;
+  return '<svg class="spark" viewBox="0 0 120 46" preserveAspectRatio="none" aria-hidden="true">' +
+    v.map((x, i) => '<rect x="' + (i * w + 1).toFixed(1) + '" y="' + (46 - (6 + (x / max) * 34)).toFixed(1) + '" width="' + (w - 2).toFixed(1) + '" height="' + (6 + (x / max) * 34).toFixed(1) + '" rx="2" fill="' + (i >= v.length - 3 ? (boja || "var(--brand)") : "var(--line-2)") + '" style="animation-delay:' + (i * 45) + 'ms"></rect>').join("") + "</svg>";
+}
+function pgPlocica(oznaka, broj, jedinica, trend, tklasa, spark) {
+  return '<article class="card tile"><div class="oznaka">' + esc(oznaka) + '</div><div class="vred"><span class="num brojac" data-do="' + broj + '">0</span>' +
+    (jedinica ? "<small>" + esc(jedinica) + "</small>" : "") + "</div>" +
+    (trend ? '<span class="trend ' + (tklasa || "t-fl") + '">' + trend + "</span>" : "") + (spark || "") + "</article>";
+}
+function renderPregled() {
+  const box = $("#pregledBox"), T = today();
+  const st = pgStanje(), k = pgKontrola(), rk = pgRokovi(), dani = pgDani(12);
+  const ulazi = pgPoDanu("U", dani), izlazi = pgPoDanu("I", dani);
+  const danasU = ulazi[ulazi.length - 1], juceU = ulazi[ulazi.length - 2] || 0;
+  const danasI = izlazi[izlazi.length - 1], juceI = izlazi[izlazi.length - 2] || 0;
+  const ned = pgPoNedeljama(8), maxNed = Math.max.apply(null, ned.concat([1]));
+  const ukupno = S.art.filter(a => !a.izbacen).length;
+  const bezNab = st.ispod.filter(x => !(S.nab && S.nab.zahtevi && S.nab.zahtevi.some(z => (z.stavke || []).some(y => y.art === x.a.id)))).length;
+  const trend = (sad, pre) => sad === pre ? ["bez promene u odnosu na juče", "t-fl"] : sad > pre ? ["+" + (sad - pre) + " u odnosu na juče", "t-up"] : [(sad - pre) + " u odnosu na juče", "t-dn"];
+  const tU = trend(danasU, juceU), tI = trend(danasI, juceI);
+  const pr = typeof potrosnja === "function" ? potrosnja() : {};
+
+  const legenda = [["Odgovara", k.ok, "var(--ulaz)"], ["Uzorkovano", k.uzo, "var(--warn)"], ["Čeka uzorkovanje", k.otv, "var(--muted)"], ["Uslovno primljeno", k.usl, "#7B3FB5"], ["Neusaglašeno", k.neu, "var(--izlaz)"]];
+  const ukK = Math.max(1, k.uk);
+  let pom = 0;
+  const lukovi = [[k.ok, "var(--ulaz)"], [k.uzo, "var(--warn)"], [k.usl, "#7B3FB5"], [k.neu, "var(--izlaz)"]].map(([n, c]) => {
+    const deo = n / ukK, el = '<circle class="luk" cx="59" cy="59" r="47" fill="none" stroke="' + c + '" stroke-width="15" stroke-linecap="round" data-deo="' + deo.toFixed(4) + '" data-pom="' + pom.toFixed(4) + '"></circle>';
+    pom += deo; return n ? el : "";
+  }).join("");
+
+  const ukRok = Math.max(1, rk.istekli + rk.m30 + rk.m90 + rk.uroku);
+  const rokRed = (l, n, boja) => '<div><div class="red"><span>' + l + '</span><span class="num" style="margin-left:auto">' + n + '</span></div><div class="traka-bg"><i style="background:' + boja + '" data-sir="' + Math.round((n / ukRok) * 100) + '%"></i></div></div>';
+
+  const dn = pgDanas();
+  const pilV = { U: ["p-ok", "Ulaz"], I: ["p-ne", "Izlaz"], P: ["p-br", "Povrat"], K: ["p-ot", "Popis"] };
+
+  box.innerHTML =
+    '<div class="mreza k4">' +
+      plocica({ ik: "kutija", naslov: "Artikala na stanju", broj: st.sa.length, oznaka: "od ukupno " + ukupno, niz: ulazi.map((x, i) => x + izlazi[i]),
+        info: [["Prati se", ukupno + " artikala"], ["Bez stanja", (ukupno - st.sa.length) + ""], ["Ispod minimuma", st.ispod.length + ""]] }) +
+      plocica({ ik: "ulaz", naslov: "Prijem danas", broj: danasU, jed: "stavki", oznaka: tU[0], tk: tU[1], niz: ulazi, boja: "var(--ulaz)",
+        info: [["Juče", juceU + " stavki"], ["Prosek 12 dana", (ulazi.reduce((a, b) => a + b, 0) / ulazi.length).toFixed(1)], ["Najviše u 12 dana", Math.max.apply(null, ulazi) + ""]] }) +
+      plocica({ ik: "izlaz", naslov: "Izdato danas", broj: danasI, jed: "stavki", oznaka: tI[0], tk: tI[1], niz: izlazi, boja: "var(--izlaz)",
+        info: [["Juče", juceI + " stavki"], ["Prosek 12 dana", (izlazi.reduce((a, b) => a + b, 0) / izlazi.length).toFixed(1)], ["Ova nedelja", ned[ned.length - 1] + " stavki"]] }) +
+      plocica({ ik: "minimum", naslov: "Ispod minimuma", broj: st.ispod.length, jed: "artikala", tk: st.ispod.length ? "t-dn" : "t-up",
+        oznaka: bezNab ? bezNab + " bez pokrenute nabavke" : "sve pokriveno zahtevom", boja2: st.ispod.length ? "var(--izlaz)" : "",
+        info: st.ispod.slice(0, 3).map(x => [x.a.naziv.slice(0, 26), fmt(x.s, false) + " / " + fmt(x.min, false)]) }) +
+    "</div>" +
+
+    '<div class="mreza k3 odvoji">' +
+      '<article class="card"><div class="zag"><h2>' + ikona("lab", 17) + 'Prijemno kontrolisanje</h2><button class="vise" data-pgidi="kamb">Otvori evidenciju</button></div>' +
+        '<div class="prsten"><svg width="118" height="118" viewBox="0 0 118 118" role="img" aria-label="Odluke kontrole">' +
+        '<circle cx="59" cy="59" r="47" fill="none" stroke="var(--line-2)" stroke-width="15"></circle>' + lukovi +
+        '<text x="59" y="55" text-anchor="middle" style="font:600 27px var(--head);fill:var(--ink)">' + k.uk + "</text>" +
+        '<text x="59" y="72" text-anchor="middle" style="font:500 11px var(--body);fill:var(--muted)">prijema</text></svg>' +
+        '<div class="legenda">' + legenda.map(([l, n, c]) => '<div data-info="' + esc(l + " · " + n + " od " + k.uk + " prijema | " + (k.uk ? Math.round((n / k.uk) * 100) : 0) + "% evidencije") + '"><i class="tacka" style="background:' + c + '"></i> ' + l + ' <b class="num">' + n + "</b></div>").join("") + "</div></div></article>" +
+
+      '<article class="card"><div class="zag"><h2>' + ikona("sat", 17) + 'Rokovi trajanja sirovina</h2><button class="vise" data-pgidi="srokovi">Rokovi</button></div>' +
+        (S.sir && S.sir.art.length ? '<div class="mreza" style="gap:10px">' +
+          rokRed("Istekao rok", rk.istekli, "var(--izlaz)") + rokRed("Ističe za 30 dana", rk.m30, "var(--warn)") +
+          rokRed("Ističe za 90 dana", rk.m90, "var(--brand)") + rokRed("U roku", rk.uroku, "var(--ulaz)") + "</div>"
+          : '<p class="muted">Sirovine još nisu uvezene.</p>') + "</article>" +
+
+      '<article class="card"><div class="zag"><h2>' + ikona("lista", 17) + 'Danas u magacinu</h2><button class="vise" data-pgidi="promet">Promet</button></div>' +
+        (dn.length ? '<ol class="dnevnik" style="list-style:none;margin:0;padding:0;display:grid;gap:11px">' + dn.map(x => {
+          const p = pilV[x.vrsta] || pilV.K;
+          return '<li><span class="pil ' + p[0] + '"><i class="tacka"></i>' + p[1] + "</span><div><div>" + esc(x.naziv) + '</div><div class="muted" style="font-size:12px">' + esc([x.t, x.ko, x.ev ? "ev. " + x.ev : "", x.nap].filter(Boolean).join(" · ")) + '</div></div><b class="num" style="margin-left:auto">' + esc(fmt(x.kol, false)) + "</b></li>";
+        }).join("") + "</ol>" : '<p class="muted">Danas još nema prometa.</p>') + "</article>" +
+    "</div>" +
+
+    '<div class="mreza k2 odvoji">' +
+      '<article class="card"><div class="zag"><h2>' + ikona("nabavka", 17) + 'Treba poručiti</h2><button class="vise" data-pgidi="zahtevi">Zahtevi za nabavku</button></div>' +
+        (st.ispod.length ? '<div class="tbl-wrap" style="max-height:300px"><table><thead><tr><th>Artikal</th><th class="num">Stanje</th><th class="num">Minimum</th><th class="num">Dana</th><th>Pokriće</th></tr></thead><tbody>' +
+          st.ispod.slice(0, 8).map(x => {
+            const dnevno = (pr[x.a.id] || 0), dana = dnevno > 0 ? Math.floor(x.s / dnevno) : null;
+            const p = Math.max(4, Math.min(100, Math.round((x.s / x.min) * 100)));
+            return '<tr data-info="' + esc(x.a.naziv + " | stanje " + fmt(x.s, false) + ", minimum " + fmt(x.min, false) + " | dnevno se troši " + (dnevno ? fmt(r3(dnevno), false) : "–") + " | nedostaje " + fmt(r3(x.min - x.s), false)) + '"><td><div>' + esc(x.a.naziv) + '</div><div class="sif">' + esc(x.a.sifra || "") + '</div></td><td class="num">' + esc(fmt(x.s, false)) + '</td><td class="num">' + esc(fmt(x.min, false)) + '</td><td class="num">' + (dana == null ? "–" : dana) + '</td><td style="min-width:110px"><div class="traka-bg"><i style="background:' + (p < 40 ? "var(--izlaz)" : p < 80 ? "var(--warn)" : "var(--ulaz)") + '" data-sir="' + p + '%"></i></div></td></tr>';
+          }).join("") + "</tbody></table></div>" : '<p class="muted">Nijedan artikal nije ispod minimuma.</p>') + "</article>" +
+
+      '<article class="card"><div class="zag"><h2>' + ikona("izlaz", 17) + 'Izlazi po nedeljama</h2></div>' +
+        '<svg viewBox="0 0 320 150" width="100%" height="150" role="img" aria-label="Izlazi po nedeljama"><g id="pgStub"></g><line x1="0" y1="120" x2="320" y2="120" stroke="var(--line)"></line></svg>' +
+        '<div class="muted" style="font-size:12.5px">Prosek ' + Math.round(ned.reduce((a, b) => a + b, 0) / ned.length) + " stavki nedeljno · najviše " + maxNed + "</div></article>" +
+    "</div>";
+
+  pgAnimiraj(box, ned);
+}
+function pgAnimiraj(root, ned) {
+  $$(".brojac", root).forEach(el => {
+    const cilj = parseFloat(el.dataset.do || "0"); let t0 = null;
+    const k = t => { if (!t0) t0 = t; const p = Math.min(1, (t - t0) / 800), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(cilj * e).toLocaleString("sr-RS"); if (p < 1) requestAnimationFrame(k); };
+    requestAnimationFrame(k);
+  });
+  $$(".luk", root).forEach(c => {
+    const r = 47, o = 2 * Math.PI * r, deo = parseFloat(c.dataset.deo), pom = parseFloat(c.dataset.pom || "0");
+    c.setAttribute("stroke-dasharray", o); c.setAttribute("stroke-dashoffset", o);
+    c.style.transform = "rotate(" + (-90 + pom * 360) + "deg)"; c.style.transformOrigin = "59px 59px";
+    setTimeout(() => c.setAttribute("stroke-dashoffset", o * (1 - deo)), 120);
+  });
+  $$("[data-sir]", root).forEach((i, n) => { i.style.width = "0"; setTimeout(() => { i.style.width = i.dataset.sir; }, 90 + n * 70); });
+  const g = $("#pgStub");
+  if (g && ned) {
+    const max = Math.max.apply(null, ned.concat([1])), kor = 300 / ned.length;
+    ned.forEach((x, i) => {
+      const h = (x / max) * 96, b = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      b.setAttribute("x", i * kor + 10); b.setAttribute("width", kor - 14); b.setAttribute("rx", "4");
+      b.setAttribute("y", 120); b.setAttribute("height", 0);
+      b.setAttribute("fill", i === ned.length - 1 ? "var(--brand)" : "var(--line-2)"); g.appendChild(b);
+      setTimeout(() => { b.setAttribute("y", (120 - h).toFixed(1)); b.setAttribute("height", h.toFixed(1));
+        b.style.transition = "y .6s cubic-bezier(.2,.8,.3,1), height .6s cubic-bezier(.2,.8,.3,1)"; }, 55 * i);
+      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("x", i * kor + 10 + (kor - 14) / 2); t.setAttribute("y", 138); t.setAttribute("text-anchor", "middle");
+      t.setAttribute("style", "font:500 10px var(--body);fill:var(--muted)");
+      t.textContent = (i === ned.length - 1 ? "ova" : "−" + (ned.length - 1 - i));
+      g.appendChild(t);
+    });
+  }
+}
+$("#pregledBox").addEventListener("click", e => {
+  const b = e.target.closest("[data-pgidi]"); if (b) show(b.dataset.pgidi);
+});
+
+
+/* =====================================================================
+   IKONICE, PLOČICE SA GRAFIKONIMA I DODATNE INFORMACIJE NA PRELAZ MIŠEM
+   (prelaz mišem radi samo na računaru; na telefonu se isti podatak
+   prikazuje u samoj pločici)
+   ===================================================================== */
+const IK = {
+  pregled: '<path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/>',
+  magacin: '<path d="M3 7h18v13H3z"/><path d="m3 7 3-4h12l3 4"/><path d="M9 12h6"/>',
+  sirovine: '<path d="M7 3h10l-1 5 3 11H5L8 8z"/><path d="M8 14h8"/>',
+  proizvodnja: '<path d="M3 20h18"/><path d="M4 20V9l5 3V9l5 3V9l5 3v8"/>',
+  nabavka: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11L21 7H6"/>',
+  kontrola: '<path d="M9 4h6l1 3h3v13H5V7h3z"/><path d="m9 13 2 2 4-4"/>',
+  kuvaona: '<path d="M5 9h14l-1.2 10.5a2 2 0 0 1-2 1.5H8.2a2 2 0 0 1-2-1.5z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/>',
+  artikli: '<path d="M4 5h16v14H4z"/><path d="M4 10h16M9 5v14"/>',
+  ulaz: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>',
+  izlaz: '<path d="M12 5v14"/><path d="m5 12 7 7 7-7"/>',
+  minimum: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.8 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0z"/>',
+  sat: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  lab: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/>',
+  kutija: '<path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/>',
+  popis: '<path d="M8 4h8v3H8z"/><path d="M6 7h12v13H6z"/><path d="m9 13 1.5 1.5L14 11"/>',
+  uskl: '<path d="M4 7h11"/><path d="m12 4 3 3-3 3"/><path d="M20 17H9"/><path d="m12 14-3 3 3 3"/>',
+  lista: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>'
+};
+function ikona(ime, vel) {
+  const p = IK[ime]; if (!p) return "";
+  const v = vel || 16;
+  return '<svg class="ik" width="' + v + '" height="' + v + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + "</svg>";
+}
+/* pločica: naslov sa ikonicom, veliki broj, oznaka, mini-grafikon i dodatne
+   informacije koje se na računaru pojave kad se mišem stane na pločicu */
+function plocica(o) {
+  const spark = o.niz && o.niz.length ? pgSpark(o.niz, o.boja) : "";
+  const info = (o.info || []).filter(Boolean);
+  return '<article class="card tile' + (o.klasa ? " " + o.klasa : "") + '"' + (info.length ? ' tabindex="0"' : "") + ">" +
+    '<div class="oznaka">' + ikona(o.ik, 14) + esc(o.naslov) + "</div>" +
+    '<div class="vred"' + (o.boja2 ? ' style="color:' + o.boja2 + '"' : "") + '><span class="num brojac" data-do="' + (o.broj || 0) + '">0</span>' +
+    (o.jed ? "<small>" + esc(o.jed) + "</small>" : "") + "</div>" +
+    (o.oznaka ? '<span class="trend ' + (o.tk || "t-fl") + '">' + esc(o.oznaka) + "</span>" : "") +
+    (info.length ? '<div class="tile-info"><dl>' + info.map(x => "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>").join("") + "</dl></div>" : "") +
+    spark + "</article>";
+}
+/* opis koji se pojavi na prelaz mišem (računar) ili na dodir (telefon) */
+let infoEl = null, infoT = null;
+function infoPrikazi(cilj) {
+  const t = cilj.dataset.info; if (!t) return;
+  if (!infoEl) { infoEl = document.createElement("div"); infoEl.className = "info-oblak"; document.body.appendChild(infoEl); }
+  infoEl.innerHTML = t.split("|").map(x => "<div>" + esc(x.trim()) + "</div>").join("");
+  const r = cilj.getBoundingClientRect();
+  infoEl.classList.add("on");
+  const w = infoEl.offsetWidth, h = infoEl.offsetHeight;
+  let x = r.left + r.width / 2 - w / 2, y = r.top - h - 9;
+  if (y < 8) y = r.bottom + 9;
+  infoEl.style.left = Math.max(8, Math.min(innerWidth - w - 8, x)) + "px";
+  infoEl.style.top = y + "px";
+}
+function infoSakrij() { if (infoEl) infoEl.classList.remove("on"); }
+document.addEventListener("pointerover", e => {
+  if (!matchMedia("(hover:hover)").matches) return;
+  const c = e.target.closest("[data-info]");
+  clearTimeout(infoT);
+  if (!c) { infoSakrij(); return; }
+  infoT = setTimeout(() => infoPrikazi(c), 90);
+});
+document.addEventListener("pointerdown", e => { if (!e.target.closest("[data-info]")) infoSakrij(); });
+document.addEventListener("focusin", e => { const c = e.target.closest("[data-info]"); if (c) infoPrikazi(c); });
+document.addEventListener("focusout", infoSakrij);
+addEventListener("scroll", infoSakrij, true);
+
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
 async function skeniraj() {
@@ -17900,7 +18266,9 @@ function renderErp() {
     '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:13px"><label class="chk"><input type="checkbox" id="erpNula"' + (E.nula ? " checked" : "") + "> artikli iz aplikacije kojih nema na listi imaju stanje 0</label>" +
     '<label class="chk"><input type="checkbox" id="erpDodaj"' + (E.dodaj ? " checked" : "") + "> dodaj u šifarnik artikle sa liste kojih nema u aplikaciji (" + nove.length + ")</label></div></div>" +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">' +
-    [["Upoređeno artikala", red.length], ["Sa razlikom", raz.length], ["Višak u ERP-u", plus], ["Manjak u ERP-u", raz.length - plus], ["Novi sa liste", nove.length]].map(([l, v]) => '<div class="card" style="padding:10px 14px"><div class="muted" style="font-size:12px">' + l + '</div><div style="font:700 24px var(--head)">' + v + "</div></div>").join("") + "</div>" +
+    [["Upoređeno artikala", red.length, "uskl", ""], ["Sa razlikom", raz.length, "minimum", raz.length ? "var(--warn)" : ""], ["Višak u ERP-u", plus, "ulaz", "var(--ulaz)"], ["Manjak u ERP-u", raz.length - plus, "izlaz", "var(--izlaz)"], ["Novi sa liste", nove.length, "kutija", ""]]
+      .map(([l, v, ik, boja]) => plocica({ ik, naslov: l, broj: v, boja2: boja,
+        info: [["Upoređeno", red.length + " artikala"], ["Sa razlikom", raz.length + ""], ["Slaže se", (red.length - raz.length) + ""]] })).join("") + "</div>" +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="erpQ" type="search" value="' + esc(E.q || "") + '" placeholder="šifra ili naziv"></label><label class="chk"><input type="checkbox" id="erpSamo"' + (E.samoRaz ? " checked" : "") + "> samo sa razlikom</label></div>" +
     '<div class="tbl-wrap" style="max-height:520px"><table><thead><tr><th>Šifra</th><th>Artikal</th><th class="num">U aplikaciji</th><th class="num">ERP lager lista</th><th class="num">Razlika</th></tr></thead><tbody>' +
     (prikaz.length ? prikaz.slice(0, 1500).map(x => '<tr><td class="sif">' + esc(x.a.sifra) + "</td><td>" + esc(x.a.naziv) + '</td><td class="num">' + esc(fmt(x.ev, false)) + '</td><td class="num"><b>' + esc(fmt(x.erp, false)) + '</b></td><td class="num ' + (x.raz > 0 ? "raz-p" : x.raz < 0 ? "raz-m" : "") + '">' + (x.raz ? (x.raz > 0 ? "+" : "") + esc(fmt(x.raz, false)) : "✓") + "</td></tr>").join("") : '<tr class="empty-row"><td colspan="5">' + (E.samoRaz ? "Nema razlika – stanje u aplikaciji se slaže sa ERP-om." : "Nema artikala.") + "</td></tr>") +
