@@ -13640,7 +13640,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "02.10.f";
+const APP_VERZIJA = "02.10.g";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -16799,10 +16799,11 @@ function stavkeIzTeksta(linije, sir) {
     const sm = ln.match(/\b(\d{6})\b/); if (!sm) continue;
     const sif = sm[1], a = naj(sif); if (!a) { if (!/\d{1,3}([.,]\d+)?\s*(KG|KOM|GR|G|L|M)?\s*$/i.test(ln)) continue; }
     const brojevi = (ln.match(/\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{1,4})?/g) || []).filter(x => x.replace(/\D/g, "") !== sif);
-    let kol = null;
-    for (let i = brojevi.length - 1; i >= 0; i--) { const v = brojPoFormatu(brojevi[i], formatBrojeva(ln)); if (v > 0) { kol = v; break; } }
+    const fmtL = formatBrojeva(ln);
+    const vred = brojevi.map(x => brojPoFormatu(x, fmtL)).filter(v => v > 0);
+    let kol = vred.length ? vred[vred.length - 1] : null;
     const lm = ln.match(/\b([A-Z0-9][A-Z0-9\-\/\.]{3,})\b(?=[^0-9]*\d)/i);
-    out.push({ sifra: sif, naziv: a ? a.naziv : ln.replace(sif, "").trim(), art: a ? a.id : "", kol: kol, lot: sir && lm && lm[1] !== sif ? lm[1] : "", tekst: ln });
+    out.push({ sifra: sif, naziv: a ? a.naziv : ln.replace(sif, "").trim(), art: a ? a.id : "", kol: kol, vred, lot: sir && lm && lm[1] !== sif ? lm[1] : "", tekst: ln });
   }
   return { zagl, stavke: out };
 }
@@ -16822,13 +16823,27 @@ function trebRedHtml(r, i, sir) {
 }
 async function trebIzlazDlg(T, sir) {
   const naslov = "Izlaz po trebovanju" + (T.zagl.broj ? " " + T.zagl.broj : "") + (sir ? " – sirovine" : " – ambalaža");
+  const viseBr = T.stavke.some(r => (r.vred || []).length > 1);
+  const kolone = [["z", "poslednji broj u redu"], ["pz", "pretposlednji broj"], ["p", "prvi broj"], ["d", "drugi broj"]];
   const html = '<div class="form"><div class="row2"><label class="fld">Datum izlaza<input class="inp" type="date" id="tbD" value="' + today() + '"></label>' +
     '<label class="fld">Napomena<input class="inp" id="tbN" value="' + esc("Trebovanje " + (T.zagl.broj || "") + (T.zagl.proizvod.naziv ? " – " + T.zagl.proizvod.sifra + " " + T.zagl.proizvod.naziv : "")) + '"></label></div>' +
+    (viseBr ? '<label class="fld">Koja kolona je tražena količina<select class="inp" id="tbKol">' + kolone.map(([v, l], i) => '<option value="' + v + '"' + (i === 0 ? " selected" : "") + ">" + l + "</option>").join("") + '</select><span class="muted" style="font-size:12px">Na papiru pored tražene stoji i normirana količina – ako su predložene pogrešne, promeni kolonu i sve stavke se prerаčunaju.</span></label>' : "") +
     '<p class="muted" style="font-size:12px;margin:0">Proveri i po potrebi ispravi količine' + (sir ? " i lotove" : "") + ". Označeno se knjiži kao izlaz, neoznačeno se preskače. Artikli kojih nema u šifarniku se ne mogu knjižiti.</p>" +
     '<div class="tbl-wrap" style="max-height:400px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="tbAll" checked></th><th>Šifra</th><th>Artikal</th><th class="num">Na stanju</th><th>Izlaz</th>' + (sir ? "<th>Lot</th>" : "") + "<th></th></tr></thead><tbody>" +
     T.stavke.map((r, i) => trebRedHtml(r, i, sir)).join("") + "</tbody></table></div></div>";
   const d = $("#dlg"); d.style.width = "min(1000px, 96vw)";
-  const ok = await ask(naslov, html, "Proknjiži izlaz", "Odustani");
+  const p = ask(naslov, html, "Proknjiži izlaz", "Odustani");
+  const izbor = $("#tbKol");
+  if (izbor) izbor.addEventListener("change", () => {
+    const k = izbor.value;
+    T.stavke.forEach((r, i) => {
+      const v = r.vred || []; if (!v.length) return;
+      const x = k === "z" ? v[v.length - 1] : k === "pz" ? (v[v.length - 2] != null ? v[v.length - 2] : v[v.length - 1]) : k === "p" ? v[0] : (v[1] != null ? v[1] : v[0]);
+      const el = document.querySelector('#dlg [data-tk="' + i + '"]'); if (el && x > 0) el.value = String(r3(x)).replace(".", ",");
+    });
+    toast("Količine preuzete iz kolone: " + (kolone.filter(c => c[0] === k)[0] || ["", ""])[1]);
+  });
+  const ok = await p;
   if (!ok) { d.style.width = ""; return; }
   const dat = $("#tbD").value || today(), nap = $("#tbN").value.trim();
   const izb = [];
