@@ -11,6 +11,7 @@
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
+    ["ucinak", "Učinak magacionera", ["ucinak"]],
     ["sirovine", "Magacin sirovina", ["sunos", "szbirno", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
     ["proizvodnja", "Proizvodnja", ["proizvodnja", "plan", "zalihe"]],
     ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "ngrupe"]],

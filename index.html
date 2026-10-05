@@ -712,6 +712,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   </section>
 
   <!-- PROMET -->
+  <section class="view" id="v-ucinak"><div id="ucinakBox"></div></section>
   <section class="view" id="v-promet">
     <div class="toolbar">
       <h1>Promet</h1>
@@ -13640,7 +13641,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "02.10.g";
+const APP_VERZIJA = "05.10.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13989,7 +13990,7 @@ function renderPromet() {
   const l = prometList();
   $("#tPromet").innerHTML = l.length ? l.slice(0, 1500).map(e => {
     const tm = new Date(e.t);
-    return '<tr class="' + (e.storno ? "neakt" : "") + '"><td>' + esc(dtxt(e.datum)) + '</td><td class="muted">' + pad(tm.getHours()) + ":" + pad(tm.getMinutes()) + '</td><td class="sif">' + esc(artSif(e.art)) + "</td><td>" + esc(artName(e.art)) + '</td><td><span class="tag ' + e.vrsta + '">' + VR[e.vrsta] + "</span>" + (e.storno ? ' <span class="muted" style="font-size:12px">storniran (' + esc(who(e.storno.uid)) + ")</span>" : "") + '</td><td class="num">' + esc(fmt(e.kol, false)) + "</td><td>" + esc(who(e.uid)) + '</td><td class="muted">' + esc(e.nap || "") + "</td></tr>";
+    return '<tr class="' + (e.storno ? "neakt" : "") + '"><td>' + esc(dtxt(e.datum)) + '</td><td class="muted">' + pad(tm.getHours()) + ":" + pad(tm.getMinutes()) + '</td><td class="sif">' + esc(artSif(e.art)) + "</td><td>" + esc(artName(e.art)) + '</td><td><span class="tag ' + e.vrsta + '">' + VR[e.vrsta] + "</span>" + (e.storno ? ' <span class="muted" style="font-size:12px">storniran (' + esc(who(e.storno.uid)) + ")</span>" : "") + '</td><td class="num">' + esc(fmt(e.kol, false)) + "</td><td>" + esc(who(e.uid)) + (e.t ? '<div class="muted" style="font-size:11.5px">' + esc(ucVreme(e.t)) + "</div>" : "") + '</td><td class="muted">' + esc(e.nap || "") + "</td></tr>";
   }).join("") : '<tr class="empty-row"><td colspan="8">Nema prometa za izabrane uslove.</td></tr>';
 }
 
@@ -14214,6 +14215,7 @@ function renderAll() {
   else if (v === "v-sprijem") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#sprijemBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirPrijem(); }
   else if (v === "v-kamb" || v === "v-kgal") { const ae = document.activeElement, bx = v === "v-kgal" ? "#kgalBox" : "#kambBox"; if (!(ae && ae.closest && ae.closest(bx) && /INPUT|SELECT/.test(ae.tagName))) renderKontrola(); }
   else if (v === "v-pregled") renderPregled();
+  else if (v === "v-ucinak") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#ucinakBox") && /INPUT|SELECT/.test(ae.tagName))) renderUcinak(); }
   else if (v === "v-szbirno") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#szbirBox") && /INPUT|SELECT/.test(ae.tagName))) renderSirZbir(); }
   else if (/^v-s(unos|stanje|promet|rokovi|popis)$/.test(v)) { const ae = document.activeElement, bx = document.querySelector("#" + v + " > div");
     if (!(ae && bx && bx.contains(ae) && /INPUT|SELECT/.test(ae.tagName) && ae.type !== "file")) ({ "v-sunos": renderSirUnos, "v-sstanje": renderSirStanje, "v-spromet": renderSirPromet, "v-srokovi": renderSirRokovi, "v-spopis": renderSirPopis })[v](); }
@@ -14230,7 +14232,7 @@ function renderAll() {
 }
 const GRUPE = {
   pregled: [["pregled", "Danas"]],
-  magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"], ["popis", "Popis ambalaže"], ["uskl", "Usklađivanje sa UPIS-om"]],
+  magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"], ["popis", "Popis ambalaže"], ["uskl", "Usklađivanje sa UPIS-om"], ["ucinak", "Učinak magacionera"]],
   sirovine: [["sunos", "Unos"], ["szbirno", "Zbirno stanje"], ["sstanje", "Stanje po lotovima"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan"], ["zalihe", "Zalihe"]],
   nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["analitika", "Analitika"], ["ngrupe", "Grupe nabavke"]],
@@ -17017,8 +17019,9 @@ async function msgOznaciProcitane(partnerId) {
 }
 function msgVreme(t) {
   if (!t) return "";
-  const d = String(t).slice(0, 10), h = String(t).slice(11, 16);
-  return (d === today() ? "danas" : dtxt(d)) + " " + h;
+  const x = new Date(t); if (isNaN(x)) return "";
+  const d = x.getFullYear() + "-" + pad(x.getMonth() + 1) + "-" + pad(x.getDate());
+  return (d === today() ? "danas" : dtxt(d)) + " " + pad(x.getHours()) + ":" + pad(x.getMinutes());
 }
 function renderMsg() {
   let el = $("#msgWrap");
@@ -17271,7 +17274,7 @@ function pgDanas() {
   for (const e of S.entries) {
     if (e.storno || e.datum !== T) continue;
     const a = S.byId[e.art] || {};
-    out.push({ vrsta: e.vrsta, naziv: a.naziv || "?", kol: e.kol, mera: a.mera || "", t: (e.t || "").slice(11, 16), ko: who(e.uid), nap: e.nap || "", ev: e.ev || "" });
+    out.push({ vrsta: e.vrsta, naziv: a.naziv || "?", kol: e.kol, mera: a.mera || "", t: ucVreme(e.t), ko: who(e.uid), nap: e.nap || "", ev: e.ev || "" });
   }
   return out.reverse().slice(0, 8);
 }
@@ -17477,6 +17480,145 @@ document.addEventListener("pointerdown", e => { if (!e.target.closest("[data-inf
 document.addEventListener("focusin", e => { const c = e.target.closest("[data-info]"); if (c) infoPrikazi(c); });
 document.addEventListener("focusout", infoSakrij);
 addEventListener("scroll", infoSakrij, true);
+
+
+/* =====================================================================
+   UČINAK MAGACIONERA – iz prometa se vidi ko je, kada i koliko radio.
+   Unosi koji se nižu jedan za drugim spajaju se u radni blok; blok se
+   prekida kad pauza pređe izabrani razmak.
+   ===================================================================== */
+S.uc = { od: "", doo: "", ko: "", razmak: 20, prikaz: "dan" };
+function ucVreme(t) { const d = new Date(t); return isNaN(d) ? "" : pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function ucDatumVreme(t) { const d = new Date(t); return isNaN(d) ? "" : dtxt(d.toISOString().slice(0, 10)) + " " + ucVreme(t); }
+function ucTrajanje(min) {
+  min = Math.max(0, Math.round(min));
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? h + " h " + pad(m) + " min" : m + " min";
+}
+function ucPeriod() {
+  const T = today(), od = S.uc.od || T.slice(0, 8) + "01", doo = S.uc.doo || T;
+  return [od, doo];
+}
+/* radni blokovi: unosi istog korisnika sa pauzom manjom od razmaka */
+function ucBlokovi() {
+  const [od, doo] = ucPeriod(), raz = (+S.uc.razmak || 20) * 60000;
+  const l = S.entries.filter(e => !e.storno && e.datum >= od && e.datum <= doo && e.t).slice()
+    .sort((a, b) => String(a.t).localeCompare(String(b.t)));
+  const po = {};
+  for (const e of l) {
+    const uid = e.uid || "anon", ime = who(uid);
+    if (S.uc.ko && uid !== S.uc.ko) continue;
+    const k = po[uid] || (po[uid] = { uid, ime, blokovi: [], unosa: 0, ulaz: 0, izlaz: 0, kol: 0, sati: new Array(24).fill(0), dani: {} });
+    k.unosa++; if (e.vrsta === "U") k.ulaz++; else if (e.vrsta === "I") k.izlaz++;
+    k.kol = r3(k.kol + (e.kol || 0));
+    const d = new Date(e.t); k.sati[d.getHours()]++;
+    const zadnji = k.blokovi[k.blokovi.length - 1];
+    if (zadnji && zadnji.datum === e.datum && (new Date(e.t) - new Date(zadnji.kraj)) <= raz) {
+      zadnji.kraj = e.t; zadnji.stavke++; zadnji.kol = r3(zadnji.kol + (e.kol || 0));
+      if (e.vrsta === "U") zadnji.ulaz++; else if (e.vrsta === "I") zadnji.izlaz++;
+    } else {
+      k.blokovi.push({ datum: e.datum, pocetak: e.t, kraj: e.t, stavke: 1, kol: r3(e.kol || 0), ulaz: e.vrsta === "U" ? 1 : 0, izlaz: e.vrsta === "I" ? 1 : 0 });
+    }
+  }
+  for (const k of Object.values(po)) {
+    k.minuta = 0;
+    for (const b of k.blokovi) {
+      b.min = Math.max(2, Math.round((new Date(b.kraj) - new Date(b.pocetak)) / 60000) + (b.stavke > 1 ? 2 : 2));
+      k.minuta += b.min;
+      k.dani[b.datum] = r3((k.dani[b.datum] || 0) + b.min);
+    }
+    k.danaRada = Object.keys(k.dani).length;
+    k.blokova = k.blokovi.length;
+  }
+  return Object.values(po).sort((a, b) => b.minuta - a.minuta);
+}
+function ucStubovi(id, parovi, boja, bazaY, visina, sirina) {
+  const g = $("#" + id); if (!g || !parovi.length) return;
+  const max = Math.max.apply(null, parovi.map(p => p[1]).concat([1])), kor = (sirina - 20) / parovi.length;
+  parovi.forEach(([l, v], i) => {
+    const h = (v / max) * visina, b = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    b.setAttribute("x", 10 + i * kor); b.setAttribute("width", Math.max(4, kor - 6)); b.setAttribute("rx", "3");
+    b.setAttribute("y", bazaY); b.setAttribute("height", 0); b.setAttribute("fill", boja);
+    b.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "title")).textContent = l + ": " + v;
+    g.appendChild(b);
+    setTimeout(() => { b.setAttribute("y", (bazaY - h).toFixed(1)); b.setAttribute("height", h.toFixed(1));
+      b.style.transition = "y .55s cubic-bezier(.2,.8,.3,1), height .55s cubic-bezier(.2,.8,.3,1)"; }, 35 * i);
+    if (parovi.length <= 16 || i % 2 === 0) {
+      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("x", 10 + i * kor + Math.max(4, kor - 6) / 2); t.setAttribute("y", bazaY + 14);
+      t.setAttribute("text-anchor", "middle"); t.setAttribute("style", "font:500 9.5px var(--body);fill:var(--muted)");
+      t.textContent = l; g.appendChild(t);
+    }
+  });
+}
+function renderUcinak() {
+  const box = $("#ucinakBox"), [od, doo] = ucPeriod(), K = ucBlokovi();
+  const svi = [...new Set(S.entries.filter(e => !e.storno && e.uid).map(e => e.uid))];
+  const ukMin = K.reduce((s, k) => s + k.minuta, 0), ukUn = K.reduce((s, k) => s + k.unosa, 0);
+  const dani = [...new Set(K.flatMap(k => Object.keys(k.dani)))].sort();
+  const boje = ["var(--brand)", "var(--povrat)", "var(--ulaz)", "#7B3FB5", "var(--warn)"];
+
+  box.innerHTML = '<div class="toolbar"><h1>' + ikona("sat", 20) + ' Učinak magacionera</h1><button class="btn dl" id="ucXls">Preuzmi Excel</button></div>' +
+    '<div class="toolbar"><label class="fld">Od<input class="inp" type="date" id="ucOd" value="' + od + '"></label>' +
+    '<label class="fld">Do<input class="inp" type="date" id="ucDo" value="' + doo + '"></label>' +
+    '<label class="fld">Radnik<select class="inp" id="ucKo"><option value="">svi</option>' + svi.map(u => '<option value="' + esc(u) + '"' + (S.uc.ko === u ? " selected" : "") + ">" + esc(who(u)) + "</option>").join("") + "</select></label>" +
+    '<label class="fld">Pauza koja prekida rad<select class="inp" id="ucRaz">' + [10, 15, 20, 30, 45].map(x => '<option value="' + x + '"' + (+S.uc.razmak === x ? " selected" : "") + ">" + x + " min</option>").join("") + "</select></label>" +
+    '<span class="nap">Unosi u nizu se spajaju u jedan radni blok; pauza duža od izabrane počinje novi blok.</span></div>' +
+
+    '<div class="mreza k4">' +
+      plocica({ ik: "sat", naslov: "Ukupno vreme rada", broj: Math.round(ukMin / 60), jed: "h", oznaka: ucTrajanje(ukMin),
+        info: [["Radnika", K.length + ""], ["Unosa", ukUn + ""], ["Dana sa radom", dani.length + ""]] }) +
+      plocica({ ik: "lista", naslov: "Unosa u prometu", broj: ukUn, jed: "stavki",
+        oznaka: ukMin ? (ukUn / (ukMin / 60)).toFixed(1) + " stavki na sat" : "", info: [["Ulazi", K.reduce((s, k) => s + k.ulaz, 0) + ""], ["Izlazi", K.reduce((s, k) => s + k.izlaz, 0) + ""]] }) +
+      plocica({ ik: "kutija", naslov: "Radnih blokova", broj: K.reduce((s, k) => s + k.blokova, 0),
+        oznaka: "prosek " + (K.length ? ucTrajanje(ukMin / Math.max(1, K.reduce((s, k) => s + k.blokova, 0))) : "–") + " po bloku" }) +
+      plocica({ ik: "proizvodnja", naslov: "Prosečno dnevno", broj: dani.length ? Math.round(ukMin / dani.length) : 0, jed: "min",
+        oznaka: dani.length ? "po danu sa radom" : "nema podataka" }) +
+    "</div>" +
+
+    '<div class="mreza k2 odvoji"><article class="card"><div class="zag"><h2>' + ikona("proizvodnja", 17) + "Po radniku</h2></div>" +
+      (K.length ? '<div class="tbl-wrap"><table><thead><tr><th>Radnik</th><th class="num">Unosa</th><th class="num">Ulaz</th><th class="num">Izlaz</th><th class="num">Blokova</th><th class="num">Dana</th><th class="num">Vreme</th><th>Udeo</th></tr></thead><tbody>' +
+        K.map((k, i) => '<tr data-info="' + esc(k.ime + " | " + k.unosa + " unosa · " + ucTrajanje(k.minuta) + " | prosek " + (k.danaRada ? ucTrajanje(k.minuta / k.danaRada) : "–") + " dnevno | " + (k.minuta ? (k.unosa / (k.minuta / 60)).toFixed(1) : "0") + " stavki na sat") + '">' +
+          "<td><b>" + esc(k.ime) + '</b></td><td class="num">' + k.unosa + '</td><td class="num">' + k.ulaz + '</td><td class="num">' + k.izlaz + '</td><td class="num">' + k.blokova + '</td><td class="num">' + k.danaRada + '</td><td class="num">' + esc(ucTrajanje(k.minuta)) + '</td>' +
+          '<td style="min-width:120px"><div class="traka-bg"><i style="background:' + boje[i % boje.length] + '" data-sir="' + Math.round((k.minuta / Math.max(1, ukMin)) * 100) + '%"></i></div></td></tr>').join("") + "</tbody></table></div>"
+        : '<p class="muted">Za izabrani period nema prometa.</p>') + "</article>" +
+
+      '<article class="card"><div class="zag"><h2>' + ikona("sat", 17) + "Kada se radi (po satima)</h2></div>" +
+        '<svg viewBox="0 0 320 150" width="100%" height="150" role="img" aria-label="Raspodela rada po satima"><g id="ucSati"></g><line x1="0" y1="120" x2="320" y2="120" stroke="var(--line)"></line></svg>' +
+        '<div class="nap">Broj unosa po satu u danu – vidi se kada je najveća gužva.</div></article></div>' +
+
+    '<article class="card odvoji"><div class="zag"><h2>' + ikona("lista", 17) + "Vreme rada po danima</h2></div>" +
+      '<svg viewBox="0 0 640 170" width="100%" height="170" role="img" aria-label="Vreme rada po danima"><g id="ucDani"></g><line x1="0" y1="140" x2="640" y2="140" stroke="var(--line)"></line></svg>' +
+      '<div class="nap">Ukupno minuta rada svih izabranih radnika po danu.</div></article>' +
+
+    K.map((k, i) => '<article class="card odvoji"><div class="zag"><h2>' + ikona("proizvodnja", 17) + esc(k.ime) + "</h2><span class=\"pil p-br\">" + esc(ucTrajanje(k.minuta)) + "</span><span class=\"nap\">" + k.blokova + " radnih blokova · " + k.unosa + " unosa</span></div>" +
+      '<div class="tbl-wrap" style="max-height:340px"><table><thead><tr><th>Datum</th><th>Od</th><th>Do</th><th class="num">Trajanje</th><th class="num">Stavki</th><th class="num">Ulaz</th><th class="num">Izlaz</th><th class="num">Količina</th></tr></thead><tbody>' +
+      k.blokovi.slice().reverse().map(b => "<tr><td>" + esc(dtxt(b.datum)) + '</td><td class="num">' + ucVreme(b.pocetak) + '</td><td class="num">' + ucVreme(b.kraj) + '</td><td class="num">' + esc(ucTrajanje(b.min)) + '</td><td class="num">' + b.stavke + '</td><td class="num">' + (b.ulaz || "") + '</td><td class="num">' + (b.izlaz || "") + '</td><td class="num">' + esc(fmt(b.kol, false)) + "</td></tr>").join("") +
+      "</tbody></table></div></article>").join("");
+
+  if (!S.downloads) $$("#ucinakBox .dl").forEach(b => b.hidden = true);
+  animBrojace(box);
+  $$("[data-sir]", box).forEach((i, n) => { i.style.width = "0"; setTimeout(() => { i.style.width = i.dataset.sir; }, 80 + n * 60); });
+  const sati = new Array(24).fill(0); K.forEach(k => k.sati.forEach((v, h) => { sati[h] += v; }));
+  ucStubovi("ucSati", sati.map((v, h) => [pad(h), v]), "var(--brand)", 120, 96, 320);
+  const poDanu = dani.map(d => [d.slice(8, 10) + "." + d.slice(5, 7) + ".", K.reduce((s, k) => s + (k.dani[d] || 0), 0)]);
+  ucStubovi("ucDani", poDanu, "var(--povrat)", 140, 112, 640);
+}
+$("#ucinakBox").addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "ucOd") S.uc.od = t.value; else if (t.id === "ucDo") S.uc.doo = t.value;
+  else if (t.id === "ucKo") S.uc.ko = t.value; else if (t.id === "ucRaz") S.uc.razmak = +t.value; else return;
+  renderUcinak();
+});
+$("#ucinakBox").addEventListener("click", e => {
+  if (e.target.id !== "ucXls") return;
+  const K = ucBlokovi(), [od, doo] = ucPeriod();
+  saveXlsx("Ucinak magacionera " + od + " do " + doo + ".xlsx", [
+    ["Zbirno", [["Radnik", "Unosa", "Ulaz", "Izlaz", "Blokova", "Dana", "Minuta rada", "Sati rada", "Stavki na sat"]]
+      .concat(K.map(k => [k.ime, k.unosa, k.ulaz, k.izlaz, k.blokova, k.danaRada, k.minuta, r3(k.minuta / 60), k.minuta ? r3(k.unosa / (k.minuta / 60)) : 0])), [28, 9, 8, 8, 10, 8, 12, 11, 13]],
+    ["Radni blokovi", [["Radnik", "Datum", "Od", "Do", "Minuta", "Stavki", "Ulaz", "Izlaz", "Količina"]]
+      .concat(K.flatMap(k => k.blokovi.map(b => [k.ime, dtxt(b.datum), ucVreme(b.pocetak), ucVreme(b.kraj), b.min, b.stavke, b.ulaz, b.izlaz, b.kol]))), [28, 12, 8, 8, 9, 9, 8, 8, 12]]]);
+});
 
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
