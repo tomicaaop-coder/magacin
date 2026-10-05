@@ -586,7 +586,6 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
       <div>
         <div class="toolbar" style="margin:0 0 10px">
           <label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="trebAmbF" accept=".pdf,application/pdf" hidden></label>
-          <label class="btn" style="cursor:pointer">Slikaj trebovanje<input type="file" id="trebAmbF" accept="image/*" capture="environment" hidden></label>
           <span id="trebAmbM" class="muted" style="font-size:12px"></span>
         </div>
         <div class="search">
@@ -13641,7 +13640,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "05.10.a";
+const APP_VERZIJA = "05.10.b";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -15596,7 +15595,7 @@ function renderSirUnos() {
   const rez = sirPretraga(S.sir.q || "");
   const danas = S.sir.entries.filter(e => e.datum === today()).slice(-25).reverse();
   box.innerHTML = '<div class="toolbar"><h1>Magacin sirovina – ulaz / izlaz</h1><button class="btn" id="sEtDan" style="margin-left:auto" title="Etikete IDENTIFIKOVANO za današnje ulaze sirovina">Etikete prijema (QP18)</button><label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="trebSirF" accept=".pdf,application/pdf" hidden></label>' +
-    '<label class="btn" style="cursor:pointer">Slikaj trebovanje<input type="file" id="trebSirF" accept="image/*" capture="environment" hidden></label><span id="sTrebM" class="muted" style="font-size:12px"></span></div>' +
+    '<span id="sTrebM" class="muted" style="font-size:12px"></span></div>' +
     (S.sir.treb ? sirTrebHtml() : "") +
     '<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)"><div><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sQ" type="search" placeholder="Šifra ili naziv sirovine" value="' + esc(S.sir.q || "") + '" autocomplete="off"></div>' +
     '<ul class="results" style="list-style:none;padding:0;margin:10px 0">' + (rez.length ? rez.map(r => '<li><button type="button" class="res' + (a && a.id === r.id ? " on" : "") + '" data-sa="' + r.id + '" style="display:grid;grid-template-columns:70px 1fr auto;gap:10px;width:100%;text-align:left;border:1px solid var(--line-2);background:' + (a && a.id === r.id ? "var(--brand-soft)" : "var(--surface)") + ';border-radius:8px;padding:8px 12px;margin-bottom:4px;cursor:pointer"><span class="sif">' + esc(r.sifra) + "</span><span>" + esc(r.naziv) + '</span><span class="num" style="font-weight:600">' + esc(fmt(sirUkupno(r.id), false)) + " " + esc(r.mera || "") + "</span></button></li>").join("") : (S.sir.q ? '<li class="muted">Nema sirovine za taj upit.</li>' : '<li class="muted">Upiši šifru ili deo naziva.</li>')) + "</ul></div>" +
@@ -16872,6 +16871,7 @@ async function trebUcitajFajl(file, sir, msgSel) {
   const m = msgSel ? $(msgSel) : null;
   try {
     const slika = /^image\//.test(file.type) || /\.(jpe?g|png|heic|webp)$/i.test(file.name);
+    if (slika) { if (m) m.textContent = "Čitanje trebovanja sa slike je isključeno – učitaj PDF trebovanje iz UPIS.Net-a."; else toast("Čitanje trebovanja sa slike je isključeno."); return; }
     let T;
     if (slika) {
       if (m) m.textContent = "Čitam sliku…";
@@ -17094,7 +17094,7 @@ const POMOC_BAZA = [
     s: ["Pronađi artikal: kucaj šifru ili deo naziva, ili skeniraj kod kamerom.", "Izaberi karticu <b>Ulaz</b>.", "Upiši količinu – ako sabiraš pakete, klikni 🧮 i saberi ih kalkulatorom.", "Proveri <b>evidencioni broj</b> – sam se predlaže kao prvi slobodan iz evidencije kontrole, a ispod se vidi LOT za etiketu.", "Klikni <b>Upiši</b>. Unos se odmah vidi u desnoj koloni i može se stornirati klikom na ×."], v: "unos" },
   { id: "izlaz", k: "izlaz trebovanje izdavanje utrošak potrošnja skidanje sa stanja", n: "Izlaz po trebovanju",
     o: "Izlaz možeš upisati ručno ili ga pročitati sa trebovanja.",
-    s: ["Ručno: Unos → nađi artikal → kartica <b>Izlaz</b> → količina → Upiši.", "Sa papira: Unos → <b>Slikaj trebovanje</b> (telefon slika papir).", "Iz ERP-a: Unos → <b>Izlaz po trebovanju (PDF)</b>.", "Otvara se prozor sa prepoznatim stavkama – ispravi količine, označi šta se knjiži i klikni <b>Proknjiži izlaz</b>."], v: "unos" },
+    s: ["Ručno: Unos → nađi artikal → kartica <b>Izlaz</b> → količina → Upiši.", "Iz ERP-a: Unos → <b>Izlaz po trebovanju (PDF)</b>.", "Otvara se prozor sa prepoznatim stavkama – ispravi količine, označi šta se knjiži i klikni <b>Proknjiži izlaz</b>."], v: "unos" },
   { id: "etikete", k: "etiketa etikete qp18 identifikaciona nalepnica stampa štampa labela identifikovano", n: "Identifikacione etikete QP18",
     o: "Etikete se prave sa kartice Prijem, za sve što je tog dana primljeno.",
     s: ["Magacin ambalaže → <b>Prijem</b>, izaberi datum.", "Klikni <b>Identifikaciona etiketa (QP18)</b>.", "Čekiraj artikle za koje praviš etikete.", "Proveri evidencioni broj i LOT (sami se predlažu, mogu se ispraviti).", "<b>Štampaj</b> štampa direktno, <b>Preuzmi PDF</b> pravi fajl.", "Posle toga te program pita za svaki artikal da li da napravi nalog laboratoriji."], v: "prijem" },
