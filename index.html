@@ -553,6 +553,53 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
   .sheet{ border:0; box-shadow:none; padding:0; max-width:none; }
   td{ padding:3px 6px; font-size:11px; }
 }
+
+/* ---------- skener na telefonu ---------- */
+body.skenerSamo .bar > .bar-in, body.skenerSamo .baner, body.skenerSamo main, body.skenerSamo #botnav { display: none !important }
+#skApp { position: fixed; inset: 0; z-index: 70; background: var(--bg); display: flex; flex-direction: column; overflow: auto; -webkit-overflow-scrolling: touch }
+.sk-bar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; border-bottom: 3px solid var(--nar, #EE7D00); position: sticky; top: 0; z-index: 2 }
+.sk-bar b { font: 600 18px "Barlow Semi Condensed", Arial, sans-serif; color: #11315F }
+.sk-logo { font: 700 15px "Barlow Condensed", Arial, sans-serif; letter-spacing: .14em; color: var(--nar, #EE7D00) }
+.sk-ko { margin-left: auto; font-size: 12px; color: var(--muted) }
+.sk-bar .btn { margin-left: 8px }
+.sk-main { padding: 14px; display: flex; flex-direction: column; gap: 12px; max-width: 640px; width: 100%; margin: 0 auto }
+.sk-big { display: flex; align-items: center; gap: 14px; width: 100%; padding: 18px 16px; border: 2px solid var(--linija, #d9dee6); border-radius: 14px; background: var(--karta, #fff); color: inherit; font: inherit; text-align: left; cursor: pointer }
+.sk-big:active { transform: scale(.99) }
+.sk-big[disabled] { opacity: .5 }
+.sk-big svg { width: 38px; height: 38px; flex: 0 0 38px; color: var(--nar, #EE7D00) }
+.sk-big span { display: flex; flex-direction: column; font: 600 19px "Barlow Semi Condensed", Arial, sans-serif }
+.sk-big small { font: 400 13px/1.3 system-ui, Arial; color: var(--muted); margin-top: 2px }
+.sk-big.ok { border-color: var(--nar, #EE7D00); background: var(--nar, #EE7D00); color: #fff }
+.sk-big.ok small { color: rgba(255, 255, 255, .85) }
+.sk-msg { padding: 10px 12px; border-radius: 10px; background: rgba(238, 125, 0, .12); font-size: 14px }
+.sk-upoz { margin-top: 6px; font-size: 12px; color: #B8322A; font-weight: 600 }
+.sk-radi { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted) }
+.sk-spin { width: 18px; height: 18px; border: 3px solid var(--linija, #d9dee6); border-top-color: var(--nar, #EE7D00); border-radius: 50%; animation: skSpin .8s linear infinite }
+@keyframes skSpin { to { transform: rotate(360deg) } }
+.sk-red { border-top: 1px solid var(--linija, #d9dee6); padding-top: 12px; font-size: 14px }
+.sk-red-h { margin-bottom: 8px }
+.sk-red-r { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--linija, #eef1f5) }
+.sk-red-r > div { flex: 1; min-width: 0 }
+.sk-red-r .muted { font-size: 12px }
+.sk-polja { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.sk-polja label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px }
+.sk-stavke { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow: auto }
+.sk-st { border: 1px solid var(--linija, #d9dee6); border-radius: 10px; padding: 10px }
+.sk-st-h { font-size: 14px; margin-bottom: 8px }
+.sk-st-r { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+.sk-st-r label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px }
+.sk-st-r .inp { font-size: 17px }
+.sk-kod { margin-bottom: 10px }
+.sk-kod-n { display: flex; flex-direction: column }
+.sk-kod-n b { font: 600 19px "Barlow Semi Condensed", Arial, sans-serif }
+.sk-kod-n span { font-size: 12px; color: var(--muted) }
+.sk-kod-s { margin-top: 6px; font-size: 15px }
+.sk-kod-l { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px }
+.sk-kod-l span { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--polje, #eef1f5) }
+.sk-kod-l span.na { background: var(--nar, #EE7D00); color: #fff }
+.sk-panel { margin-bottom: 16px; border-left: 4px solid var(--nar, #EE7D00) }
+@media (max-width: 520px) { .sk-polja, .sk-st-r { grid-template-columns: 1fr } }
+
 </style>
 </head>
 <body>
@@ -588,6 +635,7 @@ dialog::backdrop{ background:rgba(10,15,20,.45); }
           <label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="trebAmbF" accept=".pdf,application/pdf" hidden></label>
           <span id="trebAmbM" class="muted" style="font-size:12px"></span>
         </div>
+        <div id="skAmbPanel"></div>
         <div class="search">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
           <input id="q" type="search" placeholder="Šifra ili deo naziva artikla" autocomplete="off" aria-label="Pretraga artikala" aria-controls="rez">
@@ -13640,7 +13688,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "09.10.a";
+const APP_VERZIJA = "09.10.b";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -15342,7 +15390,7 @@ function renderIzdavanje() {
   const box = $("#izdBox"), T = S.treb;
   let html = '<div class="toolbar"><h1>Etikete izdavanje materijala</h1></div>' +
     '<div class="card" style="margin-bottom:16px"><div class="toolbar" style="margin:0"><label class="fld grow">Trebovanje (PDF iz UPIS.Net-a)<input class="inp" type="file" id="izdF" accept=".pdf,application/pdf"></label>' +
-    '<div id="izdM" class="muted" style="font-size:13px"></div></div><p class="muted" style="font-size:12px;margin:8px 0 0">Učitaj trebovanje – program pravi etiketu 100 × 70 mm za svaki materijal sa dokumenta: proizvod, šifra, naziv, količina, lot i rok trajanja. Za svako novo trebovanje učitaj novi PDF.</p></div>';
+    '<div id="izdM" class="muted" style="font-size:13px"></div></div><p class="muted" style="font-size:12px;margin:8px 0 0">Učitaj trebovanje – program pravi etiketu 100 × 70 mm za svaki materijal sa dokumenta: proizvod, šifra, naziv, količina, lot i rok trajanja. Za svako novo trebovanje učitaj novi PDF, ili ga skeniraj telefonom pa ga ovde izaberi.</p></div>' + skPanelHtml(true);
   if (T) {
     const et = izdEtikete();
     html += '<div class="card"><div style="display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;margin-bottom:10px"><h2 style="margin:0;font-size:20px">' + esc(T.proizvod.sifra + " " + T.proizvod.naziv) + '</h2><span class="muted">Trebovanje <b>' + esc(T.broj) + "</b> od " + esc(T.datum) + (T.serija ? " · serija " + esc(T.serija) : "") + " · " + T.stavke.length + " materijala</span></div>" +
@@ -15596,6 +15644,7 @@ function renderSirUnos() {
   const danas = S.sir.entries.filter(e => e.datum === today()).slice(-25).reverse();
   box.innerHTML = '<div class="toolbar"><h1>Magacin sirovina – ulaz / izlaz</h1><button class="btn" id="sEtDan" style="margin-left:auto" title="Etikete IDENTIFIKOVANO za današnje ulaze sirovina">Etikete prijema (QP18)</button><label class="btn" style="cursor:pointer">Izlaz po trebovanju (PDF)<input type="file" id="trebSirF" accept=".pdf,application/pdf" hidden></label>' +
     '<span id="sTrebM" class="muted" style="font-size:12px"></span></div>' +
+    skPanelHtml(true) +
     (S.sir.treb ? sirTrebHtml() : "") +
     '<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)"><div><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sQ" type="search" placeholder="Šifra ili naziv sirovine" value="' + esc(S.sir.q || "") + '" autocomplete="off"></div>' +
     '<ul class="results" style="list-style:none;padding:0;margin:10px 0">' + (rez.length ? rez.map(r => '<li><button type="button" class="res' + (a && a.id === r.id ? " on" : "") + '" data-sa="' + r.id + '" style="display:grid;grid-template-columns:70px 1fr auto;gap:10px;width:100%;text-align:left;border:1px solid var(--line-2);background:' + (a && a.id === r.id ? "var(--brand-soft)" : "var(--surface)") + ';border-radius:8px;padding:8px 12px;margin-bottom:4px;cursor:pointer"><span class="sif">' + esc(r.sifra) + "</span><span>" + esc(r.naziv) + '</span><span class="num" style="font-weight:600">' + esc(fmt(sirUkupno(r.id), false)) + " " + esc(r.mera || "") + "</span></button></li>").join("") : (S.sir.q ? '<li class="muted">Nema sirovine za taj upit.</li>' : '<li class="muted">Upiši šifru ili deo naziva.</li>')) + "</ul></div>" +
@@ -17620,6 +17669,502 @@ $("#ucinakBox").addEventListener("click", e => {
       .concat(K.flatMap(k => k.blokovi.map(b => [k.ime, dtxt(b.datum), ucVreme(b.pocetak), ucVreme(b.kraj), b.min, b.stavke, b.ulaz, b.izlaz, b.kol]))), [28, 12, 8, 8, 9, 9, 8, 8, 12]]]);
 });
 
+/* ======================= SKENER NA TELEFONU =======================
+   Zaseban ekran (i zasebna ikonica preko skener.webmanifest) koji radi dve stvari:
+   1. cita QR / bar kod sa etikete i nudi izlaz, popis ili samo prikaz;
+   2. slika trebovanje, procita ga (OCR) i posalje u program, gde se bira
+      sta se knjizi (sirovine) ili stampa (kuvaona).
+   Sve knjizenje ide kroz iste funkcije kao i ostatak programa.                 */
+
+const SKKOL = "skeniranja";
+const SK = { on: false, radi: false, poruka: "", pregled: null, red: [], slanje: false };
+
+function skSamoApp() { return /[?&]app=skener(\b|&|$)/.test(location.search); }
+function skPravo(v) { return window.PRAVO ? window.PRAVO(v) : "pun"; }
+function skSmeUpis(v) { return skPravo(v) === "pun"; }
+
+/* ---------- brojevi i kolone ---------- */
+const SK_ZAM = { O: "0", o: "0", Q: "0", D: "0", U: "0", I: "1", l: "1", "|": "1", S: "5", s: "5", B: "8", G: "6", Z: "2", T: "7", A: "4", J: "1" };
+const skNorm = t => String(t).replace(/[OoQDUIl|SsBGZTAJ]/g, c => SK_ZAM[c] || c);
+const SK_KOL_RE = /^[\d.]{1,12},\d{4}$/;      // ERP uvek stampa 4 decimale
+const SK_BEZ_RE = /^\d{5,12}$/;               // ista kolona, OCR pojeo zarez
+const SK_DATUM_RE = /\d{1,2}\.\s?\d{1,2}\.\s?\d{2,4}/;
+const SK_MERA_RE = /^(KG|GR|G|L|ML|KOM|M|M2|PAR)$/i;
+
+function skKolVrednost(t) {
+  t = String(t).trim().replace(/\.$/, "").replace(/\s/g, "");
+  if (SK_KOL_RE.test(t)) return parseFloat(t.replace(/\./g, "").replace(",", "."));
+  if (SK_BEZ_RE.test(t)) return parseFloat((t.slice(0, -4).replace(/^0+/, "") || "0") + "." + t.slice(-4));
+  return null;
+}
+function skMedijana(a) { if (!a.length) return null; const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; }
+
+/* sve sifre iz sifarnika citljive iz tokena; klizni prozor jer OCR spoji
+   redni broj i sifru ("11011208" = RBr 11 + sifra 011208) */
+function skSifreIz(tok, kat) {
+  const out = [];
+  for (const t of [String(tok), skNorm(tok)]) {
+    const c = t.replace(/\D/g, "");
+    for (let i = 0; i + 6 <= c.length; i++) { const k = c.slice(i, i + 6); if (kat[k] && out.indexOf(k) < 0) out.push(k); }
+  }
+  return out;
+}
+function skReciNaziva(s) { return String(s).toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim().split(" ").filter(x => x.length > 2); }
+function skSlicnost(a, b) {
+  const ta = new Set(skReciNaziva(a)), tb = new Set(skReciNaziva(b));
+  if (!ta.size || !tb.size) return 0;
+  let p = 0; ta.forEach(x => { if (tb.has(x)) p++; });
+  const uni = new Set([...ta, ...tb]).size;
+  const spoj = [...ta].join(""), spoj2 = [...tb].join("");
+  const sadrzi = spoj.length > 5 && spoj2.length > 5 && (spoj.indexOf(spoj2) >= 0 || spoj2.indexOf(spoj) >= 0) ? 0.5 : 0;
+  return Math.max(p / uni, sadrzi);
+}
+
+/* grupisanje reci u redove po y */
+function skLinije(reci) {
+  if (!reci.length) return [];
+  const vis = skMedijana(reci.map(w => w.h)) || 10, tol = Math.max(6, vis * 0.6), red = [];
+  reci.slice().sort((a, b) => a.y - b.y || a.x - b.x).forEach(w => {
+    const sred = w.y + w.h / 2;
+    const L = red.find(l => Math.abs(l.y - sred) <= tol);
+    if (L) { L.it.push(w); L.y = (L.y * L.it.length + sred) / (L.it.length + 1); }
+    else red.push({ y: sred, it: [w] });
+  });
+  red.forEach(L => { L.it.sort((a, b) => a.x - b.x); L.t = L.it.map(w => w.s).join(" "); });
+  return red.sort((a, b) => a.y - b.y);
+}
+
+/* ---------- parser trebovanja iz OCR-a ---------- */
+function skParsiraj(reci, kat) {
+  const L = skLinije(reci), sve = L.map(x => x.t).join(" ");
+  const zagl = { broj: "", datum: "", serija: "", proizvod: { sifra: "", naziv: "" } };
+  let m;
+  if ((m = skNorm(sve).match(/br\.?\s*(\d{10,14})/i))) zagl.broj = m[1];
+  if ((m = sve.match(/(\d{1,2}\.\s?\d{1,2}\.\s?\d{4})/))) zagl.datum = m[1].replace(/\s/g, "");
+  if ((m = sve.match(/Serija[:\s]*(\S{6,16})/i))) zagl.serija = skNorm(m[1]).replace(/\D/g, "");
+  if ((m = sve.match(/\b(\d{6})\s*\/\s*([A-ZŠĐČĆŽ][^|]{3,60}?)\s{2,}/))) zagl.proizvod = { sifra: m[1], naziv: m[2].trim() };
+
+  const ivice = [];
+  L.forEach(ln => ln.it.forEach(w => { if (SK_KOL_RE.test(String(w.s).trim().replace(/\.$/, ""))) ivice.push(w.x + w.w); }));
+  if (ivice.length < 3) return { zagl: zagl, stavke: [], greska: "Tabela nije prepoznata. Slikaj ravno odozgo, da cela tabela stane u kadar." };
+  const med = skMedijana(ivice), bliski = ivice.filter(e => Math.abs(e - med) <= 30);
+  const xq = bliski.length >= 3 ? skMedijana(bliski) : med;
+
+  const kolicina = ln => {
+    let naj = null;
+    ln.it.forEach(w => {
+      const v = skKolVrednost(w.s); if (v == null || v <= 0) return;
+      const d = Math.abs(w.x + w.w - xq);
+      if (d <= 45 && (!naj || d < naj[1])) naj = [v, d];
+    });
+    return naj ? naj[0] : null;
+  };
+
+  const stavke = [];
+  L.forEach((ln, i) => {
+    let sif = null, xs = null;
+    for (const w of ln.it) {
+      if (w.x + w.w > xq - 60) continue;
+      const k = skSifreIz(w.s, kat);
+      if (k.length) { sif = k[k.length - 1]; xs = w.x; break; }
+    }
+    if (!sif) {
+      const tekst = ln.it.filter(w => w.x + w.w < xq - 60).map(w => w.s).join(" ");
+      if (skReciNaziva(tekst).length >= 2) {
+        let naj = null, najs = 0;
+        for (const k in kat) { const s = skSlicnost(tekst, kat[k].naziv); if (s > najs) { naj = k; najs = s; } }
+        if (najs >= 0.45) { sif = naj; xs = ln.it[0].x; }
+      }
+    }
+    if (!sif || stavke.some(s => s.sifra === sif)) return;
+    stavke.push({ sifra: sif, naziv: kat[sif].naziv, art: kat[sif].id, mera: kat[sif].jm || "", kol: kolicina(ln), red: i, x: xs, lotovi: [] });
+  });
+  if (!stavke.length) return { zagl: zagl, stavke: [], greska: "Nijedna šifra sa dokumenta nije pronađena u šifarniku programa." };
+
+  const xlot = skMedijana(stavke.map(s => s.x));
+  const merax = [];
+  L.forEach(ln => ln.it.forEach(w => { if (SK_MERA_RE.test(String(w.s).trim()) && w.x < xq - 60) merax.push(w.x); }));
+  const xmera = merax.length >= 3 ? skMedijana(merax) : xq - 140;
+  const redovi = new Set(stavke.map(s => s.red));
+
+  L.forEach((ln, i) => {
+    if (redovi.has(i)) return;
+    const k = kolicina(ln);
+    const imaDat = SK_DATUM_RE.test(ln.t) || /Dat|Va\w*nost|proiz/i.test(ln.t);
+    if (k == null && !imaDat) return;                 // prelomljen naziv ili podnožje
+    const gore = stavke.filter(s => s.red < i);
+    if (!gore.length) return;
+    const st = gore[gore.length - 1], tok = [];
+    for (const w of ln.it) {
+      if (w.x < xlot - 30 || w.x + w.w > xmera - 8) continue;
+      const s2 = String(w.s).trim();
+      if (/^(Dat|proiz|iz\.?:?)/i.test(s2) || /Va\w*nost/i.test(s2)) break;
+      if (/^\d{1,2}\.$/.test(s2) || SK_DATUM_RE.test(s2)) break;
+      tok.push(s2);
+    }
+    const lot = tok.join(" ").trim().replace(/^[.,:_\-]+|[.,:_\-]+$/g, "");
+    if (!lot || lot.length < 3 || !/[A-Z0-9]{3}/i.test(lot)) return;
+    const dat = ln.t.match(/\d{1,2}\.\s?\d{1,2}\.\s?\d{4}/g);
+    st.lotovi.push({ lot: lot, kol: k, rok: dat ? dat[dat.length - 1].replace(/\s/g, "") : "" });
+  });
+
+  stavke.forEach(s => {
+    if (s.kol == null && s.lotovi.length) {
+      const z = s.lotovi.filter(l => l.kol).reduce((a, l) => a + l.kol, 0);
+      if (z > 0) s.kol = r3(z);
+    }
+    if (s.lotovi.length === 1 && s.lotovi[0].kol == null) s.lotovi[0].kol = s.kol;
+    delete s.red; delete s.x;
+  });
+  return { zagl: zagl, stavke: stavke, greska: null };
+}
+
+/* katalog: { sifra: {id, naziv, jm} } */
+function skKatalog(sir) {
+  const kat = {}, izvor = sir ? S.sir.art : S.art;
+  (izvor || []).forEach(a => { if (!a.izbacen && a.sifra) kat[String(a.sifra).trim()] = a; });
+  return kat;
+}
+
+/* lot sa papira prislonimo na lot koji program stvarno ima na stanju */
+function skRazmak(a, b) {
+  a = String(a).toUpperCase().replace(/[^A-Z0-9]/g, ""); b = String(b).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (a === b) return 0;
+  const m = a.length, n = b.length; if (!m || !n) return 99;
+  let pret = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const tek = [i];
+    for (let j = 1; j <= n; j++) tek[j] = Math.min(pret[j] + 1, tek[j - 1] + 1, pret[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    pret = tek;
+  }
+  return pret[n];
+}
+function skSnapLot(lot, artId) {
+  if (!lot || !artId || typeof sirLotovi !== "function") return { lot: lot, snap: false };
+  let naj = null, najd = 99;
+  (sirLotovi(artId) || []).forEach(o => {
+    if (!o.lot || Math.abs(o.kol) < 1e-9) return;
+    const d = skRazmak(lot, o.lot);
+    if (d < najd) { najd = d; naj = o.lot; }
+  });
+  const duz = String(lot).replace(/[^A-Za-z0-9]/g, "").length;
+  if (naj && najd > 0 && najd <= Math.max(1, Math.floor(duz / 4))) return { lot: naj, snap: true, bio: lot };
+  return { lot: naj && najd === 0 ? naj : lot, snap: false };
+}
+
+/* ---------- OCR ---------- */
+const SK_TESS = "https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js";
+let skWorker = null;
+async function skUcitajTess() {
+  if (!window.Tesseract) {
+    await new Promise((res, rej) => {
+      const el = document.createElement("script"); el.src = SK_TESS;
+      el.onload = res; el.onerror = () => rej(new Error("Nije moguće preuzeti program za čitanje teksta. Proveri internet vezu."));
+      document.head.appendChild(el);
+    });
+  }
+  if (!skWorker) skWorker = await Tesseract.createWorker("eng");
+  return skWorker;
+}
+/* slika -> crno-belo, uspravno, najvise 2200px */
+async function skPripremi(file, maxS) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Slika nije čitljiva.")); i.src = url; });
+    const s = Math.min(1, (maxS || 2200) / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    const x = c.getContext("2d"); x.drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  } finally { URL.revokeObjectURL(url); }
+}
+function skPojacaj(c) {
+  const x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+  let zbir = 0;
+  for (let i = 0; i < p.length; i += 4) { const g = (p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114); p[i] = p[i + 1] = p[i + 2] = g; zbir += g; }
+  const sred = zbir / (p.length / 4), k = 1.6;
+  for (let i = 0; i < p.length; i += 4) { const v = Math.max(0, Math.min(255, (p[i] - sred) * k + sred * 1.05)); p[i] = p[i + 1] = p[i + 2] = v; }
+  x.putImageData(d, 0, 0); return c;
+}
+function skReciIz(data) {
+  if (Array.isArray(data.words) && data.words.length) return data.words;
+  const out = [];
+  (data.blocks || []).forEach(b => (b.paragraphs || []).forEach(p => (p.lines || []).forEach(l => (l.words || []).forEach(w => out.push(w)))));
+  return out;
+}
+async function skProcitaj(file, naStanje) {
+  naStanje("Pripremam sliku…");
+  const c = skPojacaj(await skPripremi(file, 2200));
+  naStanje("Učitavam čitač teksta… (prvi put traje duže)");
+  const w = await skUcitajTess();
+  naStanje("Čitam dokument…");
+  let data;
+  try { data = (await w.recognize(c, {}, { blocks: true })).data; }
+  catch (e) { data = (await w.recognize(c)).data; }
+  const reci = skReciIz(data).filter(x => (x.text || "").trim()).map(x => ({
+    s: x.text.trim(), x: x.bbox.x0, y: x.bbox.y0, w: x.bbox.x1 - x.bbox.x0, h: x.bbox.y1 - x.bbox.y0, c: x.confidence
+  }));
+  // probamo oba sifarnika pa uzmemo onaj koji prepozna vise stavki
+  const a = skParsiraj(reci, skKatalog(true)), b = skParsiraj(reci, skKatalog(false));
+  const r = b.stavke.length > a.stavke.length ? b : a;
+  r.sir = r === a;
+  r.slika = (await skPripremi(file, 1100)).toDataURL("image/jpeg", 0.6);
+  return r;
+}
+
+/* ---------- red skeniranih dokumenata (deli se sa racunarom) ---------- */
+function skRedSort(a, b) { return String(b.t || "").localeCompare(String(a.t || "")); }
+/* upis koji ne zavisi od trenutno otvorene kartice, nego od prava na odgovarajuci meni */
+function skWrite(fn, meniji) {
+  const sme = (meniji || []).some(m => skSmeUpis(m));
+  if (!sme) { toast("Nemaš pravo unosa za ovo."); return Promise.reject(Object.assign(new Error("read_only"), { code: "read_only" })); }
+  const p = S.chain.then(fn); S.chain = p.catch(() => {}); return p;
+}
+// PRAVO() se pita po ekranu: izlaz sirovina, izdavanje u kuvaoni, izlaz ambalaže
+const SK_MENIJI = ["sunos", "izdavanje", "unos"];
+async function skPosalji(r, napomena) {
+  if (!S.db) { toast("Baza nije dostupna – dokument nije poslat."); return false; }
+  const id = (new Date().toISOString().replace(/\D/g, "").slice(0, 14)) + "-" + rid();
+  const doc = {
+    vrsta: "treb", sir: !!r.sir, broj: r.zagl.broj || "", datum: r.zagl.datum || "",
+    serija: r.zagl.serija || "", proizvod: r.zagl.proizvod || { sifra: "", naziv: "" },
+    stavke: r.stavke, slika: r.slika || "", nap: napomena || "",
+    ko: S.uid || "anon", koIme: (typeof mojeIme === "function" ? mojeIme() : "") || "", t: new Date().toISOString()
+  };
+  try {
+    await skWrite(async () => { await S.db.collection(SKKOL).doc(id).set(doc); }, SK_MENIJI);
+    return true;
+  } catch (e) { dbErr(e); return false; }
+}
+async function skObrisiSve() {
+  if (!S.db) return;
+  const lista = (S.sken || []).slice();
+  if (!lista.length) { toast("Nema skeniranih dokumenata."); return; }
+  if (!confirm("Ukloniti svih " + lista.length + " dokumenata učitanih telefonom?\n\nOvo ne dira knjižene izlaze ni odštampane etikete.")) return;
+  try {
+    await skWrite(async () => { for (const d of lista) await S.db.collection(SKKOL).doc(d.id).delete(); }, SK_MENIJI);
+    toast("Uklonjeno " + lista.length + " dokumenata.");
+  } catch (e) { dbErr(e); }
+}
+async function skObrisi(id) {
+  if (!S.db) return;
+  try { await skWrite(async () => { await S.db.collection(SKKOL).doc(id).delete(); }, SK_MENIJI); } catch (e) { dbErr(e); }
+}
+
+/* ---------- ekran skenera ---------- */
+function skOtvori() { SK.on = true; document.body.classList.add("skenerOn"); renderSk(); }
+function skZatvori() {
+  if (skSamoApp()) return;
+  SK.on = false; SK.pregled = null; document.body.classList.remove("skenerOn");
+  const el = $("#skApp"); if (el) el.remove();
+}
+function renderSk() {
+  let el = $("#skApp");
+  if (!SK.on) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "skApp"; document.body.appendChild(el); }
+  el.innerHTML = skHtml();
+}
+function skHtml() {
+  if (SK.pregled) return skPregledHtml();
+  const n = (S.sken || []).length;
+  return '<div class="sk-bar"><span class="sk-logo">NEVENA</span><b>Skener</b>' +
+    '<span class="sk-ko">' + esc((typeof mojeIme === "function" ? mojeIme() : "") || "") + "</span>" +
+    (skSamoApp() ? "" : '<button class="btn" id="skX">Zatvori</button>') + "</div>" +
+    '<div class="sk-main">' +
+    (SK.poruka ? '<div class="sk-msg">' + SK.poruka + "</div>" : "") +
+    '<button class="sk-big" id="skKodBtn"' + (SK.radi ? " disabled" : "") + '>' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2v2h-2zM14 19h2v2h-2zM19 14h2v2h-2z"/></svg>' +
+    "<span>Skeniraj kod<small>QR ili bar kod sa etikete</small></span></button>" +
+    '<button class="sk-big" id="skDokBtn"' + (SK.radi ? " disabled" : "") + '>' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg>' +
+    "<span>Slikaj trebovanje<small>šalje se u program, na računar</small></span></button>" +
+    '<input type="file" id="skF" accept="image/*" capture="environment" hidden>' +
+    (SK.radi ? '<div class="sk-radi"><span class="sk-spin"></span>' + esc(SK.stanje || "Radim…") + "</div>" : "") +
+    '<div class="sk-red"><div class="sk-red-h">U programu čeka: <b>' + n + "</b> " + (n === 1 ? "dokument" : "dokumenata") + "</div>" +
+    (n ? (S.sken || []).slice(0, 8).map(d =>
+      '<div class="sk-red-r"><div><b>' + esc(d.broj || "bez broja") + "</b> " + esc(d.datum || "") +
+      '<div class="muted">' + (d.stavke || []).length + " stavki · " + esc(d.koIme || "") + "</div></div>" +
+      '<button class="btn danger" data-skdel="' + esc(d.id) + '">Ukloni</button></div>').join("")
+      : '<div class="muted" style="padding:6px 0">Još ništa nije poslato.</div>') +
+    (n ? '<button class="btn danger" id="skSveX" style="width:100%;margin-top:8px">Poništi sve dokumente</button>' : "") +
+    "</div></div>";
+}
+
+/* pregled procitanog dokumenta pre slanja */
+function skPregledHtml() {
+  const r = SK.pregled, st = r.stavke;
+  return '<div class="sk-bar"><b>Pročitano sa trebovanja</b><button class="btn" id="skNazad">Nazad</button></div>' +
+    '<div class="sk-main">' +
+    '<div class="sk-msg">Proveri brojeve. Sve se može ispraviti i ovde i kasnije na računaru.</div>' +
+    '<div class="sk-polja"><label>Broj trebovanja<input class="inp" id="skBroj" value="' + esc(r.zagl.broj) + '" inputmode="numeric"></label>' +
+    '<label>Datum<input class="inp" id="skDatum" value="' + esc(r.zagl.datum) + '"></label></div>' +
+    '<div class="muted" style="font-size:12px;margin:2px 0 8px">' + (r.sir ? "Sirovine" : "Ambalaža") + " · prepoznato <b>" + st.length + "</b> stavki" +
+    (r.zagl.serija ? " · serija " + esc(r.zagl.serija) : "") + "</div>" +
+    '<div class="sk-stavke">' + st.map((s, i) =>
+      '<div class="sk-st"><div class="sk-st-h"><b>' + esc(s.sifra) + "</b> " + esc(s.naziv) + "</div>" +
+      '<div class="sk-st-r"><label>Količina<input class="inp" data-skk="' + i + '" inputmode="decimal" value="' + esc(s.kol == null ? "" : fmt(s.kol, false)) + '"></label>' +
+      '<label>Lot<input class="inp" data-skl="' + i + '" value="' + esc((s.lotovi[0] || {}).lot || "") + '"></label></div>' +
+      (s.lotovi.length > 1 ? '<div class="muted" style="font-size:12px">+ još ' + (s.lotovi.length - 1) + " lota: " + esc(s.lotovi.slice(1).map(l => l.lot).join(", ")) + "</div>" : "") +
+      (s.kol == null ? '<div class="sk-upoz">Količina nije pročitana – upiši je.</div>' : "") + "</div>").join("") + "</div>" +
+    '<button class="sk-big ok" id="skPosalji"' + (SK.slanje ? " disabled" : "") + "><span>Pošalji podatke u program<small>pa slikaj sledeće trebovanje</small></span></button>" +
+    '<button class="btn" id="skOdbaci" style="width:100%;margin-top:8px">Odbaci</button>' +
+    "</div>";
+}
+
+async function skSlikaj(file) {
+  SK.radi = true; SK.poruka = ""; renderSk();
+  const stanje = t => { SK.stanje = t; renderSk(); };
+  try {
+    const r = await skProcitaj(file, stanje);
+    if (r.greska || !r.stavke.length) { SK.poruka = esc(r.greska || "Dokument nije pročitan."); SK.radi = false; renderSk(); return; }
+    r.stavke.forEach(s => s.lotovi.forEach(l => { const sn = skSnapLot(l.lot, s.art); l.lot = sn.lot; if (sn.snap) l.snap = sn.bio; }));
+    SK.pregled = r;
+  } catch (e) {
+    SK.poruka = esc(e && e.message || "Čitanje nije uspelo.");
+  }
+  SK.radi = false; SK.stanje = ""; renderSk();
+}
+
+/* ---------- sta se radi sa procitanim kodom ---------- */
+function skKodSheet(code) {
+  const kod = String(code || "").trim(), i = kod.indexOf("|");
+  const sif = i > 0 ? kod.slice(0, i) : kod, lot = i > 0 ? kod.slice(i + 1) : "";
+  const sa = S.sir.bySif[sif], aa = typeof nadjiPoKodu === "function" ? nadjiPoKodu(sif) : null;
+  const sir = !!sa && !aa ? true : (!!sa && !!aa ? !!lot : false);
+  const a = sir ? sa : (aa || sa);
+  if (!a) { SK.poruka = "Nepoznat kod: " + esc(kod); renderSk(); return; }
+  const stanje = sir ? (typeof sirUkupno === "function" ? sirUkupno(a.id) : null) : (typeof trenutno === "function" ? trenutno(a.id) : null);
+  const lots = sir && typeof sirLotovi === "function" ? (sirLotovi(a.id) || []).filter(o => Math.abs(o.kol) > 1e-9) : [];
+  const meni = sir ? "sunos" : "unos";
+  const d = $("#dlg");
+  const html = '<div class="sk-kod"><div class="sk-kod-n"><b>' + esc(a.naziv) + "</b><span>" + esc(a.sifra) + "</span></div>" +
+    '<div class="sk-kod-s">Stanje: <b>' + (stanje == null ? "–" : esc(fmt(stanje, false))) + "</b> " + esc(a.jm || "") + "</div>" +
+    (lots.length ? '<div class="sk-kod-l">' + lots.slice(0, 6).map(o => '<span class="' + (lot && o.lot === lot ? "na" : "") + '">' + esc(o.lot) + ": " + esc(fmt(o.kol, false)) + "</span>").join("") + "</div>" : "") + "</div>";
+  const dug = [{ v: "no", l: "Zatvori" }];
+  if (skSmeUpis(meni)) dug.push({ v: "izlaz", l: "Izlaz" });
+  if (skSmeUpis(meni)) dug.push({ v: "popis", l: "Popis" });
+  izbor("Skenirano", html, dug.concat([{ v: "ok", l: "Samo prikaz", primary: true }])).then(v => {
+    if (v === "izlaz") skIzlaz(a, sir, lot);
+    else if (v === "popis") { if (typeof brziOtvori === "function") { if (typeof show === "function") show(sir ? "spopis" : "popis"); brziOtvori(sir); S.brzi.sel = a.id; if (lot) S.brzi.lot = lot; S.brzi.fokusKol = true; renderBrzi(); } }
+  });
+}
+async function skIzlaz(a, sir, lot) {
+  const lots = sir && typeof sirLotovi === "function" ? (sirLotovi(a.id) || []).filter(o => Math.abs(o.kol) > 1e-9) : [];
+  const html = '<div class="sk-kod"><div class="sk-kod-n"><b>' + esc(a.naziv) + "</b><span>" + esc(a.sifra) + "</span></div></div>" +
+    '<div class="form"><label class="fld">Količina izlaza<input class="inp" id="skQ" inputmode="decimal" autofocus></label>' +
+    (sir ? '<label class="fld">Lot<select class="inp" id="skL">' + lots.map(o => '<option value="' + esc(o.lot) + '"' + (o.lot === lot ? " selected" : "") + ">" + esc(o.lot) + " (" + esc(fmt(o.kol, false)) + ")</option>").join("") + "</select></label>" : "") + "</div>";
+  const v = await izbor("Izlaz – " + a.naziv, html, [{ v: "no", l: "Odustani" }, { v: "da", l: "Proknjiži izlaz", primary: true }]);
+  if (v !== "da") return;
+  if (typeof show === "function") show(sir ? "sunos" : "unos");   // da provera prava gleda pravu karticu
+  const k = parseQty(($("#skQ") && $("#skQ").value) || "");
+  if (!k || isNaN(k) || k <= 0) { toast("Upiši količinu."); return; }
+  const nap = "skener";
+  if (sir) {
+    const L = ($("#skL") && $("#skL").value) || lot || "";
+    if (!L) { toast("Nema lota za izlaz."); return; }
+    if (await sirDodajUnose(today(), [{ art: a.id, lot: L, vrsta: "I", kol: k, nap: nap }])) toast("Izlaz: " + fmt(k, false) + " – " + a.naziv);
+  } else {
+    if (await dodajUnose(today(), [{ art: a.id, vrsta: "I", kol: k, nap: nap }])) toast("Izlaz: " + fmt(k, false) + " – " + a.naziv);
+  }
+  renderSk();
+}
+
+/* ---------- dogadjaji skenera ---------- */
+document.addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("#skX")) { skZatvori(); return; }
+  if (t.closest("#skKodBtn")) { S.skMode = true; skeniraj(); return; }
+  if (t.closest("#skDokBtn")) { const f = $("#skF"); if (f) f.click(); return; }
+  if (t.closest("#skNazad") || t.closest("#skOdbaci")) { SK.pregled = null; renderSk(); return; }
+  if (t.closest("#skSveX")) { skObrisiSve(); return; }
+  const db = t.closest("[data-skdel]"); if (db) { skObrisi(db.dataset.skdel); return; }
+  if (t.closest("#skPosalji")) {
+    const r = SK.pregled; if (!r || SK.slanje) return;
+    r.zagl.broj = ($("#skBroj") && $("#skBroj").value.trim()) || r.zagl.broj;
+    r.zagl.datum = ($("#skDatum") && $("#skDatum").value.trim()) || r.zagl.datum;
+    $$("#skApp [data-skk]").forEach(el => { const s = r.stavke[+el.dataset.skk]; if (s) { const v = parseQty(el.value); s.kol = isNaN(v) ? null : v; } });
+    $$("#skApp [data-skl]").forEach(el => { const s = r.stavke[+el.dataset.skl]; if (s) { if (!s.lotovi.length) s.lotovi.push({ lot: "", kol: s.kol, rok: "" }); s.lotovi[0].lot = el.value.trim(); } });
+    SK.slanje = true; renderSk();
+    const ok = await skPosalji(r);
+    SK.slanje = false;
+    if (ok) { SK.pregled = null; SK.poruka = "Poslato. Dokument čeka na računaru."; }
+    renderSk();
+    return;
+  }
+  if (t.closest("#skUdji")) { skOtvori(); return; }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "skF" && e.target.files[0]) { const f = e.target.files[0]; e.target.value = ""; skSlikaj(f); }
+});
+
+/* ---------- panel skeniranih dokumenata (na racunaru) ---------- */
+function skVreme(t) {
+  try { const d = new Date(t); return d.toLocaleDateString("sr-Latn-RS") + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  catch (e) { return ""; }
+}
+function skPanelHtml(sir) {
+  const lista = (S.sken || []).filter(d => !!d.sir === !!sir);
+  if (!lista.length) return "";
+  return '<div class="card sk-panel"><div class="toolbar" style="margin:0 0 8px"><h2 style="margin:0;font-size:18px">Sa telefona – ' + lista.length + " " + (lista.length === 1 ? "dokument" : "dokumenata") + "</h2>" +
+    '<button class="btn danger" id="skPonisti" style="margin-left:auto">Poništi dokumenta</button></div>' +
+    '<div class="tbl-wrap"><table><thead><tr><th>Trebovanje</th><th>Datum</th><th>Proizvod</th><th class="num">Stavki</th><th>Skenirao</th><th></th></tr></thead><tbody>' +
+    lista.map(d => "<tr><td><b>" + esc(d.broj || "bez broja") + "</b></td><td>" + esc(d.datum || "") + "</td><td>" + esc((d.proizvod && d.proizvod.naziv) || "") +
+      '</td><td class="num">' + (d.stavke || []).length + "</td><td>" + esc(d.koIme || "") + '<div class="muted" style="font-size:11px">' + esc(skVreme(d.t)) + "</div></td>" +
+      '<td style="white-space:nowrap">' + (d.slika ? '<button class="btn" data-skfoto="' + esc(d.id) + '">Slika</button> ' : "") +
+      '<button class="btn primary" data-skuc="' + esc(d.id) + '">Učitaj</button></td></tr>').join("") +
+    "</tbody></table></div></div>";
+}
+document.addEventListener("click", async e => {
+  if (e.target.id === "skPonisti") { skObrisiSve(); return; }
+  const f = e.target.closest("[data-skfoto]");
+  if (f) {
+    const d = (S.sken || []).find(x => x.id === f.dataset.skfoto);
+    if (d && d.slika) izbor("Slika dokumenta", '<img src="' + d.slika + '" alt="" style="max-width:100%;border-radius:8px">', [{ v: "ok", l: "Zatvori", primary: true }]);
+    return;
+  }
+  const u = e.target.closest("[data-skuc]"); if (!u) return;
+  const d = (S.sken || []).find(x => x.id === u.dataset.skuc); if (!d) return;
+  if (document.querySelector("#v-izdavanje.on")) {
+    S.treb = {
+      broj: d.broj, datum: d.datum, serija: d.serija, proizvod: d.proizvod || { sifra: "", naziv: "" }, mesto: "",
+      stavke: (d.stavke || []).map(s => ({
+        sifra: s.sifra, naziv: s.naziv, mera: s.mera || "", kol: s.kol || 0,
+        lotovi: (s.lotovi || []).map(l => ({ lot: l.lot, kol: l.kol, mera: s.mera || "", rok: l.rok || "", proiz: "" }))
+      })),
+      ime: "sa telefona", izb: (d.stavke || []).map(() => true), poLotu: true, kom: {}, sken: d.id
+    };
+    renderIzdavanje(); return;
+  }
+  const T = { zagl: { broj: d.broj, datum: d.datum, proizvod: d.proizvod || { sifra: "", naziv: "" } }, stavke: [] };
+  (d.stavke || []).forEach(s => {
+    const a = d.sir ? S.sir.bySif[s.sifra] : (S.bySif && S.bySif[s.sifra]);
+    if (d.sir && (s.lotovi || []).length) s.lotovi.forEach(l => T.stavke.push({ sifra: s.sifra, naziv: s.naziv, art: a ? a.id : "", kol: l.kol, lot: l.lot }));
+    else T.stavke.push({ sifra: s.sifra, naziv: s.naziv, art: a ? a.id : "", kol: s.kol, lot: "" });
+  });
+  await trebIzlazDlg(T, !!d.sir);
+});
+
+/* dugme za ulazak u skener + pokretanje kad je otvoren kao zasebna aplikacija */
+function skPostavi() {
+  if (skSamoApp()) {
+    document.body.classList.add("skenerSamo");
+    const mf = document.querySelector('link[rel="manifest"]');
+    if (mf) mf.href = "skener.webmanifest";          // da se instalira kao zasebna ikonica "Skener"
+    const tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.content = "#11315F";
+    document.title = "Skener – Magacin Nevena";
+    skOtvori(); return;
+  }
+  const w = document.querySelector(".who");
+  if (w && !document.getElementById("skUdji")) {
+    const b = document.createElement("button");
+    b.id = "skUdji"; b.className = "btn"; b.textContent = "Skener"; b.title = "Skeniranje kodova i trebovanja telefonom";
+    w.appendChild(b);
+  }
+}
+setTimeout(skPostavi, 400);
+window.__sk = { parsiraj: skParsiraj, katalog: skKatalog, snapLot: skSnapLot, otvori: skOtvori,
+  zatvori: skZatvori, posalji: skPosalji, render: renderSk, kodSheet: skKodSheet, stanje: SK };
+
 /* skeniranje kamerom */
 let scanStream = null, scanRun = false;
 async function skeniraj() {
@@ -17652,6 +18197,7 @@ async function skeniraj() {
 }
 function zatvoriSken() { scanRun = false; if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; } const d = $("#scanDlg"); if (d.open) d.close(); }
 function primeniSken(code) {
+  if (S.skMode) { S.skMode = false; skKodSheet(code); return; }
   if (S.brziScan) {
     S.brziScan = false;
     const kod = String(code || "").trim(), i = kod.indexOf("|"), sif = i > 0 ? kod.slice(0, i) : kod, lot = i > 0 ? kod.slice(i + 1) : "";
@@ -18867,6 +19413,11 @@ async function start() {
     }
     S.msg._spreman = true;
     msgBadge(); if (S.msg.otvoren) renderMsg();
+  }, () => {});
+  db.collection(SKKOL).limit(200).onSnapshot(s => {
+    S.sken = s.docs.map(d => Object.assign({ id: d.id }, d.data())).sort(skRedSort);
+    renderAll(); if (SK.on) renderSk();
+    const ap = document.getElementById("skAmbPanel"); if (ap) ap.innerHTML = skPanelHtml(false);
   }, () => {});
   db.collection("kontrola").limit(500).onSnapshot(s => { const d = {}; for (const x of s.docs) d[x.id] = x.data(); S.kon.docs = d; renderAll(); }, fail);
   db.doc("sirovine/sifarnik").onSnapshot(s => { const it = s.exists ? (s.data().items || []) : []; S.sir.art = it; S.sir.byId = Object.fromEntries(it.map(x => [x.id, x])); S.sir.bySif = Object.fromEntries(it.map(x => [x.sifra, x])); S.sir.cache = null; renderAll(); }, fail);

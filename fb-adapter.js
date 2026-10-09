@@ -7,7 +7,7 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
-  const FB_VERZIJA = "26.10.a";
+  const FB_VERZIJA = "26.10.b";
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
@@ -350,7 +350,7 @@
   // (pravila to i ne dozvoljavaju) - kljuc za registraciju se podesava u ovom panelu.
   const KOLEKCIJE = ["sistem", "korisnici", "sifarnik", "stanje", "unosi", "popis", "popisi",
     "sirovine", "sirunosi", "normativi", "planovi", "potrosnja", "nabavka", "porudzbenice",
-    "kontrola", "poruke"];
+    "kontrola", "poruke", "skeniranja"];
   const dvaBroja = x => String(x).padStart(2, "0");
   const velicina = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(2) + " MB";
 
