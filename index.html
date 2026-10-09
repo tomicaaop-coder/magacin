@@ -13688,7 +13688,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "09.10.b";
+const APP_VERZIJA = "09.10.c";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13814,7 +13814,11 @@ async function dodajUnose(datum, lista) {
       const cur = S.docs[docId];
       const body = { datum, uid: S.uid || "anon", stavke: (cur ? cur.stavke : []).concat(nove) };
       S.docs[docId] = body; rebuildEntries(); renderAll();
-      await S.db.collection("unosi").doc(docId).set(body);
+      const ref = S.db.collection("unosi").doc(docId);
+      // stavke se DODAJU na serveru; prepisivanje celog dokumenta bi pregazilo
+      // unose koje je ista osoba u isto vreme upisala sa drugog uredjaja
+      if (typeof ref.dodajUNiz === "function") await ref.dodajUNiz("stavke", nove, { datum, uid: S.uid || "anon" });
+      else await ref.set(body);
     });
     try { ntfyObavesti(nove, preIspod); } catch (e) {}
     return nove;
@@ -13839,10 +13843,14 @@ async function storniraj(docId, id) {
   const set = new Set(ids);
   try {
     await write(async () => {
-      const c = S.docs[docId]; const t0 = new Date().toISOString();
+      const ref = S.db.collection("unosi").doc(docId);
+      let c = S.docs[docId];
+      // procitaj svezu verziju da storno ne pregazi unose sa drugog uredjaja
+      if (typeof ref.sveze === "function") { try { const sn = await ref.sveze(); if (sn.exists) c = sn.data(); } catch (e) {} }
+      const t0 = new Date().toISOString();
       const body = { datum: c.datum, uid: c.uid, stavke: c.stavke.map(x => set.has(x.id) && !x.storno ? Object.assign({}, x, { storno: { uid: S.uid || "anon", t: t0 } }) : x) };
       S.docs[docId] = body; rebuildEntries(); renderAll();
-      await S.db.collection("unosi").doc(docId).set(body);
+      await ref.set(body);
     });
     toast(ids.length > 1 ? "Stornirano stavki: " + ids.length : "Unos je storniran.");
   } catch (err) { dbErr(err); }
@@ -15611,7 +15619,9 @@ async function sirDodajUnose(datum, lista) {
       const cur = S.sir.docs[docId];
       const body = { datum, uid: S.uid || "anon", stavke: (cur ? cur.stavke : []).concat(nove) };
       S.sir.docs[docId] = body; sirRebuild(); renderAll();
-      await S.db.collection("sirunosi").doc(docId).set(body);
+      const ref = S.db.collection("sirunosi").doc(docId);
+      if (typeof ref.dodajUNiz === "function") await ref.dodajUNiz("stavke", nove, { datum, uid: S.uid || "anon" });
+      else await ref.set(body);
     });
     return true;
   } catch (e) { dbErr(e); return false; }
@@ -15627,8 +15637,17 @@ async function sirStorniraj(docId, id) {
     if (v === "no") return; if (v === "all") ids = grp.map(x => x.id);
   } else if (!await ask("Stornirati unos?", "<p>" + esc(SVR[e.vrsta]) + " <b>" + esc(fmt(e.kol, false)) + "</b> – " + esc(a.naziv || "") + ", lot " + esc(e.lot) + "</p><p class='muted'>Storniran unos ostaje zabeležen u prometu.</p>", "Storniraj", "Odustani", true)) return;
   const st = { t: new Date().toISOString(), uid: S.uid || "anon" };
-  const body = Object.assign({}, cur, { stavke: cur.stavke.map(x => ids.includes(x.id) ? Object.assign({}, x, { storno: st }) : x) });
-  try { await write(async () => { S.sir.docs[docId] = body; sirRebuild(); renderAll(); await S.db.collection("sirunosi").doc(docId).set(body); }); toast("Stornirano."); } catch (err) { dbErr(err); }
+  try {
+    await write(async () => {
+      const ref = S.db.collection("sirunosi").doc(docId);
+      let c = cur;
+      if (typeof ref.sveze === "function") { try { const sn = await ref.sveze(); if (sn.exists) c = sn.data(); } catch (e) {} }
+      const body = Object.assign({}, c, { stavke: c.stavke.map(x => ids.includes(x.id) ? Object.assign({}, x, { storno: st }) : x) });
+      S.sir.docs[docId] = body; sirRebuild(); renderAll();
+      await ref.set(body);
+    });
+    toast("Stornirano.");
+  } catch (err) { dbErr(err); }
 }
 
 /* ---------- Ulaz / izlaz ---------- */

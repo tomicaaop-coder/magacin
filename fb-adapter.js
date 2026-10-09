@@ -7,7 +7,7 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
-  const FB_VERZIJA = "26.10.b";
+  const FB_VERZIJA = "26.10.c";
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
@@ -74,6 +74,18 @@
     update: d => ref.set(enc(d), { merge: true }).catch(e => { throw greska(e); }),
     delete: () => ref.delete().catch(e => { throw greska(e); }),
     get: () => ref.get().then(snap),
+    // Atomsko dodavanje stavki u niz na serveru. Bez ovoga svaki upis prepisuje
+    // ceo dokument lokalnom kopijom, pa unos sa jednog uredjaja pregazi unos sa drugog.
+    dodajUNiz: (polje, niz, ostalo) => {
+      const FV = firebase.firestore.FieldValue, d = Object.assign({}, enc(ostalo || {}));
+      d[polje] = FV.arrayUnion.apply(null, (niz || []).map(x => enc(x, false)));
+      return ref.set(d, { merge: true }).catch(e => { throw greska(e); });
+    },
+    // Sveza verzija sa servera (za operacije koje moraju da citaju pa pisu).
+    sveze: async () => {
+      try { return snap(await ref.get({ source: "server" })); }
+      catch (e) { try { return snap(await ref.get()); } catch (e2) { throw greska(e2); } }
+    },
     onSnapshot: (cb, err) => ref.onSnapshot(s => cb(snap(s)), e => err && err(greska(e)))
   });
   const upit = (q, putanja) => ({
