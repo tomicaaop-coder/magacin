@@ -7,7 +7,7 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
-  const FB_VERZIJA = "26.09.c";
+  const FB_VERZIJA = "26.10.a";
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
@@ -292,6 +292,9 @@
       '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><label style="font-size:12px;color:var(--muted)">Server<input class="inp" id="fbNS" value="' + esc((window.NTFY && window.NTFY.server) || "https://ntfy.sh") + '"></label>' +
       '<label style="font-size:12px;color:var(--muted)">Tema<input class="inp" id="fbNT" value="' + esc((window.NTFY && window.NTFY.tema) || "") + '" placeholder="klikni Generiši"></label><button class="btn" id="fbNG">Generiši</button></div>' +
       '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn primary" id="fbNSave">Sačuvaj</button><button class="btn" id="fbNTest">Pošalji probno obaveštenje</button><button class="btn danger" id="fbNOff">Isključi</button></div><div id="fbNInfo" style="margin-top:8px;font-size:13px"></div>' +
+      '<h3 style="margin:22px 0 6px">Rezervna kopija cele baze</h3><p style="color:var(--muted);margin:0 0 8px">Besplatan Firebase plan <b>ne radi automatske kopije</b>. Preuzmi kopiju s vremena na vreme (npr. svakog petka) i sa\u010Duvaj fajl na ra\u010Dunar ili u cloud. Vra\u0107anje upisuje podatke iz kopije preko trenutnih; dokumenti kojih u kopiji nema ostaju nedirnuti (ni\u0161ta se ne bri\u0161e).</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn primary" id="fbBkD">Preuzmi kopiju cele baze</button><label class="btn" for="fbBkF" style="cursor:pointer">Vrati iz kopije\u2026</label><input type="file" id="fbBkF" accept=".json,application/json" style="display:none"></div>' +
+      '<div id="fbBkInfo" style="margin-top:8px;font-size:12px;color:var(--muted)"></div><div id="fbBkM" style="margin-top:6px;font-size:13px"></div>' +
       '<h3 style="margin:22px 0 6px">Uvoz podataka iz prototipa</h3><p style="color:var(--muted);margin:0 0 8px">Jednokratno: izaberi fajl <b>podaci-za-prenos.json</b>. Postojeći podaci sa istim nazivima biće zamenjeni.</p>' +
       '<input type="file" id="fbImp" accept=".json,application/json"> <span id="fbImpM"></span></div>';
     document.body.appendChild(w);
@@ -319,11 +322,13 @@
           await fs.collection("korisnici").doc(uid).update({ uloge: ul });
         }
         if (t.id === "fbImp" && t.files[0]) uvoz(t.files[0], w.querySelector("#fbImpM"));
+        if (t.id === "fbBkF" && t.files[0]) { const f = t.files[0]; t.value = ""; vratiKopiju(f, w.querySelector("#fbBkM"), w); }
       } catch (err) { alert("Promena nije sačuvana: " + err.message); }
     });
     const info = () => { const n = window.NTFY; const el = w.querySelector("#fbNInfo"); if (!el) return;
       el.innerHTML = n && n.tema ? "Za lične poruke svako se pretplaćuje na svoju temu (piše u prozoru Poruke). Na telefonu: instaliraj aplikaciju <b>ntfy</b> (Google Play / App Store), pa se pretplati na teme:<br><b>" + esc(n.tema) + "-prijem</b> (prijem materijala) i <b>" + esc(n.tema) + "-minimum</b> (pad ispod minimuma), server " + esc(n.server) + "." : "ntfy nije podešen."; };
     info();
+    bkInfo(w);
     w.addEventListener("click", async e => {
       const t = e.target;
       try {
@@ -332,6 +337,7 @@
         if (t.id === "fbNG") { const a = new Uint8Array(9); crypto.getRandomValues(a); w.querySelector("#fbNT").value = "nevena-magacin-" + [...a].map(x => "abcdefghijkmnpqrstuvwxyz23456789"[x % 32]).join(""); return; }
         if (t.id === "fbNSave") { const server = w.querySelector("#fbNS").value.trim().replace(/\/+$/, "") || "https://ntfy.sh", tema = w.querySelector("#fbNT").value.trim(); if (!/^[A-Za-z0-9_-]{8,64}$/.test(tema)) { alert("Tema: 8–64 znaka, samo slova, brojevi, - i _. Klikni Generiši."); return; } await fs.doc("sistem/ntfy").set({ server, tema }); window.NTFY = { server, tema }; info(); return; }
         if (t.id === "fbNOff") { await fs.doc("sistem/ntfy").set({ server: "", tema: "" }); window.NTFY = null; info(); return; }
+        if (t.id === "fbBkD") { await kopijaBaze(w.querySelector("#fbBkM"), w); return; }
         if (t.id === "fbNTest") { if (!window.NTFY || !window.NTFY.tema) { alert("Prvo sačuvaj temu."); return; } await window.ntfyPosalji("prijem", "Probno obaveštenje", "Magacin ambalaže – obaveštenja rade.", 3, ["white_check_mark"]); await window.ntfyPosalji("minimum", "Probno obaveštenje", "Upozorenja o minimumu rade.", 4, ["warning"]); alert("Poslato na obe teme."); return; }
       } catch (err) { alert("Nije sačuvano: " + err.message); return; }
       const d = t.closest("[data-del]"); if (!d) return;
@@ -339,6 +345,94 @@
       await fs.collection("korisnici").doc(d.dataset.del).delete().catch(err => alert(err.message));
     });
   }
+  /* ---------- rezervna kopija cele baze ---------- */
+  // Sve kolekcije koje aplikacija koristi. "tajne" i "kljucevi" se namerno ne citaju
+  // (pravila to i ne dozvoljavaju) - kljuc za registraciju se podesava u ovom panelu.
+  const KOLEKCIJE = ["sistem", "korisnici", "sifarnik", "stanje", "unosi", "popis", "popisi",
+    "sirovine", "sirunosi", "normativi", "planovi", "potrosnja", "nabavka", "porudzbenice",
+    "kontrola", "poruke"];
+  const dvaBroja = x => String(x).padStart(2, "0");
+  const velicina = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(2) + " MB";
+
+  async function bkInfo(w) {
+    const el = w.querySelector("#fbBkInfo"); if (!el) return;
+    try {
+      const sn = await fs.doc("sistem/kopija").get();
+      if (!sn.exists || !sn.data().t) { el.innerHTML = '<b style="color:#B8322A">Kopija baze još nije preuzeta.</b>'; return; }
+      const d = sn.data(), kada = new Date(d.t), dana = Math.floor((Date.now() - kada.getTime()) / 86400000);
+      el.innerHTML = "Poslednja kopija: <b>" + esc(kada.toLocaleString("sr-Latn-RS")) + "</b>" +
+        (d.ko ? " · preuzeo " + esc(d.ko) : "") + (d.n ? " · " + d.n + " dokumenata" : "") +
+        (dana >= 14 ? ' <b style="color:#B8322A">(pre ' + dana + " dana – vreme je za novu)</b>" : dana >= 7 ? " (pre " + dana + " dana)" : "");
+    } catch (e) { el.textContent = ""; }
+  }
+
+  async function kopijaBaze(msg, w) {
+    const dugme = w.querySelector("#fbBkD"); if (dugme) dugme.disabled = true;
+    msg.textContent = "Čitam bazu…";
+    const docs = {}; let n = 0; const preskoceno = [];
+    try {
+      for (const c of KOLEKCIJE) {
+        msg.textContent = "Čitam „" + c + "“… (do sada " + n + " dokumenata)";
+        try {
+          const sn = await fs.collection(c).get();
+          sn.docs.forEach(d => { docs[c + "/" + d.id] = dec(d.data()); n++; });
+        } catch (e) { preskoceno.push(c); }
+      }
+      if (!n) { msg.innerHTML = '<b style="color:#B8322A">Baza je prazna ili nije dostupna.</b> Pokušaj ponovo ili proveri internet vezu.'; return; }
+      const dt = new Date();
+      const ime = "magacin-kopija-" + dt.getFullYear() + dvaBroja(dt.getMonth() + 1) + dvaBroja(dt.getDate()) +
+        "-" + dvaBroja(dt.getHours()) + dvaBroja(dt.getMinutes()) + ".json";
+      const tekst = JSON.stringify({ aplikacija: "magacin-nevena", verzija: FB_VERZIJA, datum: dt.toISOString(), brojDokumenata: n, docs: docs });
+      await dlApi.save({ filename: ime, data: new Blob([tekst], { type: "application/json" }) });
+      msg.innerHTML = "Kopija je preuzeta: <b>" + esc(ime) + "</b> — " + n + " dokumenata, " +
+        velicina(tekst.length) + ". <b>Sačuvaj fajl</b> na računar ili u cloud (Google Drive, OneDrive…)." +
+        (preskoceno.length ? '<br><span style="color:#B8322A">Nije pročitano: ' + esc(preskoceno.join(", ")) + ".</span>" : "");
+      try { await fs.doc("sistem/kopija").set({ t: dt.toISOString(), ko: ja && (ja.ime || ja.email) || "", n: n, ime: ime }); } catch (e) {}
+      bkInfo(w);
+    } catch (e) {
+      msg.innerHTML = '<b style="color:#B8322A">Kopija nije napravljena.</b> ' + esc((e && e.message) || String(e));
+    } finally { if (dugme) dugme.disabled = false; }
+  }
+
+  async function vratiKopiju(file, msg, w) {
+    let p; try { p = JSON.parse(await file.text()); } catch (e) { msg.innerHTML = '<b style="color:#B8322A">Fajl nije ispravan JSON.</b>'; return; }
+    const docs = p && p.docs;
+    if (!docs || typeof docs !== "object" || Array.isArray(docs)) { msg.innerHTML = '<b style="color:#B8322A">Ovo nije fajl rezervne kopije.</b> Izaberi fajl <b>magacin-kopija-….json</b>.'; return; }
+    const putanje = Object.keys(docs).filter(x => x.split("/").length === 2 && x.split("/").every(Boolean));
+    if (!putanje.length) { msg.innerHTML = '<b style="color:#B8322A">U fajlu nema dokumenata.</b>'; return; }
+    const kada = p.datum ? new Date(p.datum).toLocaleString("sr-Latn-RS") : "nepoznat datum";
+    if (!confirm("VRAĆANJE IZ REZERVNE KOPIJE\n\nKopija je od: " + kada + "\nDokumenata u kopiji: " + putanje.length +
+      "\n\nPodaci iz kopije se upisuju preko trenutnih. Sve što je u bazi promenjeno POSLE ove kopije biće izgubljeno.\n\nNastaviti?")) return;
+    if (!confirm("Još jednom, za sigurnost:\n\nzameniti podatke u bazi podacima iz kopije od " + kada + "?")) return;
+    let n = 0, gresaka = 0; const pali = []; let kod = "";
+    for (let i = 0; i < putanje.length; i += 400) {
+      const deo = putanje.slice(i, i + 400);
+      msg.textContent = "Upisujem… " + n + " / " + putanje.length;
+      try {
+        const b = fs.batch();
+        for (const pt of deo) b.set(fs.doc(pt), enc(docs[pt]));
+        await b.commit(); n += deo.length;
+      } catch (e) {
+        // paket je pao – idemo dokument po dokument da jedan problematičan ne zaustavi ostatak
+        for (const pt of deo) {
+          try { await fs.doc(pt).set(enc(docs[pt])); n++; }
+          catch (e2) { gresaka++; if (!kod) kod = (e2 && e2.code) || ""; if (pali.length < 6) pali.push(pt); }
+        }
+      }
+    }
+    if (gresaka) {
+      msg.innerHTML = '<b style="color:#B8322A">Vraćeno ' + n + " od " + putanje.length + " dokumenata; " + gresaka + " nije upisano" + (kod ? " (" + esc(kod) + ")" : "") + ".</b> " +
+        (pali.length ? "Na primer: " + esc(pali.join(", ")) + ". " : "") +
+        (kod === "permission-denied"
+          ? "Baza je odbila upis. U Firebase konzoli otvori <b>Firestore Database → Rules</b>, nalepi sadržaj fajla <b>firestore.rules</b> iz poslednjeg paketa i klikni <b>Publish</b>, pa pokušaj ponovo."
+          : "Obrisani korisnici se ne mogu vratiti ovim putem – oni se ponovo registruju. Ostalo probaj ponovo.");
+      bkInfo(w);
+      return;
+    }
+    msg.textContent = "Vraćeno " + n + " dokumenata. Stranica se osvežava…";
+    setTimeout(() => location.reload(), 1500);
+  }
+
   async function uvoz(file, msg) {
     let p; try { p = JSON.parse(await file.text()); } catch (e) { msg.textContent = "Fajl nije ispravan JSON."; return; }
     const docs = p && p.docs ? p.docs : null; if (!docs) { msg.textContent = "Ovo nije fajl za prenos."; return; }

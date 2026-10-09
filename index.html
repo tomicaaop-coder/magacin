@@ -13640,7 +13640,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "05.10.b";
+const APP_VERZIJA = "09.10.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
