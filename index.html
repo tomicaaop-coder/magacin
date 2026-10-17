@@ -13688,7 +13688,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "09.10.c";
+const APP_VERZIJA = "17.10.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13910,7 +13910,8 @@ function renderTicket() {
     (S.vrsta === "U" ? '<div class="row2" style="grid-template-columns:1fr 200px"><label class="fld">Dobavljač<select class="inp" id="tDob">' + dobOptions(S.tDob, dobavljaciArtikla(a)) + '</select></label>' +
       '<label class="fld">Nabavna cena po ' + esc(jm(a)) + ' (RSD)<input class="inp" id="tCena" inputmode="decimal" autocomplete="off" placeholder="nije obavezno"></label></div><div class="after" id="tCenaInfo"></div>' +
       '<div class="row2" style="grid-template-columns:200px 1fr"><label class="fld">Evidencioni broj<input class="inp" id="tEv" inputmode="numeric" autocomplete="off" value="' + esc(S.tEv != null ? S.tEv : sledeciEv(S.dUnos)) + '"></label>' +
-      '<div class="fld"><span style="font-size:12px;color:var(--muted)">LOT za etiketu</span><div class="inp" id="tLotPrev" style="background:var(--bg);color:var(--muted)">' + esc(predlogLota(S.dUnos, S.tEv != null ? S.tEv : sledeciEv(S.dUnos))) + "</div></div></div>" : "") +
+      '<div class="fld"><span style="font-size:12px;color:var(--muted)">LOT za etiketu</span><div class="inp" id="tLotPrev" style="background:var(--bg);color:var(--muted)">' + esc(predlogLota(S.dUnos, S.tEv != null ? S.tEv : sledeciEv(S.dUnos))) + "</div></div></div>" +
+      '<div class="after" id="tEvInfo">' + evNapomena(S.dUnos, S.tEv != null ? S.tEv : sledeciEv(S.dUnos)) + "</div>" : "") +
     '<div class="after" id="after"></div>' +
     '<button type="button" class="submit" id="upisi" data-v="' + S.vrsta + '">Upiši ' + VR[S.vrsta].toLowerCase() + "</button></div>";
   $("#qty").value = keep.qty; $("#nap").value = keep.nap;
@@ -13927,12 +13928,68 @@ function osveziCenu(a) {
     : pa ? "Kod ovog dobavljača nema ranije cene · poslednja kod " + esc(dobNaziv(pa.dob)) + ": <b>" + esc(fmtC(pa.cena)) + "</b>" : "";
 }
 // sledeći slobodan evidencioni broj: poslednji iz evidencije kontrole + 1, uz već dodeljene brojeve na ulazima
+// Poslednji evidencioni broj koji je STVARNO upotrebljen u toj godini – hronoloski
+// poslednji, a ne najveci. Zato rucna ispravka broja odmah postaje osnova za dalje
+// brojanje: ako se broj ispravi na 517, sledeci predlog je 518.
+function poslednjiEvBroj(god) {
+  let naj = null;
+  const uzmi = (n, t) => { if (!(n > 0)) return; if (!naj || String(t || "") > String(naj.t || "")) naj = { n: n, t: t }; };
+  for (const e of S.entries) {
+    if (e.storno || e.vrsta !== "U" || !e.ev) continue;
+    if (String(e.datum).slice(0, 4) !== String(god)) continue;
+    uzmi(parseInt(e.ev, 10), e.t);
+  }
+  try {
+    for (const r of konRedovi()) {
+      if (r.storniran || !r.kb) continue;
+      if (String(r.godina || (r.datum || "").slice(0, 4)) !== String(god)) continue;
+      uzmi(konKbBroj(r.kb), r.t);
+    }
+  } catch (e) {}
+  return naj ? naj.n : null;
+}
 function sledeciEv(datum) {
   const god = String(datum || today()).slice(0, 4);
+  const p = poslednjiEvBroj(god);
+  if (p != null) return p + 1;
   let m = 0;
   try { m = konMaxBroj(god) || 0; } catch (e) {}
   for (const e of S.entries) { if (e.storno || e.vrsta !== "U" || !e.ev || String(e.datum).slice(0, 4) !== god) continue; const n = parseInt(e.ev, 10); if (n > m) m = n; }
   return m + 1;
+}
+// da li je broj vec upotrebljen (na ulazu ili u evidenciji kontrolisanja)
+function evZauzet(datum, broj) {
+  const god = String(datum || today()).slice(0, 4), n = parseInt(broj, 10);
+  if (!(n > 0)) return false;
+  for (const e of S.entries) {
+    if (e.storno || e.vrsta !== "U" || !e.ev) continue;
+    if (String(e.datum).slice(0, 4) !== god) continue;
+    if (parseInt(e.ev, 10) === n) return true;
+  }
+  try {
+    for (const r of konRedovi()) {
+      if (r.storniran || !r.kb) continue;
+      if (String(r.godina || (r.datum || "").slice(0, 4)) !== god) continue;
+      if (konKbBroj(r.kb) === n) return true;
+    }
+  } catch (e) {}
+  return false;
+}
+function evMaksBroj(god) {
+  let m = 0;
+  try { m = konMaxBroj(god) || 0; } catch (e) {}
+  for (const e of S.entries) { if (e.storno || e.vrsta !== "U" || !e.ev || String(e.datum).slice(0, 4) !== String(god)) continue; const n = parseInt(e.ev, 10); if (n > m) m = n; }
+  return m;
+}
+// kratka napomena ispod polja: duplikat ili nastavak ispod dosadasnjeg maksimuma
+function evNapomena(datum, broj) {
+  const n = parseInt(broj, 10);
+  if (!(n > 0)) return "";
+  const god = String(datum || today()).slice(0, 4);
+  if (evZauzet(datum, n)) return '<span style="color:#B8322A">Broj <b>' + n + "</b> je već upotrebljen u " + god + ". godini.</span>";
+  const m = evMaksBroj(god);
+  if (m && n < m) return '<span style="color:var(--muted)">Nastavlja se od ispravljenog broja; najveći do sada je ' + m + ".</span>";
+  return "";
 }
 function updAfter() {
   const a = S.byId[S.sel]; const el = $("#after"); if (!a || !el) return;
@@ -14344,7 +14401,7 @@ window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prav
 window.__trebTest = (l, sir) => trebIzlazDlg(stavkeIzTeksta(l, sir), sir);
 window.__unos = (art, vrsta, kol, nap) => dodajUnose(today(), [{ art, vrsta, kol, nap }]);
 window.__sirUnos = (art, lot, vrsta, kol, nap) => sirDodajUnose(today(), [{ art, lot, vrsta, kol, nap }]);
-window.__S = () => S;
+window.__S = () => S; window.__ev = { sledeci: sledeciEv, poslednji: poslednjiEvBroj, zauzet: evZauzet, napomena: evNapomena };
 window.__trebParse = (l, sir) => stavkeIzTeksta(l, sir);
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
 const q = $("#q");
@@ -14381,7 +14438,7 @@ $("#ticket").addEventListener("click", e => {
   if (e.target.id === "upisi") submit();
 });
 $("#ticket").addEventListener("input", e => {
-  if (e.target.id === "tEv") { S.tEv = e.target.value.trim(); const p = $("#tLotPrev"); if (p) p.textContent = predlogLota(S.dUnos, S.tEv); return; } if (e.target.id === "qty") updAfter(); if (e.target.id === "tCena") S.tCena = e.target.value; });
+  if (e.target.id === "tEv") { S.tEv = e.target.value.trim(); const p = $("#tLotPrev"); if (p) p.textContent = predlogLota(S.dUnos, S.tEv); const ei = $("#tEvInfo"); if (ei) ei.innerHTML = evNapomena(S.dUnos, S.tEv); return; } if (e.target.id === "qty") updAfter(); if (e.target.id === "tCena") S.tCena = e.target.value; });
 $("#ticket").addEventListener("change", e => { if (e.target.id === "tDob") { S.tDob = e.target.value; S.tCena = null; osveziCenu(S.byId[S.sel]); } });
 $("#ticket").addEventListener("keydown", e => {
   if ((e.target.id === "qty" || e.target.id === "nap" || e.target.id === "tCena") && e.key === "Enter") { e.preventDefault(); submit(); }
@@ -16070,7 +16127,7 @@ function konRedovi() {
   return out.sort((x, y) => (x.datum < y.datum ? 1 : x.datum > y.datum ? -1 : konKbBroj(y.kb) - konKbBroj(x.kb)));
 }
 function konMaxBroj(god) { let m = 0; for (const d of Object.values(S.kon.docs)) for (const r of (d.stavke || [])) if (String(r.godina || (r.datum || "").slice(0, 4)) === String(god)) m = Math.max(m, konKbBroj(r.kb)); return m; }
-function konSledeciKb(datum) { const d = String(datum || today()); return d.slice(8, 10) + d.slice(5, 7) + d.slice(2, 4) + "/" + (konMaxBroj(d.slice(0, 4)) + 1); }
+function konSledeciKb(datum) { const d = String(datum || today()); return d.slice(8, 10) + d.slice(5, 7) + d.slice(2, 4) + "/" + sledeciEv(d); }
 async function konSacuvaj(docId, stavke) {
   S.kon.docs[docId] = { stavke };
   try { await write(() => S.db.collection("kontrola").doc(docId).set({ stavke })); return true; } catch (e) { dbErr(e); return false; }
