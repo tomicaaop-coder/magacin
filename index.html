@@ -640,7 +640,9 @@ tr.po-knj .inp{border-style:dashed}
   .toolbar { gap: 6px !important; margin-bottom: 10px }
   .toolbar .btn, .card .btn { padding: 7px 11px !important; font-size: 13px !important }
   .fld { font-size: 12px }
-  .inp { padding: 8px 10px !important; font-size: 15px }
+  .inp { font-size: 15px }
+  /* polje sa kalkulatorom mora da zadrzi prostor za dugme, inace cifre idu ispod njega */
+  .kalkPolje .inp { padding-right: 44px !important }
   .card { padding: 12px !important }
   .notice { font-size: 12.5px !important; padding: 8px 10px !important }
 
@@ -13798,7 +13800,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "30.10.b";
+const APP_VERZIJA = "30.10.c";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
