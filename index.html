@@ -603,6 +603,8 @@ body.skenerSamo .bar > .bar-in, body.skenerSamo .baner, body.skenerSamo main, bo
 .qp-dno{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin:10px 0}
 .qp-prev{flex:1;min-width:200px}
 @media (max-width:640px){ .qp-dno{flex-direction:column} .qp-prev{width:100%} }
+tr.po-knj{opacity:.72;background:color-mix(in srgb, var(--ulaz, #2e7d32) 7%, transparent)}
+tr.po-knj .inp{border-style:dashed}
 </style>
 </head>
 <body>
@@ -787,6 +789,7 @@ body.skenerSamo .bar > .bar-in, body.skenerSamo .baner, body.skenerSamo main, bo
           <h1>Artikli</h1>
           <label class="fld grow">Filter<input class="inp" id="aQ" type="search" placeholder="Šifra, naziv ili grupa"></label>
           <label class="chk" id="aIzbL" hidden><input type="checkbox" id="aIzb"> prikaži izbačene (<span id="aIzbN"></span>)</label>
+          <button class="btn" id="vratiNalep" title="Vrati ZN/TN nalepnice u šifarnik, bez vođenja stanja">Vrati ZN/TN</button>
           <button class="btn primary" id="novi">Novi artikal</button>
         </div>
         <div class="tbl-wrap"><table>
@@ -13691,7 +13694,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "29.10.a";
+const APP_VERZIJA = "30.10.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -13712,7 +13715,7 @@ function ask(title, html, ok = "U redu", cancel = "Odustani", danger = false) {
     setTimeout(() => d.querySelector('[value="ok"]').focus(), 0);
   });
 }
-function cl(x) { const o = { id: x.id, sifra: x.sifra, naziv: x.naziv, grupa: x.grupa, aktivan: x.aktivan }; if (x.izbacen) o.izbacen = x.izbacen; if (x.min > 0) o.min = x.min; if (x.dob) o.dob = x.dob; if (x.mera) o.mera = x.mera; if (x.ng) o.ng = x.ng; if (x.korak > 0) o.korak = x.korak; if (x.moq > 0) o.moq = x.moq; if (x.korakRucno) o.korakRucno = true; return o; }
+function cl(x) { const o = { id: x.id, sifra: x.sifra, naziv: x.naziv, grupa: x.grupa, aktivan: x.aktivan }; if (x.izbacen) o.izbacen = x.izbacen; if (x.bezStanja) o.bezStanja = true; if (x.min > 0) o.min = x.min; if (x.dob) o.dob = x.dob; if (x.mera) o.mera = x.mera; if (x.ng) o.ng = x.ng; if (x.korak > 0) o.korak = x.korak; if (x.moq > 0) o.moq = x.moq; if (x.korakRucno) o.korakRucno = true; return o; }
 function izbor(title, html, dugmad) {
   return new Promise(res => {
     const d = $("#dlg");
@@ -13802,7 +13805,7 @@ function ntfyObavesti(nove, preIspod) {
   const pr = nove.filter(x => x.vrsta === "U");
   const opis = x => { const a = S.byId[x.art] || {}; return (a.naziv || "artikal") + " +" + fmt(x.kol, false) + (a.mera ? " " + a.mera : "") + (x.dob && typeof dobNaziv === "function" ? " (" + dobNaziv(x.dob) + ")" : ""); };
   if (pr.length) window.ntfyPosalji("prijem", pr.length === 1 ? "Prijem materijala" : "Prijem materijala – " + pr.length + " stavki", pr.slice(0, 8).map(opis).join("\n") + (pr.length > 8 ? "\n…" : "") + "\nUneo: " + who(S.uid), 3, ["package"]);
-  const pali = [...new Set(nove.map(x => x.art))].filter(id => { const a = S.byId[id]; return a && !a.izbacen && a.min > 0 && trenutno(id) < a.min && !preIspod.has(id); });
+  const pali = [...new Set(nove.map(x => x.art))].filter(id => { const a = S.byId[id]; return a && !a.izbacen && !a.bezStanja && a.min > 0 && trenutno(id) < a.min && !preIspod.has(id); });
   if (pali.length) window.ntfyPosalji("minimum", pali.length === 1 ? "Ispod minimuma: " + S.byId[pali[0]].naziv : pali.length + " artikala ispod minimuma",
     pali.slice(0, 8).map(id => { const a = S.byId[id]; return a.naziv + ": stanje " + fmt(trenutno(id), false) + ", min " + fmt(a.min, false); }).join("\n"), 4, ["warning"]);
 }
@@ -13905,9 +13908,12 @@ function renderTicket() {
   t.className = "ticket";
   t.innerHTML =
     '<div class="ticket-head"><div><h2>' + esc(a.naziv) + '</h2><div class="meta">Šifra ' + esc(a.sifra || "–") + " · " + esc(a.grupa) + "</div></div>" +
-    '<div class="stock"><div class="lbl">Na stanju</div><div class="val ' + (st < 0 || (a.min > 0 && st < a.min) ? "neg" : "") + '">' + esc(fmt(st, false)) + "</div>" + zalihaInfo(a) + "</div></div>" +
+    (a.bezStanja
+      ? '<div class="stock"><div class="lbl">Stanje</div><div class="val" style="font-size:20px">ne vodi se</div></div></div>'
+      : '<div class="stock"><div class="lbl">Na stanju</div><div class="val ' + (st < 0 || (a.min > 0 && st < a.min) ? "neg" : "") + '">' + esc(fmt(st, false)) + "</div>" + zalihaInfo(a) + "</div></div>") +
     '<div class="ticket-body">' +
-    '<div class="seg" role="group" aria-label="Vrsta">' + ["U", "I", "P"].map(v => '<button type="button" data-v="' + v + '" aria-pressed="' + (S.vrsta === v) + '">' + VR[v] + "</button>").join("") + "</div>" +
+    (a.bezStanja ? '<div class="notice" style="font-size:12px;margin-bottom:8px">Za ovaj artikal se <b>ne vodi stanje</b> – moguć je samo ulaz, zbog etikete i ulaznog kontrolisanja.</div>' : "") +
+    '<div class="seg" role="group" aria-label="Vrsta">' + ["U", "I", "P"].map(v => '<button type="button" data-v="' + v + '" aria-pressed="' + (S.vrsta === v) + '"' + (a.bezStanja && v !== "U" ? " disabled" : "") + ">" + VR[v] + "</button>").join("") + "</div>" +
     '<div class="row2"><label class="fld">Količina<span class="kalkPolje"><input class="inp qty" id="qty" inputmode="decimal" autocomplete="off"><button type="button" class="kalkBtn" data-kalk="#qty" title="Kalkulator – saberi pakete" aria-label="Kalkulator">🧮</button></span></label>' +
     '<label class="fld">Napomena (nije obavezno)<input class="inp" id="nap" autocomplete="off" placeholder="npr. broj otpremnice"></label></div>' +
     (S.vrsta === "U" ? '<div class="row2" style="grid-template-columns:1fr 200px"><label class="fld">Dobavljač<select class="inp" id="tDob">' + dobOptions(S.tDob, dobavljaciArtikla(a)) + '</select></label>' +
@@ -13915,6 +13921,12 @@ function renderTicket() {
       '<div class="row2" style="grid-template-columns:200px 1fr"><label class="fld">Evidencioni broj<input class="inp" id="tEv" inputmode="numeric" autocomplete="off" value="' + esc(S.tEv != null ? S.tEv : sledeciEv(S.dUnos)) + '"></label>' +
       '<div class="fld"><span style="font-size:12px;color:var(--muted)">LOT za etiketu</span><div class="inp" id="tLotPrev" style="background:var(--bg);color:var(--muted)">' + esc(predlogLota(S.dUnos, S.tEv != null ? S.tEv : sledeciEv(S.dUnos))) + "</div></div></div>" +
       '<div class="after" id="tEvInfo">' + evNapomena(S.dUnos, S.tEv != null ? S.tEv : sledeciEv(S.dUnos)) + "</div>" : "") +
+    (S.vrsta === "I" && !a.bezStanja
+      ? '<label class="fld">Prebrojano stanje posle izlaza <span class="muted" style="font-weight:400">(nije obavezno)</span>' +
+        '<span class="kalkPolje"><input class="inp" id="tPrebroj" inputmode="decimal" autocomplete="off" placeholder="ostavi prazno ako se slaže">' +
+        '<button type="button" class="kalkBtn" data-kalk="#tPrebroj" title="Kalkulator" aria-label="Kalkulator">🧮</button></span></label>' +
+        '<div class="after" id="tPrebrojInfo"></div>'
+      : "") +
     '<div class="after" id="after"></div>' +
     '<button type="button" class="submit" id="upisi" data-v="' + S.vrsta + '">Upiši ' + VR[S.vrsta].toLowerCase() + "</button></div>";
   $("#qty").value = keep.qty; $("#nap").value = keep.nap;
@@ -13994,6 +14006,24 @@ function evNapomena(datum, broj) {
   if (m && n < m) return '<span style="color:var(--muted)">Nastavlja se od ispravljenog broja; najveći do sada je ' + m + ".</span>";
   return "";
 }
+// razlika izmedju prebrojanog i ocekivanog stanja posle izlaza
+function izlazRazlika() {
+  const a = S.byId[S.sel], el = $("#tPrebroj"); if (!a || !el) return null;
+  const v = el.value.trim(); if (v === "") return null;
+  const pre = parseQty(v); if (isNaN(pre) || pre < 0) return { greska: true };
+  const k = parseQty($("#qty").value); if (!(k > 0)) return null;
+  const ocek = r3(trenutno(a.id) - k);
+  return { pre: r3(pre), ocek: ocek, raz: r3(pre - ocek) };
+}
+function updStanjeInfo() {
+  const el = $("#tPrebrojInfo"); if (!el) return;
+  const o = izlazRazlika();
+  if (!o) { el.innerHTML = ""; return; }
+  if (o.greska) { el.innerHTML = "<span class='warn'>Stanje mora biti broj nula ili veći.</span>"; return; }
+  el.innerHTML = Math.abs(o.raz) < 1e-9
+    ? "Slaže se sa stanjem u programu."
+    : "Razlika <b class='" + (o.raz < 0 ? "neg" : "") + "'>" + (o.raz > 0 ? "+" : "") + esc(fmt(o.raz, false)) + "</b> – biće proknjižena kao korekcija (očekivano " + esc(fmt(o.ocek, false)) + ").";
+}
 function updAfter() {
   const a = S.byId[S.sel]; const el = $("#after"); if (!a || !el) return;
   const k = parseQty($("#qty").value); const st = trenutno(a.id);
@@ -14022,7 +14052,14 @@ async function submit() {
     const evv = ($("#tEv") && $("#tEv").value.trim()) || String(sledeciEv(S.dUnos));
     extra = { dob: S.tDob || undefined, cena: c > 0 ? c : undefined, ev: evv || undefined, lot: evv ? predlogLota(S.dUnos, evv) : undefined };
   }
+  const ispravka = S.vrsta === "I" ? izlazRazlika() : null;
+  if (ispravka && ispravka.greska) { btn.disabled = false; toast("Prebrojano stanje mora biti broj nula ili veći."); $("#tPrebroj").focus(); return; }
   const ok = await dodajUnos(S.dUnos, a.id, S.vrsta, k, $("#nap").value.trim(), extra);
+  if (ok && ispravka && Math.abs(ispravka.raz) > 1e-9) {
+    await dodajUnos(S.dUnos, a.id, "K", ispravka.raz,
+      "Ispravka stanja pri izdavanju – prebrojano " + fmt(ispravka.pre, false) + ", očekivano " + fmt(ispravka.ocek, false));
+    toast("Stanje ispravljeno na " + fmt(ispravka.pre, false) + " – " + a.naziv);
+  }
   btn.disabled = false;
   if (ok) {
     toast(VR[S.vrsta] + " " + fmt(k, false) + " – " + a.naziv);
@@ -14063,7 +14100,7 @@ function renderStanje() {
   const r = obracun(X);
   let html = "", g = null, n = 0;
   for (const a of S.art) {
-    if (a.izbacen) continue;
+    if (a.izbacen || a.bezStanja) continue;
     if (!neakt && !a.aktivan) continue;
     const o = r[a.id] || { p: 0, u: 0, i: 0, pv: 0, k: 0, s: 0 };
     if (samo && !(o.u || o.i || o.pv)) continue;
@@ -14076,7 +14113,7 @@ function renderStanje() {
 }
 function stanjeRows(X) {
   const r = obracun(X), rows = [["Šifra", "Naziv artikla", "Grupa", "Početno stanje", "Ulaz", "Izlaz", "Povrat", "Popis ±", "Stanje"]];
-  for (const a of S.art) { if (!a.aktivan || a.izbacen) continue; const o = r[a.id]; rows.push([a.sifra, a.naziv, a.grupa, r3(o.p), r3(o.u), r3(o.i), r3(o.pv), r3(o.k), o.s]); }
+  for (const a of S.art) { if (!a.aktivan || a.izbacen || a.bezStanja) continue; const o = r[a.id]; rows.push([a.sifra, a.naziv, a.grupa, r3(o.p), r3(o.u), r3(o.i), r3(o.pv), r3(o.k), o.s]); }
   return rows;
 }
 
@@ -14144,6 +14181,7 @@ async function dodajArtikle(novi) {
   const grupe = S.grupe.slice(); const poc = {};
   for (const n of novi) {
     const it = { id: "a" + rid(), sifra: n.sifra, naziv: n.naziv, grupa: n.grupa, aktivan: n.aktivan !== false };
+    if (n.bezStanja) it.bezStanja = true;
     if (n.min > 0) it.min = n.min; if (n.dob) it.dob = n.dob; if (n.mera) it.mera = n.mera; it.ng = n.ng || autoGrupa(it);
     if (!grupe.includes(it.grupa)) grupe.push(it.grupa);
     let pos = -1; items.forEach((x, k) => { if (x.grupa === it.grupa) pos = k; });
@@ -14404,7 +14442,8 @@ window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prav
 window.__trebTest = (l, sir) => trebIzlazDlg(stavkeIzTeksta(l, sir), sir);
 window.__unos = (art, vrsta, kol, nap) => dodajUnose(today(), [{ art, vrsta, kol, nap }]);
 window.__sirUnos = (art, lot, vrsta, kol, nap) => sirDodajUnose(today(), [{ art, lot, vrsta, kol, nap }]);
-window.__S = () => S; window.__qp = { crtaj: crtajQP18, format: qpFormat, pregled: qpPregledCrtaj, dlg: qp18Dlg }; window.__ev = { sledeci: sledeciEv, poslednji: poslednjiEvBroj, zauzet: evZauzet, napomena: evNapomena };
+window.__S = () => S; window.__popis = { knjizi: popisKnjizi, zaKnjizenje: popisZaKnjizenje, proknjizenih: popisProknjizenih };
+window.__nalep = { vrati: vratiNalepnice, je: jeNalepnica }; window.__qp = { crtaj: crtajQP18, format: qpFormat, pregled: qpPregledCrtaj, dlg: qp18Dlg }; window.__ev = { sledeci: sledeciEv, poslednji: poslednjiEvBroj, zauzet: evZauzet, napomena: evNapomena };
 window.__trebParse = (l, sir) => stavkeIzTeksta(l, sir);
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
 const q = $("#q");
@@ -14441,7 +14480,7 @@ $("#ticket").addEventListener("click", e => {
   if (e.target.id === "upisi") submit();
 });
 $("#ticket").addEventListener("input", e => {
-  if (e.target.id === "tEv") { S.tEv = e.target.value.trim(); const p = $("#tLotPrev"); if (p) p.textContent = predlogLota(S.dUnos, S.tEv); const ei = $("#tEvInfo"); if (ei) ei.innerHTML = evNapomena(S.dUnos, S.tEv); return; } if (e.target.id === "qty") updAfter(); if (e.target.id === "tCena") S.tCena = e.target.value; });
+  if (e.target.id === "tEv") { S.tEv = e.target.value.trim(); const p = $("#tLotPrev"); if (p) p.textContent = predlogLota(S.dUnos, S.tEv); const ei = $("#tEvInfo"); if (ei) ei.innerHTML = evNapomena(S.dUnos, S.tEv); return; } if (e.target.id === "qty") { updAfter(); updStanjeInfo(); } if (e.target.id === "tPrebroj") { updStanjeInfo(); return; } if (e.target.id === "tCena") S.tCena = e.target.value; });
 $("#ticket").addEventListener("change", e => { if (e.target.id === "tDob") { S.tDob = e.target.value; S.tCena = null; osveziCenu(S.byId[S.sel]); } });
 $("#ticket").addEventListener("keydown", e => {
   if ((e.target.id === "qty" || e.target.id === "nap" || e.target.id === "tCena") && e.key === "Enter") { e.preventDefault(); submit(); }
@@ -14461,6 +14500,7 @@ $("#tArt").addEventListener("click", e => {
 });
 $("#aIzb").addEventListener("change", renderArtikli);
 $("#novi").addEventListener("click", () => izmeni(null));
+$("#vratiNalep").addEventListener("click", () => vratiNalepnice());
 $("#npQ").addEventListener("input", renderNeprac);
 $("#npAll").addEventListener("click", () => $$("#neprac input[data-np]").forEach(c => c.checked = true));
 $("#npGo").addEventListener("click", () => {
@@ -14756,7 +14796,89 @@ function updBadge() {
 
 /* ---------- POPIS ---------- */
 S.popis = null; S.popisi = [];
-function popisArtikli() { const p = S.popis; return S.art.filter(a => !a.izbacen && a.aktivan && (!p.grupa || a.grupa === p.grupa)); }
+
+/* Knjizenje popisa. delimicno=true: knjizi samo ono sto je do sada izbrojano,
+   oznacava te stavke kao proknjizene i ostavlja popis otvoren za ostale artikle. */
+async function popisKnjizi(delimicno) {
+  const P = S.popis; if (!P) return;
+  const r = obracun(P.datum), par = popisZaKnjizenje();
+  const stavke = [], lista = [], grp = "po" + rid();
+  let plus = 0, minus = 0;
+  for (const [a, p] of par) {
+    const ev = r[a.id].s, raz = r3(p.kol - ev), razlog = raz ? (p.razlog || "Kalo") : "";
+    stavke.push({ art: a.id, sifra: a.sifra, naziv: a.naziv, evid: ev, izbr: p.kol, raz, razlog,
+      osn: p.osn !== p.kol ? p.osn : undefined, ulaz: p.p.ul || undefined, izlaz: p.p.iz || undefined });
+    if (raz) { lista.push({ art: a.id, vrsta: "K", kol: raz, nap: "Popis " + dtxt(P.datum) + " – " + razlog, grp }); if (raz > 0) plus++; else minus++; }
+  }
+  const ostalo = popisArtikli().length - popisProknjizenih() - par.length;
+  if (!stavke.length && delimicno) { toast("Nema novih izbrojanih stavki za knjiženje."); return; }
+  if (!stavke.length && !delimicno && !popisProknjizenih()) { toast("Nije upisana nijedna izbrojana količina."); return; }
+
+  const uvod = "<p>Knjiži se <b>" + stavke.length + "</b> izbrojanih artikala. Razlika postoji kod <b>" + lista.length + "</b> (višak " + plus + ", manjak " + minus + ").</p>";
+  const rep = delimicno
+    ? uvod + "<p>Te stavke se zaključavaju i više se ne menjaju, a popis <b>ostaje otvoren</b> za preostalih <b>" + Math.max(0, ostalo) + "</b> artikala.</p>"
+    : uvod + "<p>Popis se <b>zatvara</b>." + (ostalo > 0 ? " Preostalih <b>" + ostalo + "</b> neizbrojanih artikala ostaje nepromenjeno." : "") + "</p>";
+  const ok = await ask(delimicno ? "Proknjižiti popisano?" : "Završiti popis?",
+    rep + "<p>Razlike se knjiže kao korekcije na dan " + esc(dtxt(P.datum)) + " i stanje tih artikala postaje jednako izbrojanom.</p>" +
+    "<p class='muted'>Popis se čuva u spisku dosadašnjih popisa. Korekcije se mogu stornirati iz prometa.</p>",
+    delimicno ? "Proknjiži popisano" : "Završi popis");
+  if (!ok) return;
+  if (lista.length && !(await dodajUnose(P.datum, lista))) return;
+  const t0 = new Date().toISOString();
+  try {
+    await write(async () => {
+      if (stavke.length) {
+        await S.db.collection("popisi").doc(P.datum + "__" + rid()).set({
+          datum: P.datum, grupa: P.grupa || "", uid: P.uid, t: t0, grp, stavke,
+          delimicno: !!delimicno, ko: S.uid || "anon"
+        });
+      }
+      if (delimicno) {
+        const patch = {};
+        for (const [a] of par) patch[a.id] = { knj: t0 };
+        if (P.stavke) for (const [a] of par) P.stavke[a.id] = Object.assign({}, P.stavke[a.id], { knj: t0 });
+        await S.db.doc("popis/aktivan").update({ stavke: patch });
+      } else {
+        await S.db.doc("popis/aktivan").delete();
+      }
+    });
+    if (delimicno) { toast("Proknjiženo " + stavke.length + " stavki – popis ostaje otvoren."); }
+    else { S.popis = null; toast("Popis je završen – korekcija: " + lista.length); }
+    renderPopis();
+  } catch (err) { dbErr(err); }
+}
+
+/* ---------- vracanje ZN/TN nalepnica u sifarnik, bez vodjenja stanja ---------- */
+function jeNalepnica(naziv) { return /^(zn|tn|z\.n\.|t\.n\.)\s/.test(norm(naziv || "")); }
+async function vratiNalepnice() {
+  const izNorm = nepraceni(null).filter(m => jeNalepnica(m.naziv));
+  const izbaceni = S.art.filter(a => a.izbacen && jeNalepnica(a.naziv));
+  const bezSt = S.art.filter(a => !a.izbacen && a.bezStanja && jeNalepnica(a.naziv)).length;
+  if (!izNorm.length && !izbaceni.length) {
+    await ask("Nema šta da se vrati", "<p>U normativima nema ZN/TN nalepnica kojih nema u šifarniku, a nema ni izbačenih." +
+      (bezSt ? " U šifarniku ih je već <b>" + bezSt + "</b> sa oznakom da im se ne vodi stanje." : "") + "</p>", "U redu", null);
+    return;
+  }
+  const lista = izNorm.map(m => ({ sifra: m.sifra, naziv: m.naziv, mera: "", kol: null, _nov: true }))
+    .concat(izbaceni.map(a => ({ sifra: a.sifra, naziv: a.naziv, mera: a.mera || "", kol: null, _id: a.id })));
+  const sel = await izborNovihSifri(lista, "Vrati ZN/TN nalepnice",
+    "Ovi materijali se vraćaju u šifarnik <b>bez vođenja stanja</b> – ne ulaze u stanje, popis ni minimume, " +
+    "ali se mogu izabrati pri <b>ulazu</b>, zbog identifikacione etikete i ulaznog kontrolisanja. " +
+    "Novih iz normativa: <b>" + izNorm.length + "</b>, ranije izbačenih: <b>" + izbaceni.length + "</b>.");
+  if (!sel || !sel.length) return;
+  const novi = sel.filter(x => x._nov).map(x => ({ sifra: x.sifra, naziv: x.naziv, grupa: predlogGrupe(x.naziv), aktivan: true, bezStanja: true }));
+  const vrati = new Set(sel.filter(x => x._id).map(x => x._id));
+  let n = 0;
+  if (vrati.size) {
+    const items = S.art.map(a => { const o = cl(a); if (vrati.has(a.id)) { delete o.izbacen; o.bezStanja = true; o.aktivan = true; n++; } return o; });
+    if (!(await sacuvajSifarnik(items, S.grupe.slice()))) return;
+  }
+  if (novi.length) { if (!(await dodajArtikle(novi))) return; }
+  toast("Vraćeno: " + (novi.length + n) + " ZN/TN nalepnica, bez vođenja stanja.");
+  renderAll();
+}
+
+function popisArtikli() { const p = S.popis; return S.art.filter(a => !a.izbacen && !a.bezStanja && a.aktivan && (!p.grupa || a.grupa === p.grupa)); }
 function renderPopis() {
   const box = $("#popisBox");
   if (!S.popis) {
@@ -14778,8 +14900,8 @@ function renderPopis() {
   const samo = $("#poSamo") ? $("#poSamo").checked : false;
   const qv = ($("#poQ") || {}).value || "";
   const svi = popisArtikli();
-  let izbr = 0, sraz = 0;
-  for (const a of svi) { const p = popisIzbrojano(a); if (p) { izbr++; if (Math.abs(p.kol - r[a.id].s) > 1e-9) sraz++; } }
+  let izbr = 0, sraz = 0, knjN = 0;
+  for (const a of svi) { const p = popisIzbrojano(a); if (!p) continue; if (p.knj) { knjN++; continue; } izbr++; if (Math.abs(p.kol - r[a.id].s) > 1e-9) sraz++; }
   let g = null, rows = "";
   for (const a of svi) {
     const x = st[a.id] || {}; const pi = popisIzbrojano(a), counted = !!pi;
@@ -14787,15 +14909,24 @@ function renderPopis() {
     if (q.length && !q.every(w => (a._n || (a._n = norm(a.sifra + " " + a.naziv + " " + a.grupa))).includes(w))) continue;
     if (a.grupa !== g) { g = a.grupa; rows += '<tr class="grp"><td colspan="6">' + esc(g) + "</td></tr>"; }
     const ev = r[a.id].s, raz = counted ? r3(pi.kol - ev) : null;
-    rows += "<tr><td class=\"sif\">" + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="num">' + esc(fmt(ev, false)) + '</td><td class="num"><input class="inp poin" data-po="' + a.id + '" inputmode="decimal" autocomplete="off" value="' + (counted ? esc(String(pi.kol).replace(".", ",")) : "") + '"><button type="button" class="kalkBtn" data-kalk="[data-po=\'' + a.id + '\']" title="Kalkulator" aria-label="Kalkulator">🧮</button>' + (counted ? popisNapomena(pi) : "") + "</td>"
-       +
-      '<td class="num ' + (raz > 0 ? "raz-p" : raz < 0 ? "raz-m" : "") + '" data-raz="' + a.id + '">' + (raz === null ? "" : raz === 0 ? "✓" : (raz > 0 ? "+" : "") + esc(fmt(raz, false))) + "</td>" +
-      '<td><select class="inp" data-por="' + a.id + '" style="padding:4px 6px"' + (raz ? "" : " hidden") + ">" + ["Kalo", "Oštećenje", "Greška u knjiženju", "Ostalo"].map(o => "<option" + ((x.razlog || "Kalo") === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></td></tr>";
+    const knj = counted && pi.knj;
+    rows += '<tr class="' + (knj ? "po-knj" : "") + '"><td class="sif">' + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="num">' + esc(fmt(ev, false)) + '</td><td class="num">' +
+      (knj
+        ? '<input class="inp poin" value="' + esc(String(pi.kol).replace(".", ",")) + '" disabled><div class="poNap" style="color:var(--ulaz)">proknjiženo ' + esc(typeof skVreme === "function" ? skVreme(pi.knj) : "") + "</div>"
+        : '<input class="inp poin" data-po="' + a.id + '" inputmode="decimal" autocomplete="off" value="' + (counted ? esc(String(pi.kol).replace(".", ",")) : "") + '"><button type="button" class="kalkBtn" data-kalk="[data-po=\'' + a.id + '\']" title="Kalkulator" aria-label="Kalkulator">🧮</button>' + (counted ? popisNapomena(pi) : "")) + "</td>" +
+      (knj
+        ? '<td class="num muted">✓</td><td></td></tr>'
+        : '<td class="num ' + (raz > 0 ? "raz-p" : raz < 0 ? "raz-m" : "") + '" data-raz="' + a.id + '">' + (raz === null ? "" : raz === 0 ? "✓" : (raz > 0 ? "+" : "") + esc(fmt(raz, false))) + "</td>" +
+          '<td><select class="inp" data-por="' + a.id + '" style="padding:4px 6px"' + (raz ? "" : " hidden") + ">" + ["Kalo", "Oštećenje", "Greška u knjiženju", "Ostalo"].map(o => "<option" + ((x.razlog || "Kalo") === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></td></tr>");
   }
   box.innerHTML = '<div class="toolbar"><h1>Popis na dan ' + esc(dtxt(P.datum)) + "</h1>" +
     '<label class="fld grow">Filter<input class="inp" id="poQ" type="search" placeholder="Šifra ili naziv"></label><label class="chk"><input type="checkbox" id="poSamo"' + (samo ? " checked" : "") + "> samo neizbrojani</label>" +
-    '<button class="btn primary" id="poBrzi">Brzo popisivanje</button><button class="btn" id="poOdustani">Odustani od popisa</button><button class="btn primary" id="poKnjizi">Proknjiži popis</button></div>' +
-    '<div class="notice" style="font-size:13px">' + esc(P.grupa || "Svi artikli") + " · izbrojano <b id=\"poIz\">" + izbr + "</b> od " + svi.length + " · sa razlikom <b id=\"poSr\">" + sraz + "</b> · započeo " + esc(who(P.uid)) + ". Upiši izbrojanu količinu i pritisni Enter – prelazi se na sledeći artikal. Neizbrojani artikli se ne menjaju.</div>" +
+    '<button class="btn primary" id="poBrzi">Brzo popisivanje</button><button class="btn" id="poOdustani">Odustani od popisa</button>' +
+    '<button class="btn" id="poDelim"' + (izbr ? "" : " disabled") + ">Proknjiži popisano (" + izbr + ")</button>" +
+    '<button class="btn primary" id="poKnjizi">Završi popis</button></div>' +
+    '<div class="notice" style="font-size:13px">' + esc(P.grupa || "Svi artikli") + " · izbrojano <b id=\"poIz\">" + izbr + "</b> od " + svi.length + " · sa razlikom <b id=\"poSr\">" + sraz + "</b>" +
+      (knjN ? " · već proknjiženo <b>" + knjN + "</b>" : "") + " · započeo " + esc(who(P.uid)) +
+      ". <b>Proknjiži popisano</b> knjiži samo ono što je do sada izbrojano, a popis ostaje otvoren za ostale artikle. <b>Završi popis</b> knjiži ostatak i zatvara popis.</div>" +
     '<div class="tbl-wrap"><table><thead><tr><th>Šifra</th><th>Naziv artikla</th><th class="num">Po evidenciji</th><th class="num">Izbrojano</th><th class="num">Razlika</th><th>Razlog</th></tr></thead><tbody>' + (rows || '<tr class="empty-row"><td colspan="6">Nema artikala za prikaz.</td></tr>') + "</tbody></table></div>";
   $("#poQ").value = qv;
   if (foc) { const f = document.querySelector('[data-po="' + foc + '"]'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }
@@ -14818,8 +14949,20 @@ function popisPromet(artId, odT) {
 function popisIzbrojano(a) {
   const x = (S.popis.stavke || {})[a.id];
   if (!x || x.kol == null) return null;
+  // vec proknjizena stavka se zamrzava: stanje joj je ispravljeno, ne diraju je kasniji ulazi/izlazi
+  if (x.knj) return { osn: x.kol, p: { ul: 0, iz: 0, neto: 0 }, kol: x.kol, t: x.t, razlog: x.razlog, knj: x.knj };
   const p = popisPromet(a.id, x.t);
   return { osn: x.kol, p, kol: r3(x.kol + p.neto), t: x.t, razlog: x.razlog };
+}
+// stavke koje cekaju knjizenje (popisane, a jos nisu proknjizene)
+function popisZaKnjizenje() {
+  const out = [];
+  for (const a of popisArtikli()) { const p = popisIzbrojano(a); if (p && !p.knj) out.push([a, p]); }
+  return out;
+}
+function popisProknjizenih() {
+  const st = (S.popis && S.popis.stavke) || {};
+  return Object.keys(st).filter(k => st[k] && st[k].knj).length;
 }
 function popisNapomena(p) {
   if (!p || (!p.p.ul && !p.p.iz)) return "";
@@ -14869,27 +15012,9 @@ $("#popisBox").addEventListener("click", async e => {
     if (!await ask("Odustati od popisa?", "<p>Sve upisane izbrojane količine biće obrisane, a stanje ostaje nepromenjeno.</p>", "Odustani od popisa", "Nastavi popis", true)) return;
     try { await write(() => S.db.doc("popis/aktivan").delete()); S.popis = null; renderPopis(); } catch (err) { dbErr(err); }
   } else if (e.target.id === "poKnjizi") {
-    const P = S.popis, r = obracun(P.datum), st = P.stavke || {};
-    const stavke = [], lista = [], grp = "po" + rid();
-    let plus = 0, minus = 0;
-    for (const a of popisArtikli()) {
-      const p = popisIzbrojano(a); if (!p) continue;
-      const ev = r[a.id].s, raz = r3(p.kol - ev), razlog = raz ? (p.razlog || "Kalo") : "";
-      stavke.push({ art: a.id, sifra: a.sifra, naziv: a.naziv, evid: ev, izbr: p.kol, raz, razlog,
-        osn: p.osn !== p.kol ? p.osn : undefined, ulaz: p.p.ul || undefined, izlaz: p.p.iz || undefined });
-      if (raz) { lista.push({ art: a.id, vrsta: "K", kol: raz, nap: "Popis " + dtxt(P.datum) + " – " + razlog, grp }); if (raz > 0) plus++; else minus++; }
-    }
-    if (!stavke.length) { toast("Nije upisana nijedna izbrojana količina."); return; }
-    const ok = await ask("Proknjižiti popis?", "<p>Izbrojano je <b>" + stavke.length + "</b> artikala. Razlika postoji kod <b>" + lista.length + "</b> (višak " + plus + ", manjak " + minus + ").</p><p>Razlike se knjiže kao korekcije na dan " + esc(dtxt(P.datum)) + " i stanje tih artikala postaje jednako izbrojanom.</p><p class='muted'>Popis se čuva u spisku dosadašnjih popisa. Korekcije se mogu stornirati iz prometa.</p>", "Proknjiži");
-    if (!ok) return;
-    if (lista.length && !(await dodajUnose(P.datum, lista))) return;
-    try {
-      await write(async () => {
-        await S.db.collection("popisi").doc(P.datum + "__" + rid()).set({ datum: P.datum, grupa: P.grupa || "", uid: P.uid, t: new Date().toISOString(), grp, stavke });
-        await S.db.doc("popis/aktivan").delete();
-      });
-      S.popis = null; toast("Popis je proknjižen – korekcija: " + lista.length); renderPopis();
-    } catch (err) { dbErr(err); }
+    await popisKnjizi(false);
+  } else if (e.target.id === "poDelim") {
+    await popisKnjizi(true);
   } else if (e.target.dataset.arh) {
     const p = S.popisi.find(x => x._id === e.target.dataset.arh); if (!p) return;
     saveXlsx("Popis " + p.datum + ".xlsx", [["Popis", [["Popis na dan " + dtxt(p.datum) + (p.grupa ? " – " + p.grupa : "")], [], ["Šifra", "Naziv artikla", "Po evidenciji", "Izbrojano", "Razlika", "Razlog"]]
@@ -19409,7 +19534,7 @@ function obBedz() {
 }
 function obIspod() {
   const s = new Set();
-  for (const a of S.art) if (!a.izbacen && a.aktivan && a.min > 0 && trenutno(a.id) < a.min) s.add(a.id);
+  for (const a of S.art) if (!a.izbacen && !a.bezStanja && a.aktivan && a.min > 0 && trenutno(a.id) < a.min) s.add(a.id);
   return s;
 }
 function proveriObavestenja() {
