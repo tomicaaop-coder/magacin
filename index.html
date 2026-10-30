@@ -605,6 +605,110 @@ body.skenerSamo .bar > .bar-in, body.skenerSamo .baner, body.skenerSamo main, bo
 @media (max-width:640px){ .qp-dno{flex-direction:column} .qp-prev{width:100%} }
 tr.po-knj{opacity:.72;background:color-mix(in srgb, var(--ulaz, #2e7d32) 7%, transparent)}
 tr.po-knj .inp{border-style:dashed}
+
+/* =====================================================================
+   PRILAGOĐENJE ZA TELEFON
+   Na telefonu: zbijeno zaglavlje, manja slova i dugmad, a široke tabele
+   (stanje, promet, popis) se prikazuju kao kartice – jedan artikal po
+   kartici, bez bočnog skrolovanja.
+   ===================================================================== */
+@media (max-width: 640px) {
+  /* --- zaglavlje: zauzimalo je pola ekrana --- */
+  .bar-in { padding: 6px 10px !important; gap: 8px }
+  .brand img { height: 22px !important; width: auto }
+  .brand-name { font-size: 15px !important; line-height: 1.1 }
+  .brand-name small, #danas { display: none !important }
+  .who { gap: 6px !important }
+  .who .obBtn { width: 34px !important; height: 34px !important; min-width: 34px; padding: 0 }
+  .who .obBtn svg { width: 17px; height: 17px }
+  .who #conn { display: none }
+  .who .nm-me { display: none }
+  .who .btn { padding: 5px 9px !important; font-size: 12.5px !important }
+  .baner { padding-bottom: 0 }
+  nav.tabs { gap: 2px !important; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none }
+  nav.tabs::-webkit-scrollbar { display: none }
+  nav.tabs button { font-size: 13px !important; padding: 7px 10px !important; white-space: nowrap }
+  nav.tabs button svg { display: none }
+  .subnav { gap: 2px !important; overflow-x: auto; scrollbar-width: none }
+  .subnav::-webkit-scrollbar { display: none }
+  .subnav button { font-size: 12.5px !important; padding: 5px 9px !important; white-space: nowrap }
+
+  /* --- sadržaj: manji naslovi, zbijeniji raspored --- */
+  main { padding: 10px !important }
+  .view h1 { font-size: 20px !important; line-height: 1.2; margin: 0 0 8px }
+  .view h2 { font-size: 16px !important }
+  .toolbar { gap: 6px !important; margin-bottom: 10px }
+  .toolbar .btn, .card .btn { padding: 7px 11px !important; font-size: 13px !important }
+  .fld { font-size: 12px }
+  .inp { padding: 8px 10px !important; font-size: 15px }
+  .card { padding: 12px !important }
+  .notice { font-size: 12.5px !important; padding: 8px 10px !important }
+
+  /* pločice sa brojevima: dve u redu, bez detalja ispod */
+  .tile-info, .plocica .detalj { display: none !important }
+  .plocice, .tiles { gap: 8px !important }
+
+  /* ================= tabele kao kartice ================= */
+  table.kart { border-collapse: separate; border-spacing: 0 }
+  table.kart thead { display: none }
+  table.kart, table.kart tbody, table.kart tr, table.kart td { display: block; width: auto }
+  table.kart tr {
+    border: 1px solid var(--linija, #d9dee6); border-radius: 10px;
+    margin: 0 0 8px; padding: 9px 11px; background: var(--karta, #fff);
+  }
+  table.kart tr.grp {
+    background: transparent; border: 0; border-radius: 0; margin: 14px 0 6px; padding: 0;
+    font: 600 13px/1.2 var(--head, inherit); letter-spacing: .04em; color: var(--nar, #EE7D00);
+  }
+  table.kart tr.grp td { padding: 0; border: 0 }
+  table.kart tr.empty-row { text-align: center; color: var(--muted) }
+  table.kart td {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding: 3px 0; border: 0 !important; text-align: right; font-size: 14px;
+  }
+  table.kart td::before {
+    content: attr(data-l); flex: 0 0 auto; text-align: left;
+    color: var(--muted); font: 400 12px/1.4 system-ui, Arial, sans-serif;
+  }
+  table.kart td:not([data-l])::before { content: none }
+  /* naziv artikla = naslov kartice, preko cele širine */
+  table.kart td.kart-glava {
+    display: block; text-align: left; font-weight: 600; font-size: 15px;
+    line-height: 1.25; margin-bottom: 5px; padding-top: 0;
+  }
+  table.kart td.kart-glava::before { content: none }
+  /* glavni broj (stanje, količina) – krupnije */
+  table.kart td.kart-veliko { font: 600 19px/1.2 var(--num, inherit); padding-top: 4px }
+  table.kart td.kart-veliko::before { font-size: 12px; align-self: center }
+  /* sporedne kolone se na telefonu ne prikazuju */
+  table.kart td.kart-sporedno { display: none }
+  /* polja u kartici (popis) zauzimaju desnu stranu */
+  table.kart td .inp { width: 108px; text-align: right }
+  table.kart td select.inp { width: 150px; text-align: left }
+  table.kart td .poNap { text-align: right; width: 100% }
+  /* omotac tabele u rezimu kartica nije kutija */
+  .kart-wrap { background: transparent !important; border: 0 !important; border-radius: 0 !important;
+    overflow: visible !important; max-height: none !important; padding: 0 !important; box-shadow: none !important }
+  /* naslov grupe: samo tekst, bez trake */
+  table.kart tr.grp td { background: transparent !important; border: 0 !important; padding: 0 !important;
+    color: var(--nar, #EE7D00) !important; font-size: 13px !important; letter-spacing: .04em }
+  /* prazna polja ne zauzimaju red */
+  table.kart td:empty { display: none }
+
+  /* rezultat pretrage: naziv se prelama umesto da izlazi iz ekrana */
+  #rez [data-id] { align-items: flex-start }
+  #rez .nm { white-space: normal !important; overflow-wrap: anywhere; line-height: 1.25 }
+  #rez .g { white-space: normal !important }
+  /* dugacki nazivi nigde ne razvlace prikaz */
+  .ticket-head h2, .view h1, .view h2 { overflow-wrap: anywhere }
+
+  /* dvokolonski rasporedi se na telefonu sklapaju, da strana ne klizi postrance */
+  .split { grid-template-columns: minmax(0, 1fr) !important }
+  .mreza { grid-template-columns: repeat(2, minmax(0, 1fr)) !important }
+  .unos { grid-template-columns: minmax(0, 1fr) !important }
+  .row2 { grid-template-columns: minmax(0, 1fr) !important }
+}
+
 </style>
 </head>
 <body>
@@ -678,7 +782,7 @@ tr.po-knj .inp{border-style:dashed}
     </div>
     <div class="print-only" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center"><img src="data:image/png;base64,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" style="height:34px" alt=""><h1 id="pStanjeT" style="font-size:20px"></h1></div></div>
     <div class="notice" id="stanjeInfo" hidden></div>
-    <div class="tbl-wrap"><table>
+    <div class="tbl-wrap kart-wrap"><table class="kart">
       <thead><tr><th>Šifra</th><th>Naziv artikla</th><th class="num">Početno</th><th class="num">Ulaz</th><th class="num">Izlaz</th><th class="num">Povrat</th><th class="num" title="Korekcije sa popisa">Popis ±</th><th class="num">Stanje</th></tr></thead>
       <tbody id="tStanje"></tbody>
     </table></div>
@@ -775,7 +879,7 @@ tr.po-knj .inp{border-style:dashed}
       <label class="chk"><input type="checkbox" id="pStorno"> prikaži stornirane</label>
       <button class="btn dl" id="xPromet">Preuzmi Excel</button>
     </div>
-    <div class="tbl-wrap"><table>
+    <div class="tbl-wrap kart-wrap"><table class="kart">
       <thead><tr><th>Datum</th><th>Vreme</th><th>Šifra</th><th>Naziv artikla</th><th>Vrsta</th><th class="num">Količina</th><th>Uneo</th><th>Napomena</th></tr></thead>
       <tbody id="tPromet"></tbody>
     </table></div>
@@ -13694,7 +13798,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "30.10.a";
+const APP_VERZIJA = "30.10.b";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14107,7 +14211,7 @@ function renderStanje() {
     if (q.length) { const h = a._n || (a._n = norm(a.sifra + " " + a.naziv + " " + a.grupa)); if (!q.every(x => h.includes(x))) continue; }
     if (a.grupa !== g) { g = a.grupa; html += '<tr class="grp"><td colspan="8">' + esc(g) + "</td></tr>"; }
     n++;
-    html += '<tr class="' + (a.aktivan ? "" : "neakt") + '"><td class="sif">' + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="num">' + fmt(o.p) + '</td><td class="num">' + fmt(o.u) + '</td><td class="num">' + fmt(o.i) + '</td><td class="num">' + fmt(o.pv) + '</td><td class="num">' + fmt(o.k) + '</td><td class="num stanje ' + (o.s < 0 ? "neg" : "") + '">' + fmt(o.s) + "</td></tr>";
+    html += '<tr class="' + (a.aktivan ? "" : "neakt") + '"><td class="sif" data-l="Šifra">' + esc(a.sifra) + '</td><td class="kart-glava">' + esc(a.naziv) + '</td><td class="num kart-sporedno" data-l="Početno">' + fmt(o.p) + '</td><td class="num" data-l="Ulaz">' + fmt(o.u) + '</td><td class="num" data-l="Izlaz">' + fmt(o.i) + '</td><td class="num kart-sporedno" data-l="Povrat">' + fmt(o.pv) + '</td><td class="num kart-sporedno" data-l="Popis ±">' + fmt(o.k) + '</td><td class="num stanje kart-veliko ' + (o.s < 0 ? "neg" : "") + '" data-l="Stanje">' + fmt(o.s) + "</td></tr>";
   }
   $("#tStanje").innerHTML = n ? html : '<tr class="empty-row"><td colspan="8">Nema artikala za prikaz.</td></tr>';
 }
@@ -14142,7 +14246,7 @@ function renderPromet() {
   const l = prometList();
   $("#tPromet").innerHTML = l.length ? l.slice(0, 1500).map(e => {
     const tm = new Date(e.t);
-    return '<tr class="' + (e.storno ? "neakt" : "") + '"><td>' + esc(dtxt(e.datum)) + '</td><td class="muted">' + pad(tm.getHours()) + ":" + pad(tm.getMinutes()) + '</td><td class="sif">' + esc(artSif(e.art)) + "</td><td>" + esc(artName(e.art)) + '</td><td><span class="tag ' + e.vrsta + '">' + VR[e.vrsta] + "</span>" + (e.storno ? ' <span class="muted" style="font-size:12px">storniran (' + esc(who(e.storno.uid)) + ")</span>" : "") + '</td><td class="num">' + esc(fmt(e.kol, false)) + "</td><td>" + esc(who(e.uid)) + (e.t ? '<div class="muted" style="font-size:11.5px">' + esc(ucVreme(e.t)) + "</div>" : "") + '</td><td class="muted">' + esc(e.nap || "") + "</td></tr>";
+    return '<tr class="' + (e.storno ? "neakt" : "") + '"><td data-l="Datum">' + esc(dtxt(e.datum)) + '</td><td class="muted" data-l="Vreme">' + pad(tm.getHours()) + ":" + pad(tm.getMinutes()) + '</td><td class="sif kart-sporedno" data-l="Šifra">' + esc(artSif(e.art)) + '</td><td class="kart-glava">' + esc(artName(e.art)) + '</td><td data-l="Vrsta"><span class="tag ' + e.vrsta + '">' + VR[e.vrsta] + "</span>" + (e.storno ? ' <span class="muted" style="font-size:12px">storniran (' + esc(who(e.storno.uid)) + ")</span>" : "") + '</td><td class="num kart-veliko" data-l="Količina">' + esc(fmt(e.kol, false)) + '</td><td data-l="Uneo">' + esc(who(e.uid)) + (e.t ? '<div class="muted" style="font-size:11.5px">' + esc(ucVreme(e.t)) + "</div>" : "") + '</td><td class="muted" data-l="Napomena">' + esc(e.nap || "") + "</td></tr>";
   }).join("") : '<tr class="empty-row"><td colspan="8">Nema prometa za izabrane uslove.</td></tr>';
 }
 
@@ -14910,14 +15014,14 @@ function renderPopis() {
     if (a.grupa !== g) { g = a.grupa; rows += '<tr class="grp"><td colspan="6">' + esc(g) + "</td></tr>"; }
     const ev = r[a.id].s, raz = counted ? r3(pi.kol - ev) : null;
     const knj = counted && pi.knj;
-    rows += '<tr class="' + (knj ? "po-knj" : "") + '"><td class="sif">' + esc(a.sifra) + "</td><td>" + esc(a.naziv) + '</td><td class="num">' + esc(fmt(ev, false)) + '</td><td class="num">' +
+    rows += '<tr class="' + (knj ? "po-knj" : "") + '"><td class="sif" data-l="Šifra">' + esc(a.sifra) + '</td><td class="kart-glava">' + esc(a.naziv) + '</td><td class="num" data-l="Po evidenciji">' + esc(fmt(ev, false)) + '</td><td class="num" data-l="Izbrojano">' +
       (knj
         ? '<input class="inp poin" value="' + esc(String(pi.kol).replace(".", ",")) + '" disabled><div class="poNap" style="color:var(--ulaz)">proknjiženo ' + esc(typeof skVreme === "function" ? skVreme(pi.knj) : "") + "</div>"
         : '<input class="inp poin" data-po="' + a.id + '" inputmode="decimal" autocomplete="off" value="' + (counted ? esc(String(pi.kol).replace(".", ",")) : "") + '"><button type="button" class="kalkBtn" data-kalk="[data-po=\'' + a.id + '\']" title="Kalkulator" aria-label="Kalkulator">🧮</button>' + (counted ? popisNapomena(pi) : "")) + "</td>" +
       (knj
-        ? '<td class="num muted">✓</td><td></td></tr>'
-        : '<td class="num ' + (raz > 0 ? "raz-p" : raz < 0 ? "raz-m" : "") + '" data-raz="' + a.id + '">' + (raz === null ? "" : raz === 0 ? "✓" : (raz > 0 ? "+" : "") + esc(fmt(raz, false))) + "</td>" +
-          '<td><select class="inp" data-por="' + a.id + '" style="padding:4px 6px"' + (raz ? "" : " hidden") + ">" + ["Kalo", "Oštećenje", "Greška u knjiženju", "Ostalo"].map(o => "<option" + ((x.razlog || "Kalo") === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></td></tr>");
+        ? '<td class="num muted" data-l="Razlika">✓</td><td></td></tr>'
+        : '<td class="num ' + (raz > 0 ? "raz-p" : raz < 0 ? "raz-m" : "") + '" data-l="Razlika" data-raz="' + a.id + '">' + (raz === null ? "" : raz === 0 ? "✓" : (raz > 0 ? "+" : "") + esc(fmt(raz, false))) + "</td>" +
+          '<td data-l="Razlog"><select class="inp" data-por="' + a.id + '" style="padding:4px 6px"' + (raz ? "" : " hidden") + ">" + ["Kalo", "Oštećenje", "Greška u knjiženju", "Ostalo"].map(o => "<option" + ((x.razlog || "Kalo") === o ? " selected" : "") + ">" + o + "</option>").join("") + "</select></td></tr>");
   }
   box.innerHTML = '<div class="toolbar"><h1>Popis na dan ' + esc(dtxt(P.datum)) + "</h1>" +
     '<label class="fld grow">Filter<input class="inp" id="poQ" type="search" placeholder="Šifra ili naziv"></label><label class="chk"><input type="checkbox" id="poSamo"' + (samo ? " checked" : "") + "> samo neizbrojani</label>" +
@@ -14927,7 +15031,7 @@ function renderPopis() {
     '<div class="notice" style="font-size:13px">' + esc(P.grupa || "Svi artikli") + " · izbrojano <b id=\"poIz\">" + izbr + "</b> od " + svi.length + " · sa razlikom <b id=\"poSr\">" + sraz + "</b>" +
       (knjN ? " · već proknjiženo <b>" + knjN + "</b>" : "") + " · započeo " + esc(who(P.uid)) +
       ". <b>Proknjiži popisano</b> knjiži samo ono što je do sada izbrojano, a popis ostaje otvoren za ostale artikle. <b>Završi popis</b> knjiži ostatak i zatvara popis.</div>" +
-    '<div class="tbl-wrap"><table><thead><tr><th>Šifra</th><th>Naziv artikla</th><th class="num">Po evidenciji</th><th class="num">Izbrojano</th><th class="num">Razlika</th><th>Razlog</th></tr></thead><tbody>' + (rows || '<tr class="empty-row"><td colspan="6">Nema artikala za prikaz.</td></tr>') + "</tbody></table></div>";
+    '<div class="tbl-wrap kart-wrap"><table class="kart"><thead><tr><th>Šifra</th><th>Naziv artikla</th><th class="num">Po evidenciji</th><th class="num">Izbrojano</th><th class="num">Razlika</th><th>Razlog</th></tr></thead><tbody>' + (rows || '<tr class="empty-row"><td colspan="6">Nema artikala za prikaz.</td></tr>') + "</tbody></table></div>";
   $("#poQ").value = qv;
   if (foc) { const f = document.querySelector('[data-po="' + foc + '"]'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }
   else if (S.poFocusQ) { $("#poQ").focus(); S.poFocusQ = false; }
