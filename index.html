@@ -13800,7 +13800,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "30.10.c";
+const APP_VERZIJA = "03.11.a";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14548,7 +14548,7 @@ window.__probaUpis = () => write(() => Promise.resolve(1));   // za proveru prav
 window.__trebTest = (l, sir) => trebIzlazDlg(stavkeIzTeksta(l, sir), sir);
 window.__unos = (art, vrsta, kol, nap) => dodajUnose(today(), [{ art, vrsta, kol, nap }]);
 window.__sirUnos = (art, lot, vrsta, kol, nap) => sirDodajUnose(today(), [{ art, lot, vrsta, kol, nap }]);
-window.__S = () => S; window.__popis = { knjizi: popisKnjizi, zaKnjizenje: popisZaKnjizenje, proknjizenih: popisProknjizenih };
+window.__S = () => S; window.__rok = { pdf: rokoviPDF, redovi: rokoviRedovi }; window.__popis = { knjizi: popisKnjizi, zaKnjizenje: popisZaKnjizenje, proknjizenih: popisProknjizenih };
 window.__nalep = { vrati: vratiNalepnice, je: jeNalepnica }; window.__qp = { crtaj: crtajQP18, format: qpFormat, pregled: qpPregledCrtaj, dlg: qp18Dlg }; window.__ev = { sledeci: sledeciEv, poslednji: poslednjiEvBroj, zauzet: evZauzet, napomena: evNapomena };
 window.__trebParse = (l, sir) => stavkeIzTeksta(l, sir);
 $("#subnav").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b) show(b.dataset.view); });
@@ -16174,7 +16174,9 @@ function renderSirStanje() {
   const P = S.sir.prikaz || "stanje", R = sirStanjeRedovi();
   const sve = [...sirStanje().values()].filter(o => o.kol > 1e-9), t = today();
   const ist = sve.filter(o => o.vaz && o.vaz < t).length, uskoro = sve.filter(o => o.vaz && o.vaz >= t && o.vaz <= addDays(t, 90)).length;
-  $("#sstanjeBox").innerHTML = '<div class="toolbar"><h1>Magacin sirovina – stanje po lotovima</h1><button class="btn dl" id="sXls">Preuzmi Excel</button><label class="btn" style="cursor:pointer">Uvoz lager liste po serijama (PDF)<input type="file" id="sLagF" accept=".pdf,application/pdf" hidden></label></div>' +
+  $("#sstanjeBox").innerHTML = '<div class="toolbar"><h1>Magacin sirovina – stanje po lotovima</h1><button class="btn dl" id="sXls">Preuzmi Excel</button>' +
+    '<button class="btn dl" id="sRokPdf" title="PDF sa sirovinama kojima rok ističe u narednih 90 dana">PDF – rokovi 90 dana' + (uskoro + ist ? " (" + (uskoro + ist) + ")" : "") + "</button>" +
+    '<label class="btn" style="cursor:pointer">Uvoz lager liste po serijama (PDF)<input type="file" id="sLagF" accept=".pdf,application/pdf" hidden></label></div>' +
     (S.sir.uvoz ? sirUvozHtml() : "") +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">' +
     [["Sirovina na stanju", new Set(sve.map(o => o.art)).size, "sirovine", ""], ["Lotova na stanju", sve.length, "kutija", ""], ["Istekao rok", ist, "minimum", ist ? "var(--izlaz)" : ""], ["Ističe u 90 dana", uskoro, "sat", uskoro ? "var(--warn)" : ""]]
@@ -16230,6 +16232,7 @@ $("#sstanjeBox").addEventListener("click", async e => {
   const le = t.closest("[data-slet]"); if (le) { const i = le.dataset.slet.indexOf("|"), art = le.dataset.slet.slice(0, i), lot = le.dataset.slet.slice(i + 1);
     const u = S.sir.entries.filter(x => !x.storno && x.vrsta === "U" && x.art === art && sirKljuc(art, x.lot) === sirKljuc(art, lot)).pop();
     const it = sirEtiketaStavka(art, lot, null, u && u.dob); if (it) qp18Dlg([it], u ? u.datum : (S.sir.poc.datum || today())); return; }
+  if (t.id === "sRokPdf") { await rokoviPdfSnimi(90); return; }
   if (t.id === "sUvX") { S.sir.uvoz = null; renderSirStanje(); return; }
   if (t.id === "sXls") {
     const R = sirStanjeRedovi();
@@ -16313,7 +16316,7 @@ $("#spromBox").addEventListener("click", e => {
 function renderSirRokovi() {
   const N = S.sir.rN || 90, t = today(), gr = addDays(t, N);
   const l = [...sirStanje().values()].filter(o => o.kol > 1e-9 && o.vaz && o.vaz <= gr).sort((a, b) => a.vaz < b.vaz ? -1 : 1);
-  $("#srokBox").innerHTML = '<div class="toolbar"><h1>Sirovine – rokovi trajanja</h1><label class="fld">Ističe u narednih (dana)<input class="inp" id="srN" inputmode="numeric" value="' + N + '" style="width:110px"></label><button class="btn dl" id="srXls">Excel</button></div>' +
+  $("#srokBox").innerHTML = '<div class="toolbar"><h1>Sirovine – rokovi trajanja</h1><label class="fld">Ističe u narednih (dana)<input class="inp" id="srN" inputmode="numeric" value="' + N + '" style="width:110px"></label><button class="btn dl" id="srXls">Excel</button><button class="btn dl" id="srPdf">PDF</button></div>' +
     '<p class="muted" style="font-size:13px">Lotovi sa stanjem kojima je rok važenja istekao (crveno) ili ističe u zadatom periodu – redom kako ističu. Njih treba trošiti prve ili izdvojiti.</p>' +
     '<div class="tbl-wrap" style="max-height:640px"><table><thead><tr><th>Važi do</th><th class="num">Dana</th><th>Šifra</th><th>Sirovina</th><th>Lot</th><th class="num">Stanje</th></tr></thead><tbody>' +
     (l.length ? l.map(o => { const a = S.sir.byId[o.art] || {}, d = Math.round((new Date(o.vaz) - new Date(t)) / 864e5); return "<tr><td class=\"" + rokKlasa(o.vaz) + "\"><b>" + esc(dtxt(o.vaz)) + '</b></td><td class="num ' + (d < 0 ? "raz-m" : "") + '">' + d + '</td><td class="sif">' + esc(a.sifra || "") + "</td><td>" + esc(a.naziv || "") + "</td><td>" + esc(o.lot) + '</td><td class="num">' + esc(fmt(o.kol, false)) + " " + esc(a.mera || "") + "</td></tr>"; }).join("") : '<tr class="empty-row"><td colspan="6">Nema lotova kojima rok ističe u ovom periodu.</td></tr>') + "</tbody></table></div>";
@@ -16321,6 +16324,7 @@ function renderSirRokovi() {
 }
 $("#srokBox").addEventListener("change", e => { if (e.target.id === "srN") { S.sir.rN = Math.max(0, parseInt(e.target.value, 10) || 0); renderSirRokovi(); } });
 $("#srokBox").addEventListener("click", e => {
+  if (e.target.id === "srPdf") { rokoviPdfSnimi(S.sir.rN || 90); return; }
   if (e.target.id === "srXls") {
     const N = S.sir.rN || 90, gr = addDays(today(), N);
     const l = [...sirStanje().values()].filter(o => o.kol > 1e-9 && o.vaz && o.vaz <= gr).sort((a, b) => a.vaz < b.vaz ? -1 : 1);
@@ -17143,7 +17147,7 @@ function renderSirZbir() {
   const L = sirZbirno(), q = norm(Z.q).split(" ").filter(Boolean);
   const vid = L.filter(x => (Z.prikaz === "svi" || Math.abs(x.kol) > 1e-9) && (!q.length || q.every(w => norm(x.a.sifra + " " + x.a.naziv).includes(w))));
   const uk = vid.reduce((s, x) => s + (x.lot || 0), 0);
-  box.innerHTML = '<div class="toolbar"><h1>Zbirno stanje sirovina</h1><label class="btn" style="cursor:pointer">Usaglasi sa tabelom magacionera (Excel)<input type="file" id="zbF" accept=".xlsx,.xls,.xlsm,.csv" hidden></label><button class="btn dl" id="zbXls2">Preuzmi Excel</button></div>' +
+  box.innerHTML = '<div class="toolbar"><h1>Zbirno stanje sirovina</h1><label class="btn" style="cursor:pointer">Usaglasi sa tabelom magacionera (Excel)<input type="file" id="zbF" accept=".xlsx,.xls,.xlsm,.csv" hidden></label><button class="btn dl" id="zbXls2">Preuzmi Excel</button><button class="btn dl" id="zbRokPdf" title="PDF sa sirovinama kojima rok ističe u narednih 90 dana">PDF – rokovi 90 dana</button></div>' +
     '<p class="muted" style="font-size:13px">Zbir svih lotova po sirovini, bez prikaza lotova. Za pregled po lotovima koristi karticu <b>Stanje</b>.</p>' +
     '<div class="toolbar"><label class="fld grow">Filter<input class="inp" id="zbQ2" type="search" value="' + esc(Z.q) + '" placeholder="šifra ili naziv"></label>' +
     '<label class="fld">Prikaz<select class="inp" id="zbPrikaz"><option value="stanje"' + (Z.prikaz === "stanje" ? " selected" : "") + '>samo sa stanjem</option><option value="svi"' + (Z.prikaz === "svi" ? " selected" : "") + ">sve sirovine</option></select></label></div>" +
@@ -17173,6 +17177,7 @@ $("#szbirBox").addEventListener("change", async e => {
 });
 $("#szbirBox").addEventListener("click", async e => {
   const t = e.target, Z = S.zbir;
+  if (t.id === "zbRokPdf") { await rokoviPdfSnimi(90); return; }
   if (t.id === "zbNazad") { Z.uvoz = null; Z.q = ""; renderSirZbir(); return; }
   if (t.id === "zbXls2") {
     saveXlsx("Zbirno stanje sirovina " + today() + ".xlsx", [["Sirovine", [["Zbirno stanje sirovina – " + dtxt(today())], [], ["Šifra", "Sirovina", "Stanje", "JM", "Lotova", "Istekli lotovi"]]
@@ -18988,6 +18993,89 @@ $("#porBox").addEventListener("click", async e => {
 async function snimiPDF(buf, ime) {
   if (!S.downloads) { toast("Preuzimanje fajlova nije dostupno u ovom prikazu."); return false; }
   try { await S.downloads.save({ filename: ime, data: buf }); return true; } catch (e) { if (e && e.code !== "declined") toast("PDF nije sačuvan."); return false; }
+}
+
+/* ---- PDF: sirovine kojima rok ističe u zadatom broju dana ---- */
+function rokoviRedovi(dana) {
+  const t = today(), gr = addDays(t, dana);
+  return [...sirStanje().values()]
+    .filter(o => o.kol > 1e-9 && o.vaz && o.vaz <= gr)
+    .sort((a, b) => (a.vaz < b.vaz ? -1 : a.vaz > b.vaz ? 1 : 0));
+}
+function rokoviPDF(dana) {
+  if (!window.jspdf) { toast("Biblioteka za PDF nije učitana."); return null; }
+  const N = Math.max(0, parseInt(dana, 10) || 0), t = today(), l = rokoviRedovi(N);
+  if (!l.length) { toast("Nema lotova kojima rok ističe u narednih " + N + " dana."); return null; }
+  const doc = new jspdf.jsPDF({ unit: "mm", format: "a4", compress: true });
+  doc.addFileToVFS("LS-R.ttf", FONT_R); doc.addFont("LS-R.ttf", "LS", "normal");
+  doc.addFileToVFS("LS-B.ttf", FONT_B); doc.addFont("LS-B.ttf", "LS", "bold");
+  const F = S.firma || {};
+  // zaglavlje
+  const logo = document.querySelector(".brand img"); try { doc.addImage(logo.src, "PNG", 15, 11, 38, 10); } catch (e) {}
+  doc.setFont("LS", "bold"); doc.setFontSize(10.5); doc.text(F.naziv || "HI NEVENA doo", 195, 15, { align: "right" });
+  doc.setFont("LS", "normal"); doc.setFontSize(8.5); doc.setTextColor(91, 104, 117);
+  doc.text("Magacin sirovina · stanje po lotovima", 195, 19.5, { align: "right" });
+  doc.setTextColor(0);
+  doc.setDrawColor(247, 148, 29); doc.setLineWidth(0.8); doc.line(15, 24, 195, 24);
+  doc.setFont("LS", "bold"); doc.setFontSize(15);
+  doc.text("Sirovine kojima ističe rok", 15, 33);
+  doc.setFont("LS", "normal"); doc.setFontSize(9.5);
+  doc.text("narednih " + N + " dana (zaključno sa " + dtxt(addDays(t, N)) + ")", 15, 38.5);
+  doc.text("Na dan " + dtxt(t), 195, 33, { align: "right" });
+  doc.setFontSize(8.5); doc.setTextColor(91, 104, 117);
+  doc.text("Lotova: " + l.length, 195, 38.5, { align: "right" });
+  doc.setTextColor(0);
+
+  let y = 45;
+  const cols = [[15, "Važi do", "l"], [40, "Dana", "r"], [44, "Šifra", "l"], [63, "Sirovina", "l"], [148, "Lot", "l"], [195, "Stanje", "r"]];
+  const head = () => {
+    doc.setFillColor(64, 64, 64); doc.rect(15, y, 180, 7, "F");
+    doc.setTextColor(255); doc.setFont("LS", "bold"); doc.setFontSize(8.5);
+    for (const [x, tx, al] of cols) doc.text(tx, al === "r" ? x - 1.5 : x + 1.5, y + 4.8, { align: al === "r" ? "right" : "left" });
+    doc.setTextColor(0); doc.setFont("LS", "normal"); y += 7;
+  };
+  head();
+  let istekli = 0;
+  l.forEach((o, i) => {
+    const a = S.sir.byId[o.art] || {};
+    const naz = doc.splitTextToSize(String(a.naziv || ""), 82);
+    const h = Math.max(6, naz.length * 3.9 + 2.2);
+    if (y + h > 276) { doc.addPage(); y = 18; head(); }
+    if (i % 2) { doc.setFillColor(246, 248, 250); doc.rect(15, y, 180, h, "F"); }
+    const d = Math.round((new Date(o.vaz) - new Date(t)) / 864e5);
+    const isteklo = o.vaz < t;
+    if (isteklo) istekli++;
+    doc.setFontSize(8.8);
+    // istekao rok: ceo red je crven (da upada u oci), a datum i dodatno podebljan
+    if (isteklo) { doc.setTextColor(184, 50, 42); doc.setFont("LS", "bold"); }
+    doc.text(dtxt(o.vaz), 16.5, y + 4.4);
+    doc.text(String(d), 38.5, y + 4.4, { align: "right" });
+    if (isteklo) doc.setFont("LS", "normal");
+    doc.text(String(a.sifra || ""), 45.5, y + 4.4);
+    doc.text(naz, 64.5, y + 4.4);
+    doc.text(String(o.lot || ""), 149.5, y + 4.4);
+    doc.setFont("LS", "bold");
+    doc.text(fmt(o.kol, false) + (a.mera ? " " + a.mera : ""), 193.5, y + 4.4, { align: "right" });
+    doc.setFont("LS", "normal"); doc.setTextColor(0);
+    y += h;
+    doc.setDrawColor(226, 232, 238); doc.setLineWidth(0.1); doc.line(15, y, 195, y);
+  });
+
+  // podnožje: sažetak i broj strane
+  const str = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= str; p++) {
+    doc.setPage(p);
+    doc.setFont("LS", "normal"); doc.setFontSize(7.8); doc.setTextColor(120, 130, 140);
+    doc.text("Istekao rok: " + istekli + " · ističe u narednih " + N + " dana: " + (l.length - istekli), 15, 287);
+    doc.text("Strana " + p + " od " + str, 195, 287, { align: "right" });
+    doc.setTextColor(0);
+  }
+  return doc;
+}
+async function rokoviPdfSnimi(dana) {
+  const doc = rokoviPDF(dana); if (!doc) return;
+  const N = Math.max(0, parseInt(dana, 10) || 0);
+  await snimiPDF(doc.output("arraybuffer"), "Sirovine rokovi " + N + " dana " + today() + ".pdf");
 }
 
 /* ---- PDF porudžbenice ---- */
