@@ -7,7 +7,7 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
-  const FB_VERZIJA = "26.10.c";
+  const FB_VERZIJA = "18.11.d";
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
@@ -17,12 +17,13 @@
     ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "ngrupe"]],
     ["kontrola", "Kontrola", ["kamb", "kgal"]],
     ["kuvaona", "Kuvaona", ["izdavanje"]],
-    ["artikli", "Artikli", ["artikli"]]
+    ["artikli", "Artikli", ["artikli"]],
+    ["finansije", "Izveštaji – finansije", ["fpregled", "fizv", "fprog", "fuvoz"]]
   ];
   const POGLED_MENI = {};
   for (const [k, , vs] of MENIJI) for (const v of vs) POGLED_MENI[v] = k;
   // stara imena uloga -> novi oblik (puna prava na odgovarajući meni)
-  const STARE = { magacin: ["magacin:pun", "artikli:pun"], proizvodnja: ["proizvodnja:pun", "kuvaona:pun"], nabavka: ["nabavka:pun"], sirovine: ["sirovine:pun", "kuvaona:pun"], kontrola: ["kontrola:pun"], pregled: MENIJI.map(m => m[0] + ":pregled") };
+  const STARE = { magacin: ["magacin:pun", "artikli:pun"], proizvodnja: ["proizvodnja:pun", "kuvaona:pun"], nabavka: ["nabavka:pun"], sirovine: ["sirovine:pun", "kuvaona:pun"], kontrola: ["kontrola:pun"], pregled: MENIJI.filter(m => m[0] !== "finansije").map(m => m[0] + ":pregled") };
   function pravaKorisnika(k) {
     const out = {};
     for (const u of (k && k.uloge) || []) {
@@ -362,7 +363,7 @@
   // (pravila to i ne dozvoljavaju) - kljuc za registraciju se podesava u ovom panelu.
   const KOLEKCIJE = ["sistem", "korisnici", "sifarnik", "stanje", "unosi", "popis", "popisi",
     "sirovine", "sirunosi", "normativi", "planovi", "potrosnja", "nabavka", "porudzbenice",
-    "kontrola", "poruke", "skeniranja"];
+    "kontrola", "poruke", "skeniranja", "finansije"];
   const dvaBroja = x => String(x).padStart(2, "0");
   const velicina = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(2) + " MB";
 
