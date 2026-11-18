@@ -13884,7 +13884,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "18.11.d";
+const APP_VERZIJA = "18.11.e";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -20732,7 +20732,7 @@ function renderFinUvoz() {
   const box = $("#fuvozBox"); if (!box) return;
   const s = finSledeci(), sme = finSme();
   const docs = FIN.docs.slice().sort((a, b) => a.od < b.od ? 1 : a.od > b.od ? -1 : a.do < b.do ? 1 : -1);
-  box.innerHTML = finPodsetnikHtml() +
+  box.innerHTML = finPodsetnikHtml() + finPocetniHtml(sme) +
     '<div class="finDva"><section class="card"><h2>Uvoz glavne knjige</h2>' +
     '<p>U UPIS-u pokreni bruto bilans (pivot „GK“) za period <b>od 01.01. do poslednjeg dana meseca</b> i sačuvaj ga kao Excel. Može i samo jedan mesec (npr. 01.11.–30.11.). Period se čita iz fajla; proveri ga pre snimanja.</p>' +
     (sme ? '<label class="btn primary finFile">' + ikona("ulaz", 16) + ' Izaberi Excel fajlove<input type="file" id="finF" accept=".xlsx,.xls" multiple hidden></label>' : '<p class="muted">Imaš pravo samo na pregled – uvoz radi korisnik sa pravom unosa za Finansije.</p>') +
@@ -22372,6 +22372,36 @@ document.addEventListener("click", async e => {
   } catch (er) { dbErr(er); }
 });
 window.__finP = { prodRed: finProdIzRedova, nabTab: finNabIzTabele, ckKnj: finCkIzKnjige, citaj: finPnCitaj, prod: finProd, nab: finNab, ck: finCk, det: finDetOtvori, detF: finDetFilter };
+
+/* ---------- početni podaci: jedan JSON fajl sa svim dosadašnjim uvozima ---------- */
+function finPocetniHtml(sme) {
+  if (!sme) return "";
+  const ima = (FIN.docs2 || []).length;
+  return '<section class="card finPoc" style="margin-bottom:14px"><h2>' + (ima ? "Početni podaci" : "Početni podaci – prvi korak") + '</h2>' +
+    "<p>" + (ima ? "Ako treba ponovo da učitaš sve dosadašnje podatke (glavna knjiga 2022–2026, otvorene stavke, prodaja, nabavka, cene koštanja), izaberi fajl <b>finansije-pocetni-podaci.json</b>. Postojeći periodi se zamenjuju istim podacima." :
+      "Svi dosadašnji podaci su već pripremljeni u jednom fajlu: <b>finansije-pocetni-podaci.json</b>. Izaberi ga i sve se upiše odjednom – glavna knjiga po mesecima 2022–2026, otvorene stavke, prodaja, nabavka i cene koštanja.") + "</p>" +
+    '<label class="btn ' + (ima ? "" : "primary ") + 'finFile">' + ikona("ulaz", 16) + ' Učitaj početne podatke<input type="file" id="finJsonF" accept=".json,application/json" hidden></label><div id="finJsonM" style="margin-top:8px"></div></section>';
+}
+document.addEventListener("change", async e => {
+  if (e.target.id !== "finJsonF") return;
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const m = $("#finJsonM"), poruka = h => { const x = $("#finJsonM"); if (x) x.innerHTML = h; };
+  let p; try { p = JSON.parse(await f.text()); } catch (er) { poruka('<span class="neg">Fajl nije ispravan.</span>'); return; }
+  if (!p || p.aplikacija !== "magacin-nevena-finansije" || !p.docs) { poruka('<span class="neg">Ovo nije fajl sa početnim podacima (finansije-pocetni-podaci.json).</span>'); return; }
+  const putanje = Object.keys(p.docs).filter(x => /^finansije\/[^/]+$/.test(x));
+  if (!confirm("Upisati " + putanje.length + " dokumenata (glavna knjiga, otvorene stavke, prodaja, nabavka, cene koštanja)?")) return;
+  let n = 0, gr = 0, kod = "";
+  try {
+    await write(async () => {
+      for (const pt of putanje) {
+        try { await S.db.doc(pt).set(p.docs[pt]); n++; } catch (er) { gr++; kod = kod || (er && er.code) || ""; }
+        if (n % 5 === 0) poruka('<span class="muted">Upisujem… ' + n + " / " + putanje.length + "</span>");
+      }
+    });
+  } catch (er) { dbErr(er); return; }
+  if (gr) poruka('<span class="neg">Upisano ' + n + " od " + putanje.length + "; " + gr + " nije upisano" + (kod ? " (" + esc(kod) + ")" : "") + ".</span>" + (kod === "invalid_argument" || kod === "permission-denied" ? " Proveri da su u Firebase konzoli objavljena nova pravila (firestore.rules) i da imaš pravo „Izveštaji – finansije: unos i izmene“." : ""));
+  else { poruka('<span class="pil p-ok">Upisano svih ' + n + " dokumenata.</span>"); toast("Početni podaci su učitani."); }
+});
 
 start();
 })();
