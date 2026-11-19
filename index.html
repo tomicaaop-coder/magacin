@@ -773,6 +773,24 @@ tr.po-knj .inp{border-style:dashed}
 .finDetX{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:10px; width:38px; height:38px; font-size:22px; cursor:pointer; }
 .finMojQ{ display:flex; gap:8px; margin-bottom:8px; }
 .finMojQ input{ flex:1; min-width:0; font:16px var(--body); padding:10px 12px; border:1.5px solid var(--brand); border-radius:10px; background:var(--surface); color:var(--ink); }
+.finKatK{ gap:2px !important; max-height:calc(100vh - 24px); overflow:auto; }
+.finKatD{ border:1px solid var(--line); border-radius:10px; background:var(--surface); margin-bottom:6px; overflow:hidden; }
+.finKatD > summary{ list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 12px; font:600 12.5px var(--body); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.finKatD > summary::-webkit-details-marker{ display:none; }
+.finKatD > summary::before{ content:"▸"; margin-right:6px; transition:transform .15s; }
+.finKatD[open] > summary::before{ transform:rotate(90deg); }
+.finKatD > summary span{ flex:1; }
+.finKatD > summary small{ background:var(--bg); border-radius:999px; padding:1px 8px; font-size:11px; }
+.finKatD[open] > summary{ color:var(--ink); border-bottom:1px solid var(--line); }
+.finKatK .finKatD button[data-fin-izv], .finKatK .finKatD button[data-fin-moj-otv]{ display:block; width:100%; text-align:left; border:0; background:none; padding:6px 12px 6px 26px; font:14px var(--body); color:var(--ink); cursor:pointer; border-radius:0; border-left:3px solid transparent; }
+.finKatK .finKatD button:hover{ background:var(--bg); }
+.finKatK .finKatD button[aria-current="true"]{ background:var(--brand-soft); border-left-color:var(--brand); font-weight:600; }
+.finKatSel{ display:none; }
+.finKatSel span{ display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+.finKatSel select{ width:100%; font:15px var(--body); padding:10px; border:1.5px solid var(--brand); border-radius:10px; background:var(--surface); color:var(--ink); }
+@media (max-width: 900px){ .finKatSel{ display:block; margin-bottom:10px; } .finKatK{ display:none !important; } .finIzv{ display:block !important; } }
+.finHeat td{ font-variant-numeric:tabular-nums; }
+.finM2 .tile{ cursor:pointer; }
 .finMojS{ display:flex; align-items:stretch; }
 .finMoj input#finMojF{ font:14px var(--body); }
 .finMojS button[data-fin-moj-otv]{ flex:1; padding-left:22px !important; }
@@ -13894,7 +13912,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "18.11.g";
+const APP_VERZIJA = "18.11.i";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -20733,9 +20751,8 @@ function renderFinIzv() {
   const P = finPal();
   let rep; try { rep = FIN_IZV[FIN.izv](P); } catch (e) { console.error(e); rep = { naslov: "Greška", blokovi: [{ tekst: "Izveštaj nije mogao da se napravi: " + e.message }] }; }
   FIN.rep = rep; FIN.repFn = FIN_IZV[FIN.izv];
-  box.innerHTML = finPodsetnikHtml() + '<div class="finIzv"><nav class="finKat" aria-label="Spisak izveštaja">' +
-    FIN_KAT.map(([id, n, o]) => id === "#" ? '<div class="finKatG">' + esc(n) + "</div>" : '<button type="button" data-fin-izv="' + id + '" aria-current="' + (FIN.izv === id) + '"><b>' + esc(n) + "</b><span>" + esc(o) + "</span></button>" + (id === "moj" && typeof finMojLista === "function" ? finMojLista().map(x => '<div class="finMojS"><button type="button" data-fin-moj-otv="' + esc(x.id) + '"><b>' + esc(x.naziv) + '</b><span>sačuvan izveštaj</span></button>' + (finSme() ? '<button type="button" class="lnk" data-fin-moj-del="' + esc(x.id) + '" title="Obriši" aria-label="Obriši">×</button>' : "") + "</div>").join("") : "")).join("") +
-    '</nav><div class="finRep card">' + finIzvestajHtml(rep) + "</div></div>";
+  box.innerHTML = finPodsetnikHtml() + '<div class="finIzv">' + (typeof finKatHtml === "function" ? finKatHtml() : "") +
+    '<div class="finRep card">' + finIzvestajHtml(rep) + "</div></div>";
   if (matchMedia("(max-width: 640px)").matches) box.querySelectorAll(".finBlok").forEach(el => { el.scrollLeft = el.scrollWidth; });
 }
 function renderFinUvoz() {
@@ -21734,7 +21751,7 @@ function finCkIzKnjige(wb, ime) {
   const hdr = (a, n) => a.findIndex(r => (r || []).some(c => finNorm(c) === n));
   const hi = hdr(pm, "PROIZVOD SIF"), h = pm[hi].map(finNorm), c = n => h.findIndex(x => x === n);
   const ix = { vr: 0, kl: c("PR.KLASA NAZIV"), sf: c("PROIZVOD SIF"), nz: c("PROIZVOD NAZ"), ms: c("MESEC RN ULAZ"), ko: h.findIndex(x => /^KOLICINA PROIZVEDENA/.test(x)), ik: h.findIndex(x => /IZNOS ULAZ \(CEN KOS/.test(x)), im: h.findIndex(x => /IZNOS ULAZ \(CEN MAT/.test(x)) };
-  const proizvodi = {}, mes = [], cur = []; let god = null;
+  const proizvodi = {}, mes = [], cur = [], brG = {}; let god = null;
   for (const r0 of pm.slice(hi + 1)) {
     if (!r0 || r0.some(x => typeof x === "string" && /Total$/.test(x))) continue;
     const r = r0.slice();
@@ -21742,10 +21759,14 @@ function finCkIzKnjige(wb, ime) {
     for (let j = 0; j <= ix.ms; j++) if (r[j] == null || r[j] === "") r[j] = cur[j];
     if (r[ix.sf] == null || r[ix.ko] == null || !/^\d{4}\.\d\d$/.test(String(r[ix.ms]))) continue;
     const sf = String(r[ix.sf]).trim(), m = String(r[ix.ms]).replace(".", "-");
-    if (!god) god = +m.slice(0, 4);
+    brG[m.slice(0, 4)] = (brG[m.slice(0, 4)] || 0) + 1;
     proizvodi[sf] = proizvodi[sf] || [String(r[ix.nz] || "").trim(), String(r[ix.kl] || "").trim(), String(r[ix.vr] || "").trim(), 0];
     mes.push([sf, m, finBrS(r[ix.ko]), finR2(finBrS(r[ix.ik])), finR2(finBrS(r[ix.im]))]);
   }
+  /* godina fajla: iz naziva fajla (npr. Cene_kostanja_2026.xlsx), inače godina sa najviše redova.
+     Fajl može da sadrži i nekoliko naloga iz prethodne godine (npr. decembar), pa prvi red nije pouzdan. */
+  const gIme = (String(ime || "").match(/(20\d\d)/) || [])[1];
+  god = gIme && brG[gIme] ? +gIme : +(Object.entries(brG).sort((a, b) => b[1] - a[1])[0] || [0])[0] || null;
   const pp = list("Po proizvodima");
   if (pp) { const h2i = hdr(pp, "PROIZVOD SIF"), h2 = pp[h2i].map(finNorm), cs = h2.indexOf("PROIZVOD SIF"), ck = h2.indexOf("OBRACUN CENA KOMERCIJALNA");
     for (const r of pp.slice(h2i + 1)) if (r && r[cs] != null && proizvodi[String(r[cs]).trim()] && ck >= 0) proizvodi[String(r[cs]).trim()][3] = finBrS(r[ck]); }
@@ -22902,6 +22923,509 @@ document.addEventListener("change", e => {
 FIN_IZV.moj = finIzvMOJ;
 FIN_KAT.splice(0, 0, ["#", "Moj izveštaj"], ["moj", "Napravi izveštaj", "Napiši šta želiš da vidiš"]);
 window.__finM = { razumi: finRazumi, redovi: finMojRedovi };
+
+
+/* =====================================================================
+   FINANSIJE 8 – izveštaji iz plana koji su nedostajali (nabavka A, zalihe B,
+   prodaja C, profitabilnost D, magacin F) + pločice brzog pregleda
+   ===================================================================== */
+const fin8Obj = t => ({ objasnjenje: t });
+const fin8Zak = L => ({ zakljucak: L.filter(Boolean) });
+function fin8Nema(naslov, sta) { return { naslov, opis: "", blokovi: [{ tekst: "Za ovaj izveštaj nema dovoljno podataka: " + sta + "." }] }; }
+const fin8Dana = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 864e5);
+const fin8Dod = (d, n) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+
+/* poslednja poznata nabavna cena po šifri artikla (iz uvoza nabavke) */
+function fin8Cene() {
+  if (FIN.cache.cene8) return FIN.cache.cene8;
+  const D = finNab(), C = finCeneGod(D), out = {};
+  for (const a in C) { const g = Object.keys(C[a]).sort().pop(); out[String(a).trim()] = C[a][g].c; }
+  return (FIN.cache.cene8 = out);
+}
+/* stavke oba magacina: stanje, dnevna potrošnja, poslednji izlaz, vrednost */
+function fin8Mag() {
+  const kk = (S.entries || []).length + "/" + ((S.sir && S.sir.entries) || []).length + "/" + (S.art || []).length; if (FIN.cache.mag8 && FIN.cache.mag8k === kk) return FIN.cache.mag8; FIN.cache.mag8k = kk;
+  const C = fin8Cene(), T = today(), out = [];
+  const zadI = {}, zadU = {};
+  for (const e of S.entries || []) { if (e.storno) continue; if (e.vrsta === "I" && (!zadI[e.art] || e.datum > zadI[e.art])) zadI[e.art] = e.datum; if (e.vrsta === "U" && (!zadU[e.art] || e.datum > zadU[e.art])) zadU[e.art] = e.datum; }
+  for (const a of S.art || []) {
+    if (a.izbacen || a.aktivan === false || a.bezStanja) continue;
+    const st = trenutno(a.id), mes = typeof mesecna === "function" ? mesecna(a) : 0, c = C[String(a.sifra || "").trim()];
+    out.push({ id: a.id, tip: "amb", mag: "Ambalaža", sifra: a.sifra || "", naziv: a.naziv || "", grupa: a.grupa || "Bez grupe", mera: a.mera || "", st, dn: mes / 30.4, min: a.min || 0, zadI: zadI[a.id] || null, zadU: zadU[a.id] || null, c: c || null, vr: c && st > 0 ? st * c : null });
+  }
+  if (S.sir && S.sir.art) {
+    const zI = {}, zU = {}, izl = {}, od90 = fin8Dod(T, -89);
+    for (const e of S.sir.entries || []) { if (e.storno) continue; if (e.vrsta === "I") { if (!zI[e.art] || e.datum > zI[e.art]) zI[e.art] = e.datum; if (e.datum >= od90) izl[e.art] = (izl[e.art] || 0) + e.kol; } if (e.vrsta === "U" && (!zU[e.art] || e.datum > zU[e.art])) zU[e.art] = e.datum; }
+    for (const a of S.sir.art) {
+      if (a.izbacen || a.aktivan === false) continue;
+      const st = sirUkupno(a.id), c = C[String(a.sifra || "").trim()];
+      out.push({ id: a.id, tip: "sir", mag: "Sirovine", sifra: a.sifra || "", naziv: a.naziv || "", grupa: a.grupa || "Sirovine", mera: a.mera || a.jm || "", st, dn: (izl[a.id] || 0) / 90, min: a.min || 0, zadI: zI[a.id] || null, zadU: zU[a.id] || null, c: c || null, vr: c && st > 0 ? st * c : null });
+    }
+  }
+  return (FIN.cache.mag8 = out);
+}
+/* svi neponišteni unosi oba magacina sa oznakom magacina */
+function fin8Unosi() {
+  const L = [];
+  for (const e of S.entries || []) if (!e.storno) L.push({ mag: "amb", art: e.art, vrsta: e.vrsta, kol: e.kol, datum: e.datum, uid: e.uid, t: e.t });
+  for (const e of (S.sir && S.sir.entries) || []) if (!e.storno) L.push({ mag: "sir", art: e.art, vrsta: e.vrsta, kol: e.kol, datum: e.datum, uid: e.uid, t: e.t, lot: e.lot });
+  return L;
+}
+function fin8Art(mag, id) { const a = mag === "sir" ? (S.sir && S.sir.byId[id]) : S.byId[id]; return a || { naziv: "?", sifra: "" }; }
+function fin8Pocetak() { let m = null; for (const e of fin8Unosi()) if (!m || e.datum < m) m = e.datum; return m; }
+function fin8Heat(redovi, kolone, vred, fmt, naslov) {
+  const sve = vred.flat().filter(v => v != null && isFinite(v)), mn = Math.min(...sve), mx = Math.max(...sve);
+  const boja = v => { if (v == null || !isFinite(v)) return ""; const t = mx > mn ? (v - mn) / (mx - mn) : 0.5; return "background:rgba(" + Math.round(46 + 170 * t) + "," + Math.round(125 - 40 * t) + "," + Math.round(79 - 40 * t) + "," + (0.15 + 0.6 * t).toFixed(2) + ")"; };
+  return '<section class="finBlok">' + (naslov ? '<h3 class="finH3">' + esc(naslov) + "</h3>" : "") + '<div class="finTw"><table class="finT finHeat"><thead><tr><th></th>' + kolone.map(k => '<th class="r">' + esc(k) + "</th>").join("") + "</tr></thead><tbody>" +
+    redovi.map((r, i) => "<tr><td><b>" + esc(r) + "</b></td>" + kolone.map((k, j) => { const v = vred[i][j]; return '<td class="r" style="' + boja(v) + '">' + (v == null || !isFinite(v) ? "" : esc(fmt(v))) + "</td>"; }).join("") + "</tr>").join("") + "</tbody></table></div></section>";
+}
+const fin8GodIzbor = (G, id) => ({ unos: [{ id, l: "Godina", v: String(finBirGod(G, id)), izbor: G.slice().reverse().map(x => [String(x), String(x)]) }] });
+
+/* ================= NABAVKA ================= */
+/* A1 – obim nabavke po mesecima */
+function finIzvNMES(P) {
+  const D = finNab(); if (!D.L.length) return fin8Nema("Nabavka po mesecima", "uvezi nabavku");
+  const G = D.god, mes = {}; for (const x of D.L) { if (!x.m) continue; const k = x.g + "-" + x.m; mes[k] = (mes[k] || 0) + x.iz; }
+  const kum = G.map(g => { let s = 0; return FIN_MES3.map((_, i) => { const v = mes[g + "-" + (i + 1)]; s += v || 0; return s; }); });
+  const zad = G[G.length - 1], zm = Math.max(0, ...D.L.filter(x => x.g === zad).map(x => x.m)), ytd = kum[G.length - 1][zm - 1] || 0, ytdP = G.length > 1 ? kum[G.length - 2][zm - 1] : null;
+  const graf = finLinije({ kat: FIN_MES3, ser: G.slice(-5).map((g, i) => ({ n: String(g), v: kum[G.indexOf(g)].map((v, j) => g === zad && j >= zm ? null : v / 1e6), boja: P.s[[7, 6, 3, 2, 1][5 - Math.min(5, G.length) + i] || i] })), fmt: v => finNum(v, 0) }, P);
+  const kol = [{ t: "Mesec", tip: "txt" }].concat(G.map(g => ({ t: String(g), tip: "hilj" })));
+  const red = FIN_MES.map((m, i) => ({ c: [m].concat(G.map(g => mes[g + "-" + (i + 1)] || null)) })).concat([{ c: ["Ukupno"].concat(G.map((g, j) => kum[j][11])), b: 1 }]);
+  return { naslov: "Nabavka po mesecima", opis: "Kumulativna nabavka kroz godinu, za svaku godinu posebno. Mesec je datum poslednje nabavke po istoj ceni, pa je raspored po mesecima približan; godišnji zbirovi su tačni.",
+    blokovi: [fin8Obj("Svaka linija je jedna godina i pokazuje koliko je ukupno nabavljeno od januara do tog meseca. Ako je linija tekuće godine iznad prošlogodišnje, trošimo više nego lane u istom periodu. Tabela daje iznose po mesecima u hiljadama dinara."),
+      { svg: graf, naslov: "Nabavka od početka godine (mil. din)" }, { tabela: { kol, red } },
+      fin8Zak([ytdP ? "Nabavka " + zad + " do kraja " + FIN_MES[zm - 1] + "a: " + finMil(ytd) + " mil., " + finZnak(ytd / ytdP - 1) + " u odnosu na isti period " + (zad - 1) + " (" + finMil(ytdP) + " mil.)." : null,
+        G.length > 2 ? "Prosečan godišnji rast nabavke " + G[0] + "–" + G[G.length - 2] + ": " + finZnak(Math.pow(kum[G.length - 2][11] / kum[0][11], 1 / (G.length - 2)) - 1) + "." : null,
+        "Raspored po mesecima je orijentacioni; za tačan mesečni trošak materijala koristi izveštaj „Sezonalnost nabavke“ (iz glavne knjige)."])] };
+}
+/* A4 – kretanje cene jednog artikla */
+function finIzvNCA(P) {
+  const D = finNab(); if (!D.L.length) return fin8Nema("Cena artikla kroz vreme", "uvezi nabavku");
+  const vr = finGrp(D.L, x => x.art, x => ({ v: x.iz })), top = [...vr.entries()].sort((a, b) => b[1].v - a[1].v).slice(0, 400).map(x => x[0]);
+  const izb = top.slice().sort((a, b) => ((D.A[a] || [a])[0]).localeCompare((D.A[b] || [b])[0], "sr"));
+  const art = FIN.par.ncaArt && vr.has(FIN.par.ncaArt) ? FIN.par.ncaArt : top[0];
+  const L = D.L.filter(x => x.art === art && x.kol > 0), G = D.god, n = (D.A[art] || [art])[0], mera = (D.A[art] || [])[3] || "";
+  const pp = finGrp(L, x => x.par + "|" + x.g, x => ({ k: x.kol, v: x.iz })), dob = [...new Set(L.map(x => x.par))];
+  const sviG = finGrp(L, x => x.g, x => ({ k: x.kol, v: x.iz }));
+  const ser = [{ n: "Prosek", v: G.map(g => { const o = sviG.get(g); return o && o.k ? o.v / o.k : null; }), boja: P.s[7] }].concat(dob.slice(0, 5).map((p, i) => ({ n: ((D.P[p] || [p])[0]).slice(0, 26), v: G.map(g => { const o = pp.get(p + "|" + g); return o && o.k ? o.v / o.k : null; }), boja: P.s[i] })));
+  const graf = finLinije({ kat: G.map(String), ser, fmt: v => finNum(v, 2) }, P);
+  const kol = [{ t: "Godina", tip: "txt" }, { t: "Dobavljač", tip: "txt" }, { t: "Cena", tip: "koef" }, { t: "Količina", tip: "dani" }, { t: "Iznos", tip: "hilj" }, { t: "Poslednja nabavka", tip: "txt" }];
+  const red = L.slice().sort((a, b) => b.g - a.g || (a.dt < b.dt ? 1 : -1)).map(x => ({ c: [String(x.g), (D.P[x.par] || [x.par])[0], x.cena || (x.kol ? x.iz / x.kol : null), x.kol, x.iz, x.dt ? finDtxt(x.dt) : ""] }));
+  const pr = ser[0].v.filter(v => v != null), r = pr.length > 1 ? pr[pr.length - 1] / pr[0] - 1 : null, r1 = pr.length > 1 ? pr[pr.length - 1] / pr[pr.length - 2] - 1 : null;
+  return { naslov: "Cena artikla kroz vreme", opis: n + (mera ? " (" + mera + ")" : "") + " – prosečna nabavna cena po godinama i po dobavljaču.",
+    blokovi: [fin8Obj("Izaberi artikal (ponuđeno je 400 artikala sa najvećom nabavkom). Siva linija je prosečna cena za godinu, ostale linije su cene kod pojedinih dobavljača. Tabela pokazuje svaku cenu po kojoj je artikal kupljen, sa količinom i datumom poslednje nabavke po toj ceni."),
+      { unos: [{ id: "ncaArt", l: "Artikal", v: art, izbor: izb.map(a => [a, ((D.A[a] || [a])[0]).slice(0, 70)]) }] }, { svg: graf, naslov: "Prosečna cena po godinama" }, { tabela: { kol, red } },
+      fin8Zak([r != null ? "Od " + G.find(g => sviG.get(g)) + " cena je promenjena za " + finZnak(r) + (r1 != null ? ", u poslednjoj godini " + finZnak(r1) : "") + "." : "Artikal je kupljen samo u jednoj godini.",
+        dob.length > 1 ? "Kupuje se kod " + finMn(dob.length, "dobavljač", "dobavljača", "dobavljača") + " – uporedi cene u tabeli pre sledeće porudžbine." : "Kupuje se samo kod jednog dobavljača – nema uporedne cene; vredi tražiti alternativnu ponudu."])] };
+}
+/* A8 – efekat cene i količine */
+function finIzvNEK(P) {
+  const D = finNab(); if (D.god.length < 2) return fin8Nema("Efekat cene i količine", "nabavka za bar dve godine");
+  const g = finBirGod(D.god.slice(1), "nekGod"), zad = D.L.filter(x => x.g === g).reduce((m, x) => x.dt > m ? x.dt : m, ""), deo = zad && zad.slice(5) < "12-15";
+  const isti = x => !deo || !x.dt || x.dt.slice(5) <= zad.slice(5);
+  const A = finGrp(D.L.filter(x => x.g === g), x => x.art, x => ({ k: x.kol, v: x.iz })), B = finGrp(D.L.filter(x => x.g === g - 1 && isti(x)), x => x.art, x => ({ k: x.kol, v: x.iz }));
+  let ce = 0, ko = 0, nov = 0, uk = 0; const det = [];
+  for (const k of new Set([...A.keys(), ...B.keys()])) {
+    const a = A.get(k), b = B.get(k);
+    if (a && b && a.k > 0 && b.k > 0) { const c1 = a.v / a.k, c0 = b.v / b.k, e = { k, c: (c1 - c0) * a.k, q: (a.k - b.k) * c0 }; ce += e.c; ko += e.q; det.push(e); }
+    else if (a && !(b && b.k > 0)) nov += a.v; else if (b) uk -= b.v;
+  }
+  const v0 = [...B.values()].reduce((s, x) => s + x.v, 0), v1 = [...A.values()].reduce((s, x) => s + x.v, 0), ost = v1 - v0 - ce - ko - nov - uk;
+  const vod = finVodopad([{ l: "Nabavka " + (g - 1), v: v0, uk: 1 }, { l: "Efekat cene", v: ce }, { l: "Efekat količine", v: ko }, { l: "Novi artikli", v: nov }, { l: "Artikli koji se više ne kupuju", v: uk }].concat(Math.abs(ost) > 5e4 ? [{ l: "Ostalo", v: ost }] : []).concat([{ l: "Nabavka " + g, v: v1, uk: 1 }]), P);
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Efekat cene", tip: "hilj" }, { t: "Efekat količine", tip: "hilj" }, { t: "Ukupno", tip: "hilj" }];
+  const red = det.sort((a, b) => Math.abs(b.c) + Math.abs(b.q) - Math.abs(a.c) - Math.abs(a.q)).slice(0, 25).map(x => ({ c: [(D.A[x.k] || [x.k])[0], x.c, x.q, x.c + x.q], klik: "artikal:" + x.k }));
+  return { naslov: "Efekat cene i količine", opis: "Nabavka " + g + (deo ? " (do " + finDtxt(zad) + ", poređenje sa istim periodom " + (g - 1) + ")" : "") + " prema " + (g - 1) + ": " + finMil(v0) + " → " + finMil(v1) + " mil.",
+    blokovi: [fin8Obj("Most pokazuje zašto se nabavka promenila. Efekat cene = razlika u ceni × ovogodišnja količina (koliko smo platili više ili manje zbog poskupljenja). Efekat količine = razlika u količini × prošlogodišnja cena (koliko je promenu izazvao veći ili manji obim). Novi artikli i artikli koji se više ne kupuju prikazani su posebno."),
+      { unos: [{ id: "nekGod", l: "Godina", v: String(g), izbor: D.god.slice(1).reverse().map(x => [String(x), String(x) + " prema " + (x - 1)]) }] }, { svg: vod, naslov: "Most nabavke (mil. din)" }, { tabela: { naslov: "Artikli sa najvećim uticajem (hiljade dinara)", kol, red } },
+      fin8Zak(["Promena nabavke " + finZnak(v0 ? v1 / v0 - 1 : 0) + ": cene su doprinele " + (ce >= 0 ? "+" : "") + finMil(ce) + " mil., obim " + (ko >= 0 ? "+" : "") + finMil(ko) + " mil., novi artikli +" + finMil(nov) + " mil.",
+        Math.abs(ce) > Math.abs(ko) ? "Glavni pokretač su cene – fokus treba da bude na pregovorima i alternativnim dobavljačima." : "Glavni pokretač je obim – nabavka prati proizvodnju; proveri da li prodaja raste istom brzinom.",
+        deo ? "Mesec nabavke je datum poslednje nabavke po istoj ceni, pa je poređenje istog perioda približno." : null])] };
+}
+/* A9 – ABC analiza artikala */
+function finIzvNABC(P) {
+  const D = finNab(); if (!D.L.length) return fin8Nema("ABC analiza artikala", "uvezi nabavku");
+  const g = finBirGod(D.god, "nabcGod"), A = [...finGrp(D.L.filter(x => x.g === g), x => x.art, x => ({ v: x.iz, k: x.kol })).entries()].map(([k, v]) => ({ k, n: (D.A[k] || [k])[0], gr: (D.A[k] || [])[1] || "", v: v.v, kol: v.k })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+  const uk = A.reduce((s, x) => s + x.v, 0); let kum = 0;
+  for (const x of A) { kum += x.v; x.kum = kum / uk; x.kl = x.kum - x.v / uk < 0.8 ? "A" : x.kum - x.v / uk < 0.95 ? "B" : "C"; }
+  const br = k => A.filter(x => x.kl === k), sm = k => br(k).reduce((s, x) => s + x.v, 0);
+  const graf = finStekH({ imena: ["A", "B", "C"], boje: [P.s[0], P.s[3], P.s[7]], redovi: A.slice(0, 25).map(x => ({ l: x.n, v: [x.kl === "A" ? x.v : 0, x.kl === "B" ? x.v : 0, x.kl === "C" ? x.v : 0] })) }, P);
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Grupa", tip: "txt" }, { t: "Nabavka", tip: "hilj" }, { t: "Udeo", tip: "pct" }, { t: "Kumulativno", tip: "pct" }, { t: "Klasa", tip: "txt" }];
+  return { naslov: "ABC analiza artikala", opis: g + ": " + finMn(A.length, "artikal", "artikla", "artikala") + ". A: " + finMn(br("A").length, "artikal", "artikla", "artikala") + " (" + finPct(sm("A") / uk, 0) + " nabavke), B: " + br("B").length + ", C: " + br("C").length + ".",
+    blokovi: [fin8Obj("Artikli su poređani po vrednosti nabavke. Klasa A su artikli koji zajedno čine 80% nabavke – njih treba najstrože pratiti (cene, ugovori, zalihe). B čini narednih 15%, a C poslednjih 5% – za njih je dovoljna jednostavna kontrola."),
+      fin8GodIzbor(D.god, "nabcGod"), { svg: graf, naslov: "25 najvećih artikala" }, { tabela: { naslov: "Klase", kol: [{ t: "Klasa", tip: "txt" }, { t: "Artikala", tip: "dani" }, { t: "Nabavka", tip: "hilj" }, { t: "Udeo", tip: "pct" }], red: ["A", "B", "C"].map(k => ({ c: [k, br(k).length, sm(k), sm(k) / uk] })) } },
+      { tabela: { naslov: "Svi artikli", kol, red: A.slice(0, 300).map(x => ({ c: [x.n, x.gr, x.v, x.v / uk, x.kum, x.kl], klik: "artikal:" + x.k })) } },
+      fin8Zak([finMn(br("A").length, "artikal", "artikla", "artikala") + " (" + finPct(br("A").length / A.length, 0) + " asortimana) nosi 80% vrednosti nabavke – na njih ide najveći deo pažnje pri pregovorima.",
+        "Klasa C ima " + finMn(br("C").length, "artikal", "artikla", "artikala") + " koji zajedno čine samo 5% nabavke; tu se isplati ukrupnjavanje porudžbina i smanjenje broja dobavljača."])] };
+}
+/* A10 – XYZ i ABC-XYZ (potrošnja iz magacina, poslednjih 12 meseci) */
+function finIzvNXYZ(P) {
+  const T = today(), poc = fin8Pocetak(); if (!poc) return fin8Nema("XYZ i ABC-XYZ matrica", "nema unosa u magacinu");
+  const kraj = T.slice(0, 7), mes = []; for (let i = 11; i >= 0; i--) { const d = new Date(T.slice(0, 7) + "-15T12:00:00"); d.setMonth(d.getMonth() - i - 1); mes.push(d.toISOString().slice(0, 7)); }
+  const pm = mes.filter(m => m >= poc.slice(0, 7)); if (pm.length < 3) return fin8Nema("XYZ i ABC-XYZ matrica", "potrebna su bar 3 puna meseca izlaza iz magacina (istorija počinje " + finDtxt(poc) + ")");
+  const C = fin8Cene(), M = {};
+  for (const e of fin8Unosi()) { if (e.vrsta !== "I") continue; const m = e.datum.slice(0, 7); const i = pm.indexOf(m); if (i < 0) continue; const k = e.mag + ":" + e.art; (M[k] = M[k] || pm.map(() => 0))[i] += e.kol; }
+  const L = Object.entries(M).map(([k, v]) => { const [mag, id] = k.split(":"), a = fin8Art(mag, id), c = C[String(a.sifra || "").trim()], s = v.reduce((x, y) => x + y, 0), avg = s / v.length, sd = Math.sqrt(v.reduce((x, y) => x + (y - avg) ** 2, 0) / v.length);
+    return { k, mag, n: a.naziv, kol: s, cv: avg ? sd / avg : null, vr: c ? s * c : null, x: avg ? (sd / avg < 0.5 ? "X" : sd / avg < 1 ? "Y" : "Z") : "Z" }; }).filter(x => x.kol > 0);
+  const sV = L.filter(x => x.vr).sort((a, b) => b.vr - a.vr), uk = sV.reduce((s, x) => s + x.vr, 0); let kum = 0;
+  for (const x of sV) { const pre = kum / uk; kum += x.vr; x.a = pre < 0.8 ? "A" : pre < 0.95 ? "B" : "C"; }
+  for (const x of L) if (!x.a) x.a = "C";
+  const mtx = ["A", "B", "C"].map(a => ["X", "Y", "Z"].map(z => L.filter(x => x.a === a && x.x === z)));
+  const opisP = { AX: "stabilno i skupo – automatsko naručivanje, mala zaliha", AY: "skupo, promenljivo – praćenje plana proizvodnje", AZ: "skupo i nepredvidivo – naručivati po nalogu", CZ: "jeftino i retko – naručivati po potrebi ili ukinuti" };
+  const html = '<section class="finBlok"><h3 class="finH3">Matrica ABC (vrednost) × XYZ (stabilnost) – broj artikala i vrednost izlaza</h3><div class="finTw"><table class="finT finHeat"><thead><tr><th></th><th class="r">X – stabilno</th><th class="r">Y – promenljivo</th><th class="r">Z – nepredvidivo</th></tr></thead><tbody>' +
+    mtx.map((r, i) => "<tr><td><b>" + ["A – 80% vrednosti", "B – 15%", "C – 5%"][i] + "</b></td>" + r.map((c, j) => '<td class="r" style="background:' + ["rgba(46,125,79,.18)", "rgba(217,178,58,.22)", "rgba(184,50,42,.18)"][j] + '"><b>' + c.length + "</b> art.<br><small>" + finMil(c.reduce((s, x) => s + (x.vr || 0), 0)) + " mil.</small></td>").join("") + "</tr>").join("") + "</tbody></table></div></section>";
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Magacin", tip: "txt" }, { t: "Izlaz (kol.)", tip: "dani" }, { t: "Vrednost izlaza", tip: "hilj" }, { t: "Koef. varijacije", tip: "koef" }, { t: "ABC", tip: "txt" }, { t: "XYZ", tip: "txt" }];
+  const red = L.sort((a, b) => (b.vr || 0) - (a.vr || 0)).slice(0, 200).map(x => ({ c: [x.n, x.mag === "sir" ? "Sirovine" : "Ambalaža", x.kol, x.vr, x.cv, x.a, x.x] }));
+  const az = mtx[0][2].length, ax = mtx[0][0].length;
+  return { naslov: "XYZ i ABC-XYZ matrica", opis: "Mesečni izlazi iz magacina ambalaže i sirovina, " + FIN_MES3[+pm[0].slice(5) - 1] + " " + pm[0].slice(0, 4) + " – " + FIN_MES3[+pm[pm.length - 1].slice(5) - 1] + " " + pm[pm.length - 1].slice(0, 4) + " (" + pm.length + " meseci). Vrednost po poslednjoj nabavnoj ceni.",
+    blokovi: [fin8Obj("ABC deli artikle po vrednosti potrošnje (A = 80% vrednosti). XYZ ih deli po stabilnosti mesečne potrošnje: koeficijent varijacije ispod 0,5 = X (stabilno), 0,5–1 = Y (promenljivo), preko 1 = Z (nepredvidivo). Kombinacija govori kako naručivati: AX automatski i u malim količinama, AZ po nalogu, CZ po potrebi."),
+      { html }, { tabela: { kol, red } },
+      fin8Zak([finMn(ax, "artikal", "artikla", "artikala") + " je u polju AX – " + opisP.AX + ".", az ? az + " skupih artikala ima nepredvidivu potrošnju (AZ) – za njih je najveći rizik i od nestašice i od viška; " + opisP.AZ + "." : null,
+        L.filter(x => !x.vr).length ? finMn(L.filter(x => !x.vr).length, "artikal", "artikla", "artikala") + " nema nabavnu cenu (šifra se ne poklapa sa uvozom nabavke) pa su svrstani u C." : null])] };
+}
+/* A11 – učestalost i veličina prijema */
+function finIzvNUC(P) {
+  const T = today(), od = fin8Dod(T, -364), C = fin8Cene();
+  const U = fin8Unosi().filter(e => e.vrsta === "U" && e.datum >= od); if (!U.length) return fin8Nema("Učestalost i veličina porudžbina", "nema prijema u magacinu u poslednjih 12 meseci");
+  const m = new Map(); for (const e of U) { const k = e.mag + ":" + e.art; const o = m.get(k) || { mag: e.mag, art: e.art, n: 0, kol: 0, d: new Set() }; o.kol += e.kol; o.d.add(e.datum); m.set(k, o); }
+  const L = [...m.values()].map(o => { const a = fin8Art(o.mag, o.art), c = C[String(a.sifra || "").trim()], d = [...o.d].sort(); return { n: a.naziv, mag: o.mag, br: d.length, kol: o.kol, pros: o.kol / d.length, vr: c ? o.kol * c : null, vrP: c ? o.kol * c / d.length : null, razm: d.length > 1 ? fin8Dana(d[0], d[d.length - 1]) / (d.length - 1) : null }; });
+  const kor = [["1", x => x.br === 1], ["2–3", x => x.br >= 2 && x.br <= 3], ["4–6", x => x.br >= 4 && x.br <= 6], ["7–12", x => x.br >= 7 && x.br <= 12], ["13–24", x => x.br >= 13 && x.br <= 24], ["više od 24", x => x.br > 24]];
+  const graf = finStubci({ kat: kor.map(x => x[0]), ser: [{ n: "Broj artikala", v: kor.map(([, f]) => L.filter(f).length), boja: P.s[1] }], div: 1, jed: "artikala", H: 220 }, P);
+  const sitne = L.filter(x => x.br >= 12 && x.vrP != null && x.vrP < 50000).sort((a, b) => b.br - a.br);
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Magacin", tip: "txt" }, { t: "Prijema", tip: "dani" }, { t: "Prosečna količina", tip: "dani" }, { t: "Prosečan razmak (dana)", tip: "dani" }, { t: "Vrednost po prijemu", tip: "hilj" }, { t: "Ukupno", tip: "hilj" }];
+  const rd = x => ({ c: [x.n, x.mag === "sir" ? "Sirovine" : "Ambalaža", x.br, x.pros, x.razm, x.vrP, x.vr] });
+  return { naslov: "Učestalost i veličina porudžbina", opis: "Prijemi u magacin u poslednjih 12 meseci (od " + finDtxt(od) + "): " + U.length + " stavki, " + finMn(L.length, "artikal", "artikla", "artikala") + ". Jedan prijem = jedan dan prijema artikla.",
+    blokovi: [fin8Obj("Za svaki artikal: koliko puta je primljen u poslednjih 12 meseci, prosečna količina po prijemu, prosečan razmak između prijema i vrednost jednog prijema po poslednjoj nabavnoj ceni. Mnogo malih prijema znači više administracije, prevoza i kontrola; retki veliki prijemi vezuju novac u zalihama."),
+      { svg: graf, naslov: "Broj artikala po broju prijema godišnje" }, sitne.length ? { tabela: { naslov: "Česti mali prijemi (12+ prijema, ispod 50.000 din po prijemu)", kol, red: sitne.slice(0, 30).map(rd) } } : { tekst: "Nema artikala sa čestim malim prijemima." },
+      { tabela: { naslov: "Svi artikli", kol, red: L.sort((a, b) => b.br - a.br).slice(0, 200).map(rd) } },
+      fin8Zak([sitne.length ? finMn(sitne.length, "artikal", "artikla", "artikala") + " se prima 12 ili više puta godišnje u malim vrednostima – kandidati za ukrupnjavanje porudžbina ili okvirni ugovor sa isporukama po pozivu." : "Nema izraženog problema sa čestim malim porudžbinama.",
+        "Prosečno " + finNum(U.length / Math.max(1, L.length), 1) + " prijema po artiklu godišnje."])] };
+}
+/* A12 – ocena dobavljača */
+function finIzvNOD(P) {
+  const D = finNab(); if (!D.L.length) return fin8Nema("Ocena dobavljača", "uvezi nabavku");
+  const g = finBirGod(D.god, "nodGod"), t = D.L.filter(x => x.g === g && x.kol > 0 && x.iz > 0), uk = t.reduce((s, x) => s + x.iz, 0);
+  const pa = finGrp(t, x => x.art, x => ({ k: x.kol, v: x.iz }));
+  const pp = finGrp(t, x => x.par + "|" + x.art, x => ({ k: x.kol, v: x.iz }));
+  const brD = {}; for (const k of pp.keys()) { const a = k.split("|")[1]; brD[a] = (brD[a] || 0) + 1; }
+  const kon = typeof konRedovi === "function" ? konRedovi().filter(r => r.odluka && String(r.datum || "").startsWith(String(g))) : [];
+  const kljuc = s => finN(s).replace(/\b(doo|d o o|ad|as|kd|sp z o o|gmbh|srl|ltd|san|ve|tic)\b/g, "").replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(w => w.length >= 3).slice(0, 2).join(" ");
+  const kp = {}; for (const r of kon) { const k = kljuc(r.proiz || ""); if (!k) continue; const o = kp[k] = kp[k] || { n: 0, ok: 0, neu: 0 }; o.n++; if (r.odluka === "Odgovara") o.ok++; if (r.odluka === "Neusaglašeno") o.neu++; }
+  const L = [...finGrp(t, x => x.par, x => ({ v: x.iz })).entries()].map(([p, v]) => {
+    let a1 = 0, a0 = 0; for (const [k, o] of pp) { const [pr, art] = k.split("|"); if (pr !== p || brD[art] < 2) continue; const s = pa.get(art); a1 += o.v; a0 += s.v / s.k * o.k; }
+    const ind = a0 ? a1 / a0 : null, n = (D.P[p] || [p])[0], kk = kljuc(n), q = kk && kp[kk];
+    const sc = ind != null ? Math.max(0, Math.min(100, 100 - (ind - 1) * 200)) : null, sq = q && q.n >= 2 ? q.ok / q.n * 100 : null;
+    const oc = sc != null && sq != null ? sc * 0.5 + sq * 0.5 : sc != null ? sc : sq;
+    return { p, n, v: v.v, ud: v.v / uk, ind, sc, kon: q ? q.n : 0, sq, neu: q ? q.neu : 0, oc };
+  }).sort((a, b) => b.v - a.v);
+  const kol = [{ t: "Dobavljač", tip: "txt" }, { t: "Nabavka", tip: "hilj" }, { t: "Udeo", tip: "pct" }, { t: "Cena prema proseku", tip: "pct" }, { t: "Ocena cene", tip: "dani" }, { t: "Kontrola (prijema)", tip: "dani" }, { t: "Neusaglašeno", tip: "dani" }, { t: "Ocena kvaliteta", tip: "dani" }, { t: "Ukupna ocena", tip: "dani" }];
+  const red = L.slice(0, 40).map(x => ({ c: [x.n, x.v, x.ud, x.ind != null ? x.ind - 1 : null, x.sc, x.kon || null, x.neu || null, x.sq, x.oc], klik: "dobavljac:" + x.p }));
+  const ocL = L.filter(x => x.oc != null && x.v / uk > 0.005), naj = ocL.slice().sort((a, b) => b.oc - a.oc)[0], najl = ocL.slice().sort((a, b) => a.oc - b.oc)[0];
+  return { naslov: "Ocena dobavljača", opis: g + ": cena se poredi sa prosečnom cenom istog artikla kod svih dobavljača; kvalitet je udeo prijema sa odlukom „Odgovara“ u ulaznoj kontroli (" + kon.length + " kontrolisanih prijema).",
+    blokovi: [fin8Obj("Ocena cene: 100 znači da dobavljač prodaje po prosečnoj ceni za te artikle; svakih 1% skuplje od proseka oduzima 2 boda. Računa se samo za artikle koje kupujemo kod bar dva dobavljača. Ocena kvaliteta je procenat prijema koji su u ulaznoj kontroli ocenjeni sa „Odgovara“ (dobavljač se prepoznaje po nazivu proizvođača u kontroli). Ukupna ocena je prosek dve ocene. Rok isporuke se za sada ne prati."),
+      fin8GodIzbor(D.god, "nodGod"), { tabela: { kol, red } },
+      fin8Zak([naj ? "Najbolje ocenjen među značajnim dobavljačima: " + naj.n + " (" + finNum(naj.oc, 0) + ")." : null, najl && najl !== naj ? "Najslabije ocenjen: " + najl.n + " (" + finNum(najl.oc, 0) + ")" + (najl.ind > 1.05 ? " – skuplji od proseka " + finPct(najl.ind - 1, 0) : "") + (najl.neu ? ", " + najl.neu + " neusaglašenih prijema" : "") + "." : null,
+        "Ocena kvaliteta postoji samo kada se naziv proizvođača u ulaznoj kontroli poklapa sa nazivom dobavljača iz UPIS-a; dobavljači bez kontrole ocenjeni su samo po ceni."])] };
+}
+/* A13 – sezonalnost nabavke (troškovi materijala iz glavne knjige, tačni po mesecima) */
+function finIzvNSEZ(P) {
+  const M = finMes(); if (M.length < 12) return fin8Nema("Sezonalnost nabavke", "potrebni su mesečni podaci glavne knjige");
+  const G = [...new Set(M.map(x => x.g))].sort(), v = G.map(g => FIN_MES3.map((_, i) => { const x = M.find(y => y.g === g && y.m === i + 1); return x ? (x.r.mat + x.r.roba) / 1e6 : null; }));
+  const ind = FIN_MES3.map((_, i) => { const r = G.map((g, j) => { const sv = v[j].filter(x => x != null); const av = sv.reduce((s, x) => s + x, 0) / sv.length; return v[j][i] != null && sv.length >= 6 ? v[j][i] / av : null; }).filter(x => x != null); return r.length ? r.reduce((s, x) => s + x, 0) / r.length : null; });
+  const html = fin8Heat(G.map(String), FIN_MES3, v, x => finNum(x, 1), "Troškovi materijala i robe po mesecima (mil. din)");
+  const graf = finStubci({ kat: FIN_MES3, ser: [{ n: "Sezonski indeks", v: ind.map(x => x == null ? null : x * 100), boja: P.s[3] }], div: 1, jed: "indeks (prosek = 100)", H: 220 }, P);
+  const pa = ind.map((x, i) => ({ i, x })).filter(o => o.x != null).sort((a, b) => b.x - a.x);
+  return { naslov: "Sezonalnost nabavke", opis: "Troškovi materijala i robe (konta 50 i 51) po mesecima, iz glavne knjige. Sezonski indeks pokazuje koliko je mesec iznad ili ispod proseka godine.",
+    blokovi: [fin8Obj("Toplotna mapa: tamnija polja su meseci sa većim troškom materijala. Indeks 100 = prosečan mesec; 120 znači 20% iznad proseka. Ovo je trošak (utrošeni materijal), a ne datum fakture dobavljača, pa je tačan po mesecima."),
+      { html }, { svg: graf, naslov: "Sezonski indeks (prosek godine = 100)" },
+      fin8Zak([pa.length ? "Najjači meseci: " + pa.slice(0, 3).map(o => FIN_MES[o.i] + " (" + finNum(o.x * 100, 0) + ")").join(", ") + "; najslabiji: " + pa.slice(-2).map(o => FIN_MES[o.i] + " (" + finNum(o.x * 100, 0) + ")").join(", ") + "." : null,
+        "Zalihe ključnih materijala vredi popuniti mesec pre najjačeg perioda, a ugovore o cenama pregovarati u slabijim mesecima."])] };
+}
+
+/* ================= ZALIHE I MAGACIN ================= */
+function fin8MagNap() { return { tekst: "Vrednost je stanje × poslednja nabavna cena iz uvoza nabavke (po šifri artikla). Artikli čija se šifra ne nalazi u nabavci imaju samo količinu." }; }
+/* B1 – obrt zaliha i dani pokrivenosti */
+function finIzvZOB(P) {
+  const L = fin8Mag().filter(x => x.st > 0); if (!L.length) return fin8Nema("Obrt zaliha i dani pokrivenosti", "nema artikala na stanju");
+  for (const x of L) x.dana = x.dn > 0 ? x.st / x.dn : null;
+  const kor = [["do 30 dana", x => x.dana != null && x.dana <= 30], ["31–90", x => x.dana > 30 && x.dana <= 90], ["91–180", x => x.dana > 90 && x.dana <= 180], ["181–365", x => x.dana > 180 && x.dana <= 365], ["preko godinu", x => x.dana > 365], ["bez potrošnje", x => x.dana == null]];
+  const sv = f => L.filter(f).reduce((s, x) => s + (x.vr || 0), 0), uk = L.reduce((s, x) => s + (x.vr || 0), 0);
+  const graf = finStubci({ kat: kor.map(x => x[0]), ser: [{ n: "Vrednost zaliha", v: kor.map(([, f]) => sv(f)), boja: P.s[1] }], H: 230 }, P);
+  const G = finSveGod(), z = G.length ? G[G.length - 1] : null;
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Magacin", tip: "txt" }, { t: "Stanje", tip: "dani" }, { t: "Mera", tip: "txt" }, { t: "Dnevna potrošnja", tip: "koef" }, { t: "Dana pokrivenosti", tip: "dani" }, { t: "Vrednost", tip: "hilj" }];
+  const red = L.slice().sort((a, b) => (b.vr || 0) - (a.vr || 0)).slice(0, 200).map(x => ({ c: [x.naziv, x.mag, x.st, x.mera, x.dn || null, x.dana, x.vr] }));
+  const pros = L.filter(x => x.dana != null && x.vr).reduce((s, x) => s + x.dana * x.vr, 0) / Math.max(1, L.filter(x => x.dana != null && x.vr).reduce((s, x) => s + x.vr, 0));
+  return { naslov: "Obrt zaliha i dani pokrivenosti", opis: finMn(L.length, "artikal", "artikla", "artikala") + " na stanju u magacinima ambalaže i sirovina, vrednost " + finMil(uk) + " mil." + (z && z.kpi.dio ? " Po glavnoj knjizi zalihe se obrnu za " + finNum(z.kpi.dio, 0) + " dana." : ""),
+    blokovi: [fin8Obj("Dani pokrivenosti = stanje / prosečna dnevna potrošnja – za koliko dana imamo robe ako potrošnja ostane ista. Malo dana znači rizik nestašice, mnogo dana znači vezan novac. Potrošnja ambalaže je iz realizacije radnih naloga ili izlaza poslednjih 30 dana, a sirovina iz izlaza poslednjih 90 dana."),
+      { svg: graf, naslov: "Vrednost zaliha po danima pokrivenosti" }, { tabela: { kol, red } }, fin8MagNap(),
+      fin8Zak(["Ponderisano po vrednosti, zalihe pokrivaju oko " + finNum(pros, 0) + " dana potrošnje.", sv(x => x.dana > 180) ? finMil(sv(x => x.dana > 180)) + " mil. je u artiklima sa više od pola godine pokrivenosti – tu je prostor za smanjenje porudžbina." : null,
+        sv(x => x.dana == null) ? finMil(sv(x => x.dana == null)) + " mil. je u artiklima bez potrošnje u posmatranom periodu – vidi izveštaj „Mrtve i spore zalihe“." : null])] };
+}
+/* B2 – mrtve i spore zalihe */
+function finIzvZMRT(P) {
+  const L = fin8Mag().filter(x => x.st > 0); if (!L.length) return fin8Nema("Mrtve i spore zalihe", "nema artikala na stanju");
+  const T = today(), poc = fin8Pocetak();
+  for (const x of L) { x.bez = x.zadI ? fin8Dana(x.zadI, T) : null; x.kl = x.bez == null ? "nema izlaza" : x.bez <= 90 ? "aktivno" : x.bez <= 180 ? "91–180 dana" : x.bez <= 365 ? "181–365 dana" : "preko 365 dana"; }
+  const kl = ["aktivno", "91–180 dana", "181–365 dana", "preko 365 dana", "nema izlaza"], sv = k => L.filter(x => x.kl === k).reduce((s, x) => s + (x.vr || 0), 0);
+  const graf = finStubci({ kat: kl, ser: [{ n: "Vrednost", v: kl.map(sv), boja: P.s[7] }], H: 230 }, P);
+  const sp = L.filter(x => x.kl !== "aktivno").sort((a, b) => (b.vr || 0) - (a.vr || 0));
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Magacin", tip: "txt" }, { t: "Stanje", tip: "dani" }, { t: "Mera", tip: "txt" }, { t: "Poslednji izlaz", tip: "txt" }, { t: "Dana bez izlaza", tip: "dani" }, { t: "Vrednost", tip: "hilj" }];
+  const mrt = sv("preko 365 dana") + sv("nema izlaza");
+  return { naslov: "Mrtve i spore zalihe", opis: "Artikli na stanju razvrstani po tome koliko dugo nisu izdati iz magacina. Istorija magacina počinje " + (poc ? finDtxt(poc) : "–") + ", pa „nema izlaza“ znači da artikal nije izdat od tada.",
+    blokovi: [fin8Obj("Aktivno = bilo je izlaza u poslednjih 90 dana. Spore zalihe nisu izdate 3–12 meseci, mrtve više od godinu dana. Vrednost tih zaliha je novac koji stoji i rizik otpisa (zastarela ambalaža, promenjen dizajn, istekao rok)."),
+      { svg: graf, naslov: "Vrednost zaliha po vremenu bez izlaza" }, { tabela: { naslov: "Spori i mrtvi artikli", kol, red: sp.slice(0, 200).map(x => ({ c: [x.naziv, x.mag, x.st, x.mera, x.zadI ? finDtxt(x.zadI) : "–", x.bez, x.vr] })) } }, fin8MagNap(),
+      fin8Zak([finMn(sp.length, "artikal", "artikla", "artikala") + " nije izdato više od 90 dana, vrednost " + finMil(sp.reduce((s, x) => s + (x.vr || 0), 0)) + " mil.", mrt ? "Bez izlaza duže od godinu dana ili nikad: " + finMil(mrt) + " mil. – predlog: proveriti upotrebljivost, ponuditi povrat dobavljaču ili otpisati." : null])] };
+}
+/* B3 – rizik nestašice (semafor) */
+function finIzvZNES(P) {
+  const L = []; for (const a of S.art || []) { if (a.izbacen || !a.aktivan || a.bezStanja) continue; const pn = planNabavke(a); if (pn.mes <= 0 && !(pn.min > 0 && pn.st < pn.min)) continue; const dov = pn.mes > 0 ? Math.max(0, pn.st) / (pn.mes / 30.4) : null; L.push({ a, pn, dov }); }
+  for (const x of fin8Mag().filter(y => y.tip === "sir" && y.dn > 0)) L.push({ a: { naziv: x.naziv, sifra: x.sifra, mera: x.mera }, pn: { st: x.st, min: x.min, L: 0, dana: x.st / x.dn - 7, porDo: null, pred: 0 }, dov: Math.max(0, x.st) / x.dn, sir: 1 });
+  const sem = x => x.dov != null && x.dov < Math.max(7, x.pn.L || 0) || (x.pn.min > 0 && x.pn.st < x.pn.min) || (x.pn.dana != null && x.pn.dana < 1) ? 0 : x.pn.dana != null && x.pn.dana <= 14 ? 1 : x.dov != null && x.dov <= 30 ? 2 : 3;
+  const R = L.map(x => Object.assign(x, { s: sem(x) })).filter(x => x.s < 3).sort((a, b) => a.s - b.s || (a.dov ?? 1e9) - (b.dov ?? 1e9));
+  const zn = ["crveno", "žuto", "zeleno-žuto"], boj = ["#B8322A", "#D9B23A", "#8DB85A"];
+  const html = '<section class="finBlok"><div class="finTw"><table class="finT"><thead><tr><th></th><th>Artikal</th><th>Magacin</th><th class="r">Stanje</th><th class="r">Minimum</th><th class="r">Dovoljno za (dana)</th><th class="r">Rok isporuke</th><th class="r">Poruči do</th><th class="r">Predlog</th></tr></thead><tbody>' +
+    R.slice(0, 200).map(x => '<tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + boj[x.s] + '" title="' + zn[x.s] + '"></span></td><td>' + esc(x.a.naziv) + "</td><td>" + (x.sir ? "Sirovine" : "Ambalaža") + '</td><td class="r">' + finNum(x.pn.st, 0) + " " + esc(x.a.mera || "") + '</td><td class="r">' + (x.pn.min ? finNum(x.pn.min, 0) : "–") + '</td><td class="r">' + (x.dov == null ? "–" : finNum(x.dov, 0)) + '</td><td class="r">' + (x.pn.L ? x.pn.L + " d" : "–") + '</td><td class="r">' + (x.pn.porDo ? (x.pn.dana < 1 ? "<b>odmah</b>" : finDtxt(x.pn.porDo)) : "–") + '</td><td class="r">' + (x.pn.pred ? finNum(x.pn.pred, 0) : "–") + "</td></tr>").join("") + "</tbody></table></div></section>";
+  const c = R.filter(x => x.s === 0).length, z = R.filter(x => x.s === 1).length;
+  return { naslov: "Rizik nestašice", opis: "Artikli koji bi mogli da ponestanu pre sledeće isporuke: " + c + " crvenih, " + z + " žutih.",
+    blokovi: [fin8Obj("Crveno: ispod minimuma, ili robe ima kraće od roka isporuke (najmanje 7 dana) – poručiti odmah. Žuto: tačka poručivanja se dostiže u narednih 14 dana. Zeleno-žuto: robe ima za manje od 30 dana. Proračun je isti kao na ekranu „Zalihe i poručivanje“: minimum + potrošnja tokom roka isporuke dobavljača."),
+      { html }, fin8Zak([c ? finMn(c, "artikal", "artikla", "artikala") + " treba poručiti odmah." : "Nema artikala u crvenoj zoni.", z ? finMn(z, "artikal", "artikla", "artikala") + " dolazi do tačke poručivanja u naredne dve nedelje." : null, "Predlog količine pokriva minimum, potrošnju tokom isporuke i period grupe artikala; prenosi se u zahtev sa ekrana „Zalihe i poručivanje“."])] };
+}
+/* B4 – rokovi i vrednost otpisa (sirovine po lotovima) */
+function finIzvZROK(P) {
+  if (!S.sir || !S.sir.art || !S.sir.art.length) return fin8Nema("Rokovi i vrednost otpisa", "magacin sirovina nema podataka");
+  const T = today(), C = fin8Cene(), L = [];
+  for (const o of sirStanje().values()) { if (o.kol <= 1e-9) continue; const a = S.sir.byId[o.art]; if (!a) continue; const c = C[String(a.sifra || "").trim()], d = o.vaz ? fin8Dana(T, o.vaz) : null; L.push({ n: a.naziv, lot: o.lot, kol: o.kol, mera: a.mera || a.jm || "", vaz: o.vaz, d, vr: c ? o.kol * c : null }); }
+  const kor = [["istekao", x => x.d != null && x.d < 0], ["0–30 dana", x => x.d >= 0 && x.d <= 30], ["31–60", x => x.d > 30 && x.d <= 60], ["61–90", x => x.d > 60 && x.d <= 90], ["91–180", x => x.d > 90 && x.d <= 180], ["preko 180", x => x.d > 180], ["bez roka", x => x.d == null]];
+  const sv = f => L.filter(f).reduce((s, x) => s + (x.vr || 0), 0);
+  const graf = finStubci({ kat: kor.map(x => x[0]), ser: [{ n: "Vrednost", v: kor.map(([, f]) => sv(f)), boja: P.s[7] }], H: 230 }, P);
+  const kr = L.filter(x => x.d != null && x.d <= 90).sort((a, b) => a.d - b.d);
+  const kol = [{ t: "Sirovina", tip: "txt" }, { t: "Lot", tip: "txt" }, { t: "Količina", tip: "koef" }, { t: "Mera", tip: "txt" }, { t: "Rok", tip: "txt" }, { t: "Dana do isteka", tip: "dani" }, { t: "Vrednost", tip: "hilj" }];
+  const r90 = sv(x => x.d != null && x.d <= 90);
+  return { naslov: "Rokovi i vrednost otpisa", opis: finMn(L.length, "lot", "lota", "lotova") + " sirovina na stanju. U riziku (istekli ili ističu u 90 dana): " + finMn(kr.length, "lot", "lota", "lotova") + ", " + finMil(r90) + " mil.",
+    blokovi: [fin8Obj("Svaki lot sirovine sa stanjem razvrstan je po broju dana do isteka roka. Istekli lotovi su potencijalni otpis; lotovi koji ističu u 30–90 dana treba da se troše prvi (FEFO). Vrednost je količina × poslednja nabavna cena."),
+      { svg: graf, naslov: "Vrednost sirovina po roku trajanja" }, { tabela: { naslov: "Lotovi koji su istekli ili ističu u 90 dana", kol, red: kr.map(x => ({ c: [x.n, x.lot || "–", x.kol, x.mera, x.vaz ? finDtxt(x.vaz) : "–", x.d, x.vr] })) } },
+      fin8Zak([sv(kor[0][1]) ? "Istekli lotovi vrede " + finMil(sv(kor[0][1])) + " mil. – proveriti mogućnost produženja roka (analiza) ili otpisati." : "Nema isteklih lotova.", sv(kor[1][1]) ? "U narednih 30 dana ističe " + finMil(sv(kor[1][1])) + " mil. – planirati te lotove u prve radne naloge." : null])] };
+}
+/* B5 – vrednost zaliha kroz vreme */
+function finIzvZVR(P) {
+  const M = finMes(); if (M.length < 3) return fin8Nema("Vrednost zaliha kroz vreme", "potrebni su mesečni podaci glavne knjige");
+  const dio = M.map((x, i) => { if (i < 11) return null; const t = M.slice(i - 11, i + 1).reduce((s, y) => s + y.r.mat + y.r.roba, 0); return t ? x.bil.zalihe / t * 365 : null; });
+  const kat = M.map(finMesNaziv);
+  const g1 = finLinije({ kat, ser: [{ n: "Zalihe", v: M.map(x => x.bil.zalihe / 1e6), boja: P.s[1] }], fmt: v => finNum(v, 0), korak: 3 }, P);
+  const g2 = finLinije({ kat, ser: [{ n: "Dani vezivanja zaliha", v: dio, boja: P.s[3] }], fmt: v => finNum(v, 0), korak: 3 }, P);
+  const z = M[M.length - 1], g0 = M.length > 12 ? M[M.length - 13] : M[0], dz = dio[dio.length - 1], d0 = dio.length > 12 ? dio[dio.length - 13] : null;
+  return { naslov: "Vrednost zaliha kroz vreme", opis: "Stanje zaliha (klasa 1) na kraju svakog meseca, iz glavne knjige, i broj dana za koje zalihe pokrivaju trošak materijala.",
+    blokovi: [fin8Obj("Gornji grafikon je vrednost zaliha na kraju meseca. Donji pokazuje koliko dana troška materijala i robe stoji u zalihama (zalihe / trošak poslednjih 12 meseci × 365). Rast dana znači da se sve više novca vezuje u robu u odnosu na obim proizvodnje."),
+      { svg: g1, naslov: "Zalihe (mil. din)" }, { svg: g2, naslov: "Dani vezivanja zaliha" },
+      { tabela: { kol: [{ t: "Mesec", tip: "txt" }, { t: "Zalihe", tip: "hilj" }, { t: "Dana", tip: "dani" }], red: M.slice().reverse().map((x, i) => ({ c: [FIN_MES[x.m - 1] + " " + x.g, x.bil.zalihe, dio[M.length - 1 - i]] })) } },
+      fin8Zak(["Zalihe na kraju " + finMesNaziv(z) + ": " + finMil(z.bil.zalihe) + " mil., " + finZnak(g0.bil.zalihe ? z.bil.zalihe / g0.bil.zalihe - 1 : 0) + " u odnosu na " + finMesNaziv(g0) + ".", dz != null ? "Zalihe pokrivaju " + finNum(dz, 0) + " dana troška materijala" + (d0 != null ? " (pre godinu dana " + finNum(d0, 0) + ")" : "") + "." : null,
+        dz != null && d0 != null && dz > d0 * 1.1 ? "Dani rastu – zalihe rastu brže od potrošnje; vredi smanjiti porudžbine sporih artikala." : null])] };
+}
+/* B6 – popisne razlike i kalo */
+function finIzvZPOP(P) {
+  const C = fin8Cene(), od = fin8Dod(today(), -730), K = fin8Unosi().filter(e => e.vrsta === "K" && e.datum >= od);
+  if (!K.length) return fin8Nema("Popisne razlike i kalo", "nema popisnih korekcija u poslednje dve godine");
+  const m = new Map(), mes = {};
+  for (const e of K) { const a = fin8Art(e.mag, e.art), c = C[String(a.sifra || "").trim()], v = c ? e.kol * c : null; const k = e.mag + ":" + e.art; const o = m.get(k) || { n: a.naziv, mag: e.mag, mera: a.mera || a.jm || "", pl: 0, mi: 0, v: 0, br: 0, imaC: !!c }; if (e.kol > 0) o.pl += e.kol; else o.mi += e.kol; o.v += v || 0; o.br++; m.set(k, o); const mk = e.datum.slice(0, 7); const x = mes[mk] = mes[mk] || { p: 0, m: 0 }; if (v > 0) x.p += v; else if (v < 0) x.m += v; }
+  const mk = Object.keys(mes).sort();
+  const graf = finStubci({ kat: mk.map(k => FIN_MES3[+k.slice(5) - 1] + " " + k.slice(2, 4)), ser: [{ n: "Višak", v: mk.map(k => mes[k].p), boja: P.pos }, { n: "Manjak", v: mk.map(k => mes[k].m), boja: P.neg }], H: 240 }, P);
+  const L = [...m.values()].sort((a, b) => a.v - b.v);
+  const kol = [{ t: "Artikal", tip: "txt" }, { t: "Magacin", tip: "txt" }, { t: "Korekcija", tip: "dani" }, { t: "Manjak (kol.)", tip: "koef" }, { t: "Višak (kol.)", tip: "koef" }, { t: "Mera", tip: "txt" }, { t: "Vrednost", tip: "hilj" }];
+  const uM = L.reduce((s, x) => s + Math.min(0, x.v), 0), uP = L.reduce((s, x) => s + Math.max(0, x.v), 0);
+  return { naslov: "Popisne razlike i kalo", opis: "Korekcije stanja po popisu u poslednje dve godine: " + K.length + " stavki, " + finMn(L.length, "artikal", "artikla", "artikala") + ". Neto: " + finMil(uM + uP) + " mil.",
+    blokovi: [fin8Obj("Svaka popisna korekcija je razlika između izbrojanog i evidentiranog stanja. Manjak (negativno) može biti kalo, rastur, neevidentiran izlaz ili greška pri unosu; višak je najčešće neevidentiran prijem. Artikli koji se ponavljaju na vrhu liste traže proveru procesa."),
+      { svg: graf, naslov: "Vrednost razlika po mesecima" }, { tabela: { naslov: "Po artiklima (najveći manjkovi prvi)", kol, red: L.slice(0, 150).map(x => ({ c: [x.n, x.mag === "sir" ? "Sirovine" : "Ambalaža", x.br, x.mi || null, x.pl || null, x.mera, x.imaC ? x.v : null] })) } },
+      fin8Zak(["Manjkovi ukupno " + finMil(uM) + " mil., viškovi " + finMil(uP) + " mil.", L.filter(x => x.br >= 2 && x.v < 0).length ? finMn(L.filter(x => x.br >= 2 && x.v < 0).length, "artikal", "artikla", "artikala") + " ima manjak na više popisa – proveriti način izdavanja i merenja." : null])] };
+}
+/* F1 – učinak magacina */
+function finIzvMUC(P) {
+  const dani = pgDani(60), U = fin8Unosi().filter(e => e.datum >= dani[0]);
+  if (!U.length) return fin8Nema("Učinak magacina", "nema unosa u poslednjih 60 dana");
+  const po = v => dani.map(d => U.filter(e => e.datum === d && e.vrsta === v).length);
+  const graf = finStubci({ kat: dani.map(d => d.slice(8) + "." + d.slice(5, 7)), ser: [{ n: "Prijem", v: po("U"), boja: P.pos }, { n: "Izdavanje", v: po("I"), boja: P.neg }], vrednosti: false, div: 1, jed: "stavki", korak: 5, H: 240 }, P);
+  const ko = new Map(); for (const e of U) { const k = e.uid || "?"; const o = ko.get(k) || { U: 0, I: 0, K: 0, d: new Set() }; o[e.vrsta === "U" ? "U" : e.vrsta === "I" ? "I" : "K"]++; o.d.add(e.datum); ko.set(k, o); }
+  const rd = [...ko.entries()].map(([k, o]) => ({ c: [typeof who === "function" ? who(k) : k, o.U, o.I, o.K || null, o.d.size, (o.U + o.I + o.K) / o.d.size] })).sort((a, b) => (b.c[1] + b.c[2]) - (a.c[1] + a.c[2]));
+  const radni = dani.filter(d => U.some(e => e.datum === d)).length, dn = [0, 1, 2, 3, 4, 5, 6].map(i => { const ds = dani.filter(d => new Date(d + "T12:00:00").getDay() === i); return ds.length ? U.filter(e => ds.includes(e.datum)).length / ds.length : 0; });
+  return { naslov: "Učinak magacina", opis: "Poslednjih 60 dana: " + U.length + " stavki u " + radni + " radnih dana, prosečno " + finNum(U.length / Math.max(1, radni), 0) + " stavki dnevno (ambalaža i sirovine).",
+    blokovi: [fin8Obj("Broj upisanih stavki prijema i izdavanja po danu i po korisniku. Jedna stavka = jedan artikal na jednom dokumentu. Služi za planiranje ljudi i za uočavanje dana sa zastojem ili gužvom."),
+      { svg: graf, naslov: "Stavke po danu" }, { tabela: { naslov: "Po korisniku", kol: [{ t: "Korisnik", tip: "txt" }, { t: "Prijem", tip: "dani" }, { t: "Izdavanje", tip: "dani" }, { t: "Korekcije", tip: "dani" }, { t: "Dana rada", tip: "dani" }, { t: "Stavki dnevno", tip: "koef" }], red: rd } },
+      { tabela: { naslov: "Prosečno po danu u nedelji", kol: [{ t: "Dan", tip: "txt" }, { t: "Stavki", tip: "koef" }], red: [1, 2, 3, 4, 5, 6, 0].map(i => ({ c: [["nedelja", "ponedeljak", "utorak", "sreda", "četvrtak", "petak", "subota"][i], dn[i]] })) } },
+      fin8Zak(["Najopterećeniji dan u nedelji: " + ["nedelja", "ponedeljak", "utorak", "sreda", "četvrtak", "petak", "subota"][dn.indexOf(Math.max(...dn))] + " (" + finNum(Math.max(...dn), 0) + " stavki).", "Odnos prijema i izdavanja: " + U.filter(e => e.vrsta === "U").length + " : " + U.filter(e => e.vrsta === "I").length + "."])] };
+}
+/* F2 – predlog nabavke */
+function finIzvMPRED(P) {
+  const C = fin8Cene(), L = [];
+  for (const a of S.art || []) { if (a.izbacen || !a.aktivan || a.bezStanja) continue; const pn = planNabavke(a); if (pn.pred > 0 && (pn.dana == null || pn.dana <= 30)) { const c = C[String(a.sifra || "").trim()]; L.push({ a, pn, vr: c ? pn.pred * c : null }); } }
+  L.sort((x, y) => (x.pn.dana ?? -1) - (y.pn.dana ?? -1));
+  if (!L.length) return { naslov: "Predlog nabavke", opis: "", blokovi: [fin8Obj("Lista artikala koje treba poručiti u narednih 30 dana."), { tekst: "Trenutno nema artikala koje treba poručiti u narednih 30 dana." }] };
+  const kol = [{ t: "Šifra", tip: "txt" }, { t: "Artikal", tip: "txt" }, { t: "Stanje", tip: "dani" }, { t: "Mesečna potrošnja", tip: "dani" }, { t: "Rok isporuke", tip: "dani" }, { t: "Poruči do", tip: "txt" }, { t: "Predlog", tip: "dani" }, { t: "Mera", tip: "txt" }, { t: "Procena vrednosti", tip: "hilj" }];
+  const uk = L.reduce((s, x) => s + (x.vr || 0), 0);
+  return { naslov: "Predlog nabavke", opis: finMn(L.length, "artikal", "artikla", "artikala") + " treba poručiti u narednih 30 dana; procenjena vrednost " + finMil(uk) + " mil. (po poslednjim nabavnim cenama).",
+    blokovi: [fin8Obj("Predlog = minimum + potrošnja tokom roka isporuke + potrošnja za period grupe artikala − trenutno stanje, zaokruženo na pakovanje. „Poruči do“ je dan kada stanje pada na tačku poručivanja. Zahtev za nabavku se pravi sa ekrana „Zalihe i poručivanje“ (dugme „Predlog u zahtev za nabavku“)."),
+      { tabela: { kol, red: L.map(x => ({ c: [x.a.sifra || "", x.a.naziv, x.pn.st, x.pn.mes, x.pn.L || null, x.pn.dana != null && x.pn.dana < 1 ? "odmah" : x.pn.porDo ? finDtxt(x.pn.porDo) : "–", x.pn.pred, x.a.mera || "", x.vr] })) } },
+      fin8Zak([finMn(L.filter(x => x.pn.dana != null && x.pn.dana < 1).length, "artikal", "artikla", "artikala") + " treba poručiti odmah.", "Za ostale je rok poručivanja u narednih 30 dana – najbolje ih je spojiti u porudžbine po dobavljaču."])] };
+}
+
+/* ================= PRODAJA ================= */
+const FIN_KANAL = [["Trgovinski lanci", /lidl|delhaize|maxi|mercator|idea|roda|univerexport|aman|gomex|tempo|metro|dis\b|lilly|dm drog|dm-drog|drogerie|shopngo|vero|konzum|interex|ahold/], ["Apoteke i veledrogerije", /galenik|phoenix|vega|apotek|farmal|pharm|farm|medik|benu|jankovic|zegin|lekovi/]];
+function finKanal(D, p) { if (D.pov.has(p)) return "Povezana lica"; const n = finN(D.P[p] || ""); for (const [k, re] of FIN_KANAL) if (re.test(n)) return k; return "Ostali kupci"; }
+/* C4 – kanali prodaje */
+function finIzvSKAN(P) {
+  const D = finProd(); if (!D.L.length) return fin8Nema("Kanali prodaje", "uvezi prodaju");
+  const G = D.god, K = ["Povezana lica", "Trgovinski lanci", "Apoteke i veledrogerije", "Ostali kupci"], kk = {};
+  for (const x of D.L) { const k = finKanal(D, x.par); const o = kk[k + "|" + x.g] = kk[k + "|" + x.g] || { n: 0, v: 0 }; o.n += x.neto; o.v += x.vz; }
+  const graf = finStek({ kat: G.map(g => finOzn(g)), ser: K.map((k, i) => ({ n: k, v: G.map(g => (kk[k + "|" + g] || { n: 0 }).n), boja: P.s[[0, 1, 3, 7][i]] })) }, P);
+  const g = G[G.length - 1], uk = K.reduce((s, k) => s + (kk[k + "|" + g] || { n: 0 }).n, 0);
+  const red = K.map(k => ({ c: [k].concat(G.map(y => (kk[k + "|" + y] || { n: 0 }).n)).concat([uk ? (kk[k + "|" + g] || { n: 0 }).n / uk : null, (() => { const o = kk[k + "|" + g]; return o && o.n ? (o.n - o.v) / o.n : null; })()]) }));
+  const kup = [...finGrp(D.L.filter(x => x.g === g), x => x.par, x => ({ n: x.neto })).entries()].map(([p, v]) => ({ p, n: D.P[p] || p, k: finKanal(D, p), v: v.n })).sort((a, b) => b.v - a.v);
+  return { naslov: "Kanali prodaje", opis: "Prodaja po kanalima. Kanal se određuje po nazivu kupca (trgovinski lanci, apoteke i veledrogerije) i po tome da li je kupac povezano lice. Domaće tržište i izvoz po glavnoj knjizi su u izveštaju „Prihodi po tržištima“.",
+    blokovi: [fin8Obj("Stubci pokazuju koliko se prodaje kroz koji kanal po godinama, a tabela i udeo i bruto maržu kanala u poslednjoj godini. Raspored po kanalima je automatski (po nazivu kupca) – ako je neki kupac pogrešno svrstan, javi pa ćemo dopuniti pravila. Regioni nisu u izvozu prodaje, pa ih za sada nema."),
+      { svg: graf, naslov: "Prodaja po kanalima" }, { tabela: { kol: [{ t: "Kanal", tip: "txt" }].concat(G.map(y => ({ t: String(y), tip: "hilj" }))).concat([{ t: "Udeo " + g, tip: "pct" }, { t: "Marža " + g, tip: "pct" }]), red } },
+      { tabela: { naslov: "Kupci i kanal (" + g + ")", kol: [{ t: "Kupac", tip: "txt" }, { t: "Kanal", tip: "txt" }, { t: "Prodaja", tip: "hilj" }], red: kup.slice(0, 40).map(x => ({ c: [x.n, x.k, x.v], klik: "kupac:" + x.p })) } },
+      fin8Zak([K.map(k => ({ k, v: (kk[k + "|" + g] || { n: 0 }).n })).sort((a, b) => b.v - a.v).slice(0, 2).map(o => o.k + " " + finPct(uk ? o.v / uk : 0, 0)).join(", ") + " prodaje u " + g + ".", "Zavisnost od povezanih lica: " + finPct(uk ? (kk["Povezana lica|" + g] || { n: 0 }).n / uk : 0, 0) + " prodaje."])] };
+}
+/* C5 – prosečna cena i rabati */
+function finIzvSCR(P) {
+  const D = finProd(); if (!D.L.length) return fin8Nema("Prosečna cena i rabati", "uvezi prodaju");
+  const mm = finGrp(D.L, x => x.dt.slice(0, 7), x => ({ n: x.neto, p: x.pop }));
+  const mk = [...mm.keys()].sort().slice(-36);
+  const graf = finLinije({ kat: mk.map(k => FIN_MES3[+k.slice(5) - 1] + " " + k.slice(2, 4)), ser: [{ n: "Rabat %", v: mk.map(k => { const o = mm.get(k); return o.n + o.p ? o.p / (o.n + o.p) * 100 : null; }), boja: P.s[3] }], fmt: v => finNum(v, 1) + "%", korak: 3 }, P);
+  const g = finBirGod(D.god, "scrGod"), t = D.L.filter(x => x.g === g);
+  const pa = finGrp(t, x => x.art, x => ({ n: x.neto, k: x.kol }));
+  const K = [...finGrp(t, x => x.par, x => ({ n: x.neto, p: x.pop })).entries()].map(([p, v]) => {
+    let s1 = 0, s0 = 0; for (const x of t) if (x.par === p && x.kol > 0) { const o = pa.get(x.art); if (o && o.k) { s1 += x.neto; s0 += o.n / o.k * x.kol; } }
+    return { p, n: D.P[p] || p, v: v.n, pop: v.p, r: v.n + v.p ? v.p / (v.n + v.p) : null, ci: s0 ? s1 / s0 - 1 : null };
+  }).sort((a, b) => b.v - a.v);
+  const uk = t.reduce((s, x) => s + x.neto, 0), ukP = t.reduce((s, x) => s + x.pop, 0);
+  const kol = [{ t: "Kupac", tip: "txt" }, { t: "Prodaja", tip: "hilj" }, { t: "Rabat", tip: "hilj" }, { t: "Rabat %", tip: "pct" }, { t: "Cena prema proseku", tip: "pct" }];
+  const vis = K.filter(x => x.v > uk * 0.01 && x.r != null).sort((a, b) => b.r - a.r)[0], jef = K.filter(x => x.v > uk * 0.01 && x.ci != null).sort((a, b) => a.ci - b.ci)[0];
+  return { naslov: "Prosečna cena i rabati", opis: g + ": odobreni rabati " + finMil(ukP) + " mil., " + finPct(uk + ukP ? ukP / (uk + ukP) : 0, 1) + " bruto prodaje.",
+    blokovi: [fin8Obj("Rabat % = odobreni popust / (neto prodaja + popust). „Cena prema proseku“ poredi cene koje kupac plaća sa prosečnom cenom istih proizvoda kod svih kupaca: −5% znači da kupac za istu robu plaća 5% manje od proseka. Linija pokazuje kretanje ukupnog rabata po mesecima."),
+      fin8GodIzbor(D.god, "scrGod"), { svg: graf, naslov: "Rabat po mesecima (% bruto prodaje)" }, { tabela: { kol, red: K.slice(0, 50).map(x => ({ c: [x.n, x.v, x.pop, x.r, x.ci], klik: "kupac:" + x.p })) } },
+      fin8Zak([vis ? "Najveći rabat među značajnim kupcima: " + vis.n + " (" + finPct(vis.r, 1) + ")." : null, jef ? "Najnižu cenu za istu robu plaća " + jef.n + " (" + finZnak(jef.ci) + " u odnosu na prosek)." : null, "Rabate i cene treba porediti sa maržom kupca – izveštaj „Marža po proizvodu i kupcu“."])] };
+}
+/* C7 – RFM segmentacija */
+function finIzvSRFM(P) {
+  const D = finProd(); if (!D.L.length) return fin8Nema("RFM segmentacija kupaca", "uvezi prodaju");
+  const ref = D.kraj || D.L.reduce((m, x) => x.dt > m ? x.dt : m, ""), od = fin8Dod(ref, -364);
+  const K = new Map(); for (const x of D.L) { const o = K.get(x.par) || { p: x.par, zad: "", prv: "9999", dok: new Set(), m: 0, m0: 0 }; if (x.dt > o.zad) o.zad = x.dt; if (x.dt < o.prv) o.prv = x.dt; if (x.dt >= od) { o.dok.add(x.dok); o.m += x.neto; } else if (x.dt >= fin8Dod(od, -365)) o.m0 += x.neto; K.set(x.par, o); }
+  const L = [...K.values()].filter(o => o.m > 0 || o.m0 > 0).map(o => Object.assign(o, { r: fin8Dana(o.zad, ref), f: o.dok.size }));
+  const kv = (arr, v, obrnuto) => { const s = arr.slice().sort((a, b) => a - b); const i = s.findIndex(x => x >= v); const q = Math.min(4, Math.floor((i < 0 ? s.length - 1 : i) / Math.max(1, s.length) * 5)) + 1; return obrnuto ? 6 - q : q; };
+  const Rs = L.map(x => x.r), Fs = L.map(x => x.f), Ms = L.map(x => x.m);
+  for (const x of L) { x.R = kv(Rs, x.r, true); x.F = kv(Fs, x.f); x.M = kv(Ms, x.m);
+    x.seg = x.r > 365 ? "Izgubljeni" : fin8Dana(x.prv, ref) <= 180 ? "Novi" : x.R >= 4 && x.F >= 4 ? "Šampioni" : x.F >= 3 && x.R >= 3 ? "Verni" : x.R <= 2 && x.F >= 3 ? "U riziku" : x.R <= 2 ? "Uspavani" : "Povremeni"; }
+  const SEG = ["Šampioni", "Verni", "Novi", "Povremeni", "U riziku", "Uspavani", "Izgubljeni"], ops = { "Šampioni": "kupuju često i skoro – čuvati, prvi za nove proizvode", "Verni": "redovni kupci – ponuditi veće količine i širi asortiman", "Novi": "prva kupovina u poslednjih 6 meseci – pratiti drugu porudžbinu", "Povremeni": "kupuju povremeno – akcije i podsećanje", "U riziku": "kupovali su često, a dugo nisu – pozvati odmah", "Uspavani": "retki i davni kupci – niska prioritetnost", "Izgubljeni": "nisu kupovali više od godinu dana" };
+  const uk = L.reduce((s, x) => s + x.m, 0);
+  const graf = finStekH({ imena: ["Prodaja 12 meseci"], boje: [P.s[1]], redovi: SEG.map(s => ({ l: s + " (" + L.filter(x => x.seg === s).length + ")", v: [L.filter(x => x.seg === s).reduce((t, x) => t + x.m, 0)] })) }, P);
+  const kol = [{ t: "Kupac", tip: "txt" }, { t: "Segment", tip: "txt" }, { t: "Dana od poslednje kupovine", tip: "dani" }, { t: "Faktura (12 mes.)", tip: "dani" }, { t: "Prodaja 12 mes.", tip: "hilj" }, { t: "Prethodnih 12 mes.", tip: "hilj" }, { t: "R-F-M", tip: "txt" }];
+  const rizik = L.filter(x => x.seg === "U riziku").sort((a, b) => b.m0 + b.m - a.m0 - a.m);
+  return { naslov: "RFM segmentacija kupaca", opis: "Stanje na dan " + finDtxt(ref) + ": " + finMn(L.length, "kupac", "kupca", "kupaca") + " u 7 segmenata.",
+    blokovi: [fin8Obj("RFM ocenjuje svakog kupca po tri merila, od 1 do 5: R – koliko je skoro poslednji put kupio, F – koliko faktura je imao u poslednjih 12 meseci, M – koliko je potrošio u poslednjih 12 meseci. Na osnovu ocena kupci se svrstavaju u segmente, a svaki segment traži drugačiji pristup prodaje."),
+      { svg: graf, naslov: "Prodaja po segmentima (broj kupaca u zagradi)" }, { tabela: { naslov: "Segmenti", kol: [{ t: "Segment", tip: "txt" }, { t: "Kupaca", tip: "dani" }, { t: "Prodaja 12 mes.", tip: "hilj" }, { t: "Udeo", tip: "pct" }, { t: "Šta raditi", tip: "txt" }], red: SEG.map(s => { const l = L.filter(x => x.seg === s), v = l.reduce((t, x) => t + x.m, 0); return { c: [s, l.length, v, uk ? v / uk : null, ops[s]] }; }) } },
+      { tabela: { naslov: "Kupci", kol, red: L.sort((a, b) => b.m - a.m).slice(0, 150).map(x => ({ c: [D.P[x.p] || x.p, x.seg, x.r, x.f, x.m, x.m0, x.R + "-" + x.F + "-" + x.M], klik: "kupac:" + x.p })) } },
+      fin8Zak([rizik.length ? "U riziku je " + finMn(rizik.length, "kupac", "kupca", "kupaca") + " koji su ranije kupovali redovno: " + rizik.slice(0, 3).map(x => D.P[x.p] || x.p).join(", ") + (rizik.length > 3 ? "…" : "") + " – prvi za poziv komercijale." : "Nema kupaca u segmentu „U riziku“.",
+        "Šampioni i verni kupci čine " + finPct(uk ? L.filter(x => x.seg === "Šampioni" || x.seg === "Verni").reduce((s, x) => s + x.m, 0) / uk : 0, 0) + " prodaje poslednjih 12 meseci."])] };
+}
+/* D4 – proizvodi sa padom marže */
+function finIzvPMP(P) {
+  const D = finProd(); if (D.god.length < 2) return fin8Nema("Proizvodi sa padom marže", "prodaja za bar dve godine");
+  const g = finBirGod(D.god.slice(1), "pmpGod"), deo = D.kraj && D.kraj.startsWith(String(g)) && D.kraj.slice(5) < "12-20", gr = D.kraj ? D.kraj.slice(4) : "";
+  const A = finGrp(D.L.filter(x => x.g === g), x => x.art, x => ({ n: x.neto, v: x.vz })), B = finGrp(D.L.filter(x => x.g === g - 1 && (!deo || x.dt.slice(4) <= gr)), x => x.art, x => ({ n: x.neto, v: x.vz }));
+  const uk = [...A.values()].reduce((s, x) => s + x.n, 0);
+  const L = [...A.entries()].filter(([k, a]) => a.n > uk * 0.002 && B.get(k) && B.get(k).n > 0).map(([k, a]) => { const b = B.get(k), m1 = (a.n - a.v) / a.n, m0 = (b.n - b.v) / b.n; return { k, n: D.A[k] || k, v: a.n, m1, m0, d: m1 - m0, gub: (m1 - m0) * a.n }; });
+  const pad = L.filter(x => x.d < -0.03).sort((a, b) => a.gub - b.gub);
+  const G = D.god, my = (k, y) => { const s = D.L.filter(x => x.art === k && x.g === y); const n = s.reduce((t, x) => t + x.neto, 0); return n ? (n - s.reduce((t, x) => t + x.vz, 0)) / n * 100 : null; };
+  const graf = pad.length ? finLinije({ kat: G.map(String), ser: pad.slice(0, 6).map((x, i) => ({ n: x.n.slice(0, 26), v: G.map(y => my(x.k, y)), boja: P.s[i] })), fmt: v => finNum(v, 0) + "%" }, P) : null;
+  const kol = [{ t: "Proizvod", tip: "txt" }, { t: "Prodaja " + g, tip: "hilj" }, { t: "Marža " + (g - 1), tip: "pct" }, { t: "Marža " + g, tip: "pct" }, { t: "Promena (p.p.)", tip: "pct" }, { t: "Izgubljena marža", tip: "hilj" }];
+  return { naslov: "Proizvodi sa padom marže", opis: g + (deo ? " do " + finDtxt(D.kraj) : "") + " prema " + (g - 1) + (deo ? " (isti period)" : "") + ": " + pad.length + " proizvoda je izgubilo više od 3 procentna poena marže.",
+    blokovi: [fin8Obj("Za svaki proizvod koji čini bar 0,2% prodaje poredi se bruto marža (prodaja − vrednost zaliha po prodajnoj fakturi) sa prethodnom godinom. Izgubljena marža = pad marže × ovogodišnja prodaja – koliko bi više zaradili da je marža ostala ista. To su prvi kandidati za korekciju prodajne cene."),
+      { unos: [{ id: "pmpGod", l: "Godina", v: String(g), izbor: D.god.slice(1).reverse().map(x => [String(x), String(x) + " prema " + (x - 1)]) }] }].concat(graf ? [{ svg: graf, naslov: "Marža % kroz godine – 6 najvećih padova" }] : []).concat([
+      { tabela: { kol, red: pad.slice(0, 60).map(x => ({ c: [x.n, x.v, x.m0, x.m1, x.d, x.gub], klik: "proizvod:" + x.k })) } },
+      fin8Zak([pad.length ? "Pad marže na ovim proizvodima košta " + finMil(-pad.reduce((s, x) => s + x.gub, 0)) + " mil. godišnje u odnosu na prošlogodišnju maržu." : "Nema proizvoda sa značajnim padom marže.", pad[0] ? "Najveći gubitak: " + pad[0].n + " (marža " + finPct(pad[0].m0, 0) + " → " + finPct(pad[0].m1, 0) + ")." : null, "Uzrok (cena prodaje ili cena koštanja) vidi se u izveštajima „Zašto se promenila marža“ i „Cena koštanja po proizvodu“."])]) };
+}
+
+/* ================= katalog ================= */
+Object.assign(FIN_IZV, { nmes: finIzvNMES, nca: finIzvNCA, nek: finIzvNEK, nabc: finIzvNABC, nxyz: finIzvNXYZ, nuc: finIzvNUC, nod: finIzvNOD, nsez: finIzvNSEZ, zob: finIzvZOB, zmrt: finIzvZMRT, znes: finIzvZNES, zrok: finIzvZROK, zvr: finIzvZVR, zpop: finIzvZPOP, muc: finIzvMUC, mpred: finIzvMPRED, skan: finIzvSKAN, scr: finIzvSCR, srfm: finIzvSRFM, pmp: finIzvPMP });
+function finKatPosle(id, ...st) { const i = FIN_KAT.findIndex(x => x[0] === id); FIN_KAT.splice(i < 0 ? FIN_KAT.length : i + 1, 0, ...st); }
+finKatPosle("np", ["nmes", "Nabavka po mesecima", "Od početka godine, poređenje godina"]);
+finKatPosle("nc", ["nca", "Cena artikla kroz vreme", "Jedan artikal, svi dobavljači"], ["nek", "Efekat cene i količine", "Da li je nabavka rasla zbog cena ili obima"]);
+finKatPosle("nu", ["nabc", "ABC analiza artikala", "Na koje artikle fokusirati kontrolu"], ["nxyz", "XYZ i ABC-XYZ matrica", "Stabilni i nepredvidivi artikli"], ["nuc", "Učestalost porudžbina", "Česti mali prijemi"], ["nod", "Ocena dobavljača", "Cena i ulazna kontrola"], ["nsez", "Sezonalnost nabavke", "Jaki i slabi meseci"]);
+finKatPosle("nsez", ["#", "Zalihe i magacin"], ["zob", "Obrt zaliha i pokrivenost", "Za koliko dana imamo robe"], ["zmrt", "Mrtve i spore zalihe", "Roba bez izlaza 90/180/365 dana"], ["znes", "Rizik nestašice", "Semafor: šta će ponestati"], ["zrok", "Rokovi i otpis", "Lotovi sirovina pred istekom"], ["zvr", "Vrednost zaliha kroz vreme", "Da li vezujemo sve više novca"], ["zpop", "Popisne razlike i kalo", "Manjkovi i viškovi"], ["muc", "Učinak magacina", "Prijemi i izdavanja po danu i korisniku"], ["mpred", "Predlog nabavke", "Šta poručiti u narednih 30 dana"]);
+finKatPosle("sk", ["srfm", "RFM segmentacija kupaca", "Verni, novi, u riziku, izgubljeni"], ["skan", "Kanali prodaje", "Lanci, apoteke, povezana lica"]);
+finKatPosle("sce", ["scr", "Prosečna cena i rabati", "Koliko popuštamo i kome"]);
+finKatPosle("pmr", ["pmp", "Proizvodi sa padom marže", "Gde korigovati prodajnu cenu"]);
+{ const i = FIN_KAT.findIndex(x => x[0] === "#" && x[1] === "Proizvodnja"); if (i >= 0) FIN_KAT[i] = ["#", "Proizvodnja i profitabilnost"]; }
+
+/* kompaktan spisak: grupe na rasklapanje (desktop) i padajući meni (telefon) */
+FIN.katOtv = FIN.katOtv || {};
+function finKatHtml() {
+  const G = []; let cur = null;
+  for (const x of FIN_KAT) { if (x[0] === "#") { cur = { n: x[1], l: [] }; G.push(cur); } else if (cur) cur.l.push(x); }
+  const akt = G.find(g => g.l.some(x => x[0] === FIN.izv));
+  const moji = typeof finMojLista === "function" ? finMojLista() : [];
+  const sel = '<label class="finKatSel"><span>Izveštaj</span><select id="finKatSel">' + G.map(g => '<optgroup label="' + esc(g.n) + '">' + g.l.map(([id, n]) => '<option value="' + id + '"' + (FIN.izv === id ? " selected" : "") + ">" + esc(n) + "</option>").join("") + (g.l.some(x => x[0] === "moj") ? moji.map(m => '<option value="moj:' + esc(m.id) + '">★ ' + esc(m.naziv) + "</option>").join("") : "") + "</optgroup>").join("") + "</select></label>";
+  return sel + '<nav class="finKat finKatK" aria-label="Spisak izveštaja">' + G.map((g, gi) => {
+    const otv = FIN.katOtv[g.n] != null ? FIN.katOtv[g.n] : g === akt;
+    return '<details class="finKatD" data-fin-kg="' + esc(g.n) + '"' + (otv ? " open" : "") + '><summary><span>' + esc(g.n) + '</span><small>' + (g.l.length + (g.l.some(x => x[0] === "moj") ? moji.length : 0)) + "</small></summary>" +
+      g.l.map(([id, n, o]) => '<button type="button" data-fin-izv="' + id + '" aria-current="' + (FIN.izv === id) + '" title="' + esc(o) + '">' + esc(n) + "</button>" +
+        (id === "moj" ? moji.map(x => '<div class="finMojS"><button type="button" data-fin-moj-otv="' + esc(x.id) + '" title="sačuvan izveštaj">★ ' + esc(x.naziv) + "</button>" + (finSme() ? '<button type="button" class="lnk" data-fin-moj-del="' + esc(x.id) + '" title="Obriši" aria-label="Obriši">×</button>' : "") + "</div>").join("") : "")).join("") + "</details>";
+  }).join("") + "</nav>";
+}
+document.addEventListener("toggle", e => { const d = e.target; if (d && d.classList && d.classList.contains("finKatD")) { FIN.katOtv[d.dataset.finKg] = d.open; if (d.open) d.parentElement.querySelectorAll(".finKatD[open]").forEach(x => { if (x !== d) { x.open = false; FIN.katOtv[x.dataset.finKg] = false; } }); } }, true);
+document.addEventListener("change", e => {
+  if (e.target.id !== "finKatSel") return;
+  const v = e.target.value;
+  if (v.startsWith("moj:")) { const x = finMojLista().find(y => y.id === v.slice(4)); if (x) { FIN.moj = { tekst: x.tekst || "", spec: JSON.parse(JSON.stringify(x.spec)), naziv: x.naziv }; FIN.izv = "moj"; } }
+  else FIN.izv = v;
+  renderFinIzv(); window.scrollTo(0, 0);
+});
+
+/* ================= pločice brzog pregleda: nabavka, zalihe, kontrola, prodaja ================= */
+function finPlocice2(P) {
+  const D = finNab(), Dp = finProd(), t = [], T = today();
+  const pl = (izv, ik, naslov, vred, jed, trend, info, niz, boja) => '<article class="card tile klik" role="button" tabindex="0" data-fin-izv="' + izv + '" title="Klik otvara izveštaj"><div class="oznaka">' + ikona(ik, 14) + esc(naslov) + '</div><div class="vred"><span class="num">' + vred + "</span>" + (jed ? "<small>" + esc(jed) + "</small>" : "") + "</div>" +
+    (trend && trend[0] ? '<span class="trend ' + trend[1] + '">' + esc(trend[0]) + "</span>" : "") + (info && info.length ? '<div class="tile-info"><dl>' + info.map(x => "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>").join("") + "</dl></div>" : "") + (niz && niz.length > 1 ? pgSpark(niz.map(x => Math.max(0, x || 0)), boja) : "") + "</article>";
+  const tr = (x, obr, txt) => x == null || !isFinite(x) ? ["", "t-fl"] : [(x > 0 ? "+" : "") + finPct(x) + " " + txt, (x > 0) !== !!obr ? "t-up" : "t-dn"];
+  if (D.L.length) {
+    const G = D.god, g = G[G.length - 1], zd = D.L.filter(x => x.g === g).reduce((m, x) => x.dt > m ? x.dt : m, ""), zm = +zd.slice(5, 7) || 12;
+    const mes = (y, m) => D.L.filter(x => x.g === y && x.m === m).reduce((s, x) => s + x.iz, 0), ytd = (y, m) => D.L.filter(x => x.g === y && x.m && x.m <= m).reduce((s, x) => s + x.iz, 0);
+    const a = mes(g, zm), b = G.includes(g - 1) ? mes(g - 1, zm) : null, ya = ytd(g, zm), yb = G.includes(g - 1) ? ytd(g - 1, zm) : null;
+    t.push(pl("nmes", "ulaz", "Nabavka – " + FIN_MES[zm - 1] + " " + g, finMil(a), "mil. din", tr(b ? a / b - 1 : null, true, "vs " + FIN_MES3[zm - 1] + " " + (g - 1)), [["Isti mesec " + (g - 1), b != null ? finMil(b) + " mil." : "–"], ["Napomena", "mesec je približan"]], Array.from({ length: zm }, (_, i) => mes(g, i + 1)), P.s[3]));
+    t.push(pl("nmes", "lista", "Nabavka od početka godine", finMil(ya), "mil. din", tr(yb ? ya / yb - 1 : null, true, "vs " + (g - 1)), [[FIN_MES3[0] + "–" + FIN_MES3[zm - 1] + " " + (g - 1), yb != null ? finMil(yb) + " mil." : "–"], ["Cela " + (g - 1), G.includes(g - 1) ? finMil(ytd(g - 1, 12)) + " mil." : "–"]], G.map(y => ytd(y, 12)), P.s[3]));
+    if (G.length > 1) {
+      const C = finCeneGod(D), grpA = a => (D.A[a] || [])[1] || "Ostalo", mat = a => !/TROŠKOVI|Osnovna sredstva|USLUG/i.test(grpA(a)), ind = finIndeks(D, mat), z = ind[ind.length - 1], g0 = G[G.length - 2];
+      t.push(pl("nc", "uskl", "Indeks nabavnih cena", finNum(z.i, 0), G[0] + " = 100", tr(z.r, true, "vs " + g0), [["Promena " + g0, ind.length > 2 && ind[ind.length - 2].r != null ? finZnak(ind[ind.length - 2].r) : "–"], ["Obuhvat", "isti artikli, ponder količina"]], ind.map(x => x.i), P.s[7]));
+      const L = Object.entries(C).filter(([a, v]) => v[g] && v[g0] && mat(a)).map(([a, v]) => ({ n: (D.A[a] || [a])[0], r: v[g].c / v[g0].c - 1, ef: (v[g].c - v[g0].c) * v[g].k })).filter(x => x.ef > 0).sort((a, b) => b.ef - a.ef).slice(0, 5);
+      t.push(pl("nc", "izlaz", "Top 5 poskupljenja", finMil(L.reduce((s, x) => s + x.ef, 0)), "mil. din više", [L[0] ? L[0].n.slice(0, 28) + " " + finZnak(L[0].r) : "", "t-dn"], L.map(x => [x.n.slice(0, 30), finZnak(x.r) + " · " + finMil(x.ef) + " mil."]), null));
+    }
+    const pd = [...finGrp(D.L.filter(x => x.g === g), x => x.par, x => ({ v: x.iz })).entries()].sort((a, b) => b[1].v - a[1].v), ukD = pd.reduce((s, x) => s + x[1].v, 0), t5 = pd.slice(0, 5).reduce((s, x) => s + x[1].v, 0);
+    t.push(pl("nd", "kutija", "Top 5 dobavljača", finPct(ukD ? t5 / ukD : 0, 0), "nabavke " + g, [finMn(pd.length, "dobavljač", "dobavljača", "dobavljača") + "", "t-fl"], pd.slice(0, 5).map(([p, v]) => [((D.P[p] || [p])[0]).slice(0, 30), finPct(v.v / ukD, 0)]), null));
+  }
+  try {
+    const M = finMes(), z = M.length ? M[M.length - 1] : null, Mg = fin8Mag(), rizik = (() => { let v = 0, n = 0; if (S.sir && S.sir.art) { const C = fin8Cene(); for (const o of sirStanje().values()) { if (o.kol <= 1e-9 || !o.vaz) continue; const d = fin8Dana(T, o.vaz); if (d <= 90) { const a = S.sir.byId[o.art]; const c = a && C[String(a.sifra || "").trim()]; v += c ? o.kol * c : 0; n++; } } } return { v, n }; })();
+    const mag = Mg.reduce((s, x) => s + (x.vr || 0), 0);
+    t.push(pl("zrok", "kutija", "Vrednost zaliha", z ? finMil(z.bil.zalihe) : finMil(mag), "mil. din", [rizik.n ? finMn(rizik.n, "lot", "lota", "lotova") + " ističe u 90 dana · " + finMil(rizik.v) + " mil." : "nema lotova pred istekom", rizik.n ? "t-dn" : "t-up"], [["Po glavnoj knjizi", z ? finMil(z.bil.zalihe) + " mil. (" + finMesNaziv(z) + ")" : "–"], ["Magacini po nabavnoj ceni", finMil(mag) + " mil."], ["Rizik otpisa (≤90 dana)", finMil(rizik.v) + " mil."]], M.slice(-12).map(x => x.bil.zalihe), P.s[1]));
+  } catch (e) { console.error(e); }
+  try {
+    const R = typeof konRedovi === "function" ? konRedovi().filter(r => r.odluka && String(r.datum || "") >= fin8Dod(T, -89)) : [];
+    const neu = R.filter(r => r.odluka === "Neusaglašeno").length, usl = R.filter(r => r.odluka === "Uslovno primljeno").length;
+    t.push(pl("nod", "uskl", "Ulazna kontrola – 90 dana", R.length ? finPct(neu / R.length, 1) : "–", "neusaglašeno", [R.length + " kontrolisanih prijema", neu ? "t-dn" : "t-up"], [["Odgovara", String(R.length - neu - usl)], ["Uslovno primljeno", String(usl)], ["Neusaglašeno", String(neu)]], null));
+  } catch (e) { console.error(e); }
+  if (Dp.L.length) {
+    const G = Dp.god, g = G[G.length - 1], gr = Dp.kraj ? Dp.kraj.slice(4) : "-12-31", a = Dp.L.filter(x => x.g === g), b = Dp.L.filter(x => x.g === g - 1 && x.dt.slice(4) <= gr);
+    const s = (l, k) => l.reduce((t, x) => t + x[k], 0), n1 = s(a, "neto"), n0 = s(b, "neto"), m1 = n1 ? (n1 - s(a, "vz")) / n1 : null, m0 = n0 ? (n0 - s(b, "vz")) / n0 : null;
+    t.push(pl("sp", "pregled", "Prodaja i bruto marža " + g, finMil(n1), "mil. din", tr(n0 ? n1 / n0 - 1 : null, false, "vs isti period " + (g - 1)), [["Bruto marža", m1 != null ? finPct(m1, 1) : "–"], ["Marža " + (g - 1), m0 != null ? finPct(m0, 1) : "–"], ["Zaključno sa", Dp.kraj ? finDtxt(Dp.kraj) : "–"]], G.map(y => s(Dp.L.filter(x => x.g === y), "neto")), P.s[1]));
+  }
+  if (!t.length) return "";
+  return '<h3 class="finH3" style="margin:22px 0 10px">Nabavka, zalihe, kontrola i prodaja</h3><div class="mreza k4 finM2">' + t.join("") + "</div>";
+}
+{
+  const _rfp = renderFinPregled;
+  renderFinPregled = function () {
+    _rfp();
+    try { const box = $("#fpregledBox"), m = box && box.querySelector(".mreza.k4"); if (m && FIN.spreman) m.insertAdjacentHTML("afterend", finPlocice2(finPal())); } catch (e) { console.error(e); }
+  };
+}
+document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches(".finM2 .tile[data-fin-izv]")) { e.preventDefault(); e.target.click(); } });
 
 start();
 })();
