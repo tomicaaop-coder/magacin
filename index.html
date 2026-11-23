@@ -812,6 +812,15 @@ button.uR{ cursor:pointer; } button.uR:hover{ background:var(--brand-soft); }
 .uDub{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:10px 12px; border:1px dashed var(--line); border-radius:12px; font-size:13px; }
 #finRepUprava rect[data-fin-uf]:hover, .uC rect[data-fin-uf]:hover{ opacity:.75; }
 @media (max-width: 900px){ .uGrid{ grid-template-columns:minmax(0,1fr); } .uKpi{ grid-template-columns:repeat(2,minmax(0,1fr)); } .uK b{ font-size:18px; } .uTop{ position:static; } }
+.uI{ display:inline-grid; place-items:center; width:15px; height:15px; border-radius:50%; border:1px solid var(--muted); font:italic 700 10px Georgia,serif; color:var(--muted); margin-left:4px; vertical-align:1px; }
+.uK.klik:hover .uI{ border-color:var(--brand); color:var(--brand); }
+.uInfoM{ position:fixed; inset:0; background:rgba(20,24,28,.45); display:none; align-items:flex-start; justify-content:center; z-index:1000; padding:5vh 16px; overflow:auto; }
+.uInfoM.on{ display:flex; }
+.uInfoK{ position:relative; background:var(--surface); color:var(--ink); border-radius:14px; max-width:620px; width:100%; padding:18px 20px 16px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+.uInfoK h3{ margin:2px 0 6px; font:600 19px var(--head); padding-right:30px; } .uInfoK h4{ margin:14px 0 4px; font:600 12px var(--body); text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+.uInfoK p{ margin:0; font-size:14px; line-height:1.55; } .uInfoV{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; } .uInfoV b{ font-size:26px; }
+.uInfoX{ position:absolute; top:10px; right:12px; border:0; background:none; font-size:24px; line-height:1; cursor:pointer; color:var(--muted); }
+.uInfoT td{ padding:4px 6px; font-size:13.5px; } .uInfoA{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
 .finMojS{ display:flex; align-items:stretch; }
 .finMoj input#finMojF{ font:14px var(--body); }
 .finMojS button[data-fin-moj-otv]{ flex:1; padding-left:22px !important; }
@@ -13933,7 +13942,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "18.11.j";
+const APP_VERZIJA = "18.11.l";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -23288,23 +23297,57 @@ function finIzvMPRED(P) {
 }
 
 /* ================= PRODAJA ================= */
-const FIN_KANAL = [["Trgovinski lanci", /lidl|delhaize|maxi|mercator|idea|roda|univerexport|aman|gomex|tempo|metro|dis\b|lilly|dm drog|dm-drog|drogerie|shopngo|vero|konzum|interex|ahold/], ["Apoteke i veledrogerije", /galenik|phoenix|vega|apotek|farmal|pharm|farm|medik|benu|jankovic|zegin|lekovi/]];
-function finKanal(D, p) { if (D.pov.has(p)) return "Povezana lica"; const n = finN(D.P[p] || ""); for (const [k, re] of FIN_KANAL) if (re.test(n)) return k; return "Ostali kupci"; }
+const FIN_KANALI = ["Povezana lica", "Private Label", "Izvoz", "Ostali kupci"];
+/* raspodela kupaca po kanalima iz tabele „Kanali prodaje“ (23.11.2026) – šifra partnera iz UPIS-a */
+const FIN_KAN_FAJL = {"000372": "Ostali kupci", "000009": "Ostali kupci", "000580": "Ostali kupci", "000052": "Izvoz", "000001": "Povezana lica", "000051": "Izvoz", "000520": "Private Label", "000564": "Izvoz", "000585": "Izvoz", "000644": "Izvoz", "000470": "Izvoz", "000602": "Izvoz", "000369": "Private Label", "000377": "Private Label", "000374": "Private Label", "000414": "Private Label", "000469": "Private Label", "000536": "Private Label", "000612": "Izvoz", "000595": "Ostali kupci", "000636": "Izvoz", "000610": "Ostali kupci", "000049": "Izvoz", "000129": "Povezana lica", "000618": "Ostali kupci", "000651": "Ostali kupci", "000523": "Private Label", "000112": "Ostali kupci", "000431": "Izvoz"};
+/* kupci kojih nema u tabeli (kupovali ranije) – pretpostavka, proveriti */
+const FIN_KAN_PRED = {"000358": "Izvoz", "000331": "Ostali kupci", "000428": "Izvoz", "000398": "Private Label", "000422": "Ostali kupci", "000496": "Ostali kupci", "000513": "Izvoz", "000514": "Izvoz", "000531": "Ostali kupci", "000539": "Ostali kupci"};
+const FIN_KAN_IME = [["RIM GROUP doo NOVI BEOGRAD", "Povezana lica"], ["LIDL SRBIJA KD NOVA PAZOVA Nova Pazova", "Private Label"], ["GALENIKA AD ZEMUN", "Private Label"], ["C1 DOO BEOGRAD Beograd", "Private Label"], ["EXPO COMMERCE DOO Kotor", "Izvoz"], ["SMD - TRADE DOO BANJA LUKA", "Izvoz"], ["ĐURIĆ MBB DOO DOBOJ", "Private Label"], ["LILLY DROGERIE Beograd", "Private Label"], ["AKSA DOO Beograd", "Private Label"], ["VENERA DOO BANJA LUKA", "Izvoz"], ["GOMEX DOO Zrenjanin", "Private Label"], ["TOP NITRA SPOL. S.R.L. NITRA", "Izvoz"], ["FANTAZIJA ŠHOP DOO Beograd", "Ostali kupci"], ["BREND CHOICE VELES", "Izvoz"], ["UG SOLUTIONS DOO BEOGRAD-ZVEZDARA", "Ostali kupci"], ["PTP DIS DOO Krnjevo", "Private Label"], ["FATTOUH PHARMA SARL BEIRUT", "Private Label"], ["M&J TRADE DOO ZEMUN", "Ostali kupci"], ["Eastern Office doo Majdanpek", "Ostali kupci"], ["ALB-KOS GROUP SHPK DURRES", "Izvoz"], ["BOBLER DOO ZEMUN", "Ostali kupci"], ["GOLUB S GROCERY PRESTONS", "Izvoz"], ["ZOOM TRAVEL DOO VOGOŠĆA", "Izvoz"], ["BARON INTERNATIONAL d.o.o. Radeče", "Izvoz"], ["DULIPAK e.U. BEČ", "Izvoz"], ["DIVES d.o.o. BANJA LUKA", "Izvoz"], ["VESHEM doo Beograd", "Ostali kupci"], ["CANDY RUSH DOO NOVI BEOGRAD", "Povezana lica"], ["FEMIĆ CO DOO NOVI BEOGRAD", "Ostali kupci"], ["KRON STR PREDRAG ŠUKOVIĆ PREDUZETNIK LESKOVAC LESKOVAC", "Ostali kupci"]];
+const finKanN = x => finN(x).replace(/[^a-z0-9]/g, "");
+function finKanMapa() { const d = (FIN.docs2 || []).find(x => x._id === "kanali"); return (d && d.mapa) || {}; }
+function finKanIzvor(D, p) {
+  const m = finKanMapa(); if (m[p] && FIN_KANALI.includes(m[p])) return [m[p], "ručno"];
+  if (FIN_KAN_FAJL[p]) return [FIN_KAN_FAJL[p], "tabela"];
+  { const n = finKanN(D.P[p] || ""); if (n.length >= 4) { const h = FIN_KAN_IME.find(([a]) => { const x = finKanN(a); return x.startsWith(n) || n.startsWith(x); }); if (h) return [h[1], "tabela"]; } }
+  if (FIN_KAN_PRED[p]) return [FIN_KAN_PRED[p], "pretpostavka"];
+  if (D.pov.has(p)) return ["Povezana lica", "pretpostavka"];
+  const n = finN(D.P[p] || "");
+  if (/\b(shpk|srl|s\.r\.l|sarl|gmbh|e\.u|ltd|spol|dooel|s\.a|sp\. z o\.o)\b|banja luka|podgorica|kotor|sarajevo|skopje|tirana|durres|pristina|zagreb|ljubljana|doboj|bijeljina|mostar|tuzla|nitra|beirut|bec\b|wien/.test(n)) return ["Izvoz", "pretpostavka"];
+  return ["Ostali kupci", "pretpostavka"];
+}
+function finKanal(D, p) { return finKanIzvor(D, p)[0]; }
 /* C4 – kanali prodaje */
 function finIzvSKAN(P) {
   const D = finProd(); if (!D.L.length) return fin8Nema("Kanali prodaje", "uvezi prodaju");
-  const G = D.god, K = ["Povezana lica", "Trgovinski lanci", "Apoteke i veledrogerije", "Ostali kupci"], kk = {};
+  const G = D.god, K = FIN_KANALI, kk = {};
   for (const x of D.L) { const k = finKanal(D, x.par); const o = kk[k + "|" + x.g] = kk[k + "|" + x.g] || { n: 0, v: 0 }; o.n += x.neto; o.v += x.vz; }
-  const graf = finStek({ kat: G.map(g => finOzn(g)), ser: K.map((k, i) => ({ n: k, v: G.map(g => (kk[k + "|" + g] || { n: 0 }).n), boja: P.s[[0, 1, 3, 7][i]] })) }, P);
+  const graf = finStek({ kat: G.map(g => finOzn(g)), ser: K.map((k, i) => ({ n: k, v: G.map(g => (kk[k + "|" + g] || { n: 0 }).n), boja: P.s[[0, 1, 3, 6][i]] })) }, P);
+  const graf2 = finStubci({ kat: G.map(g => finOzn(g)), ser: K.map((k, i) => ({ n: k, v: G.map(g => (kk[k + "|" + g] || { n: 0 }).n), boja: P.s[[0, 1, 3, 6][i]] })), vrednosti: false, H: 260 }, P);
   const g = G[G.length - 1], uk = K.reduce((s, k) => s + (kk[k + "|" + g] || { n: 0 }).n, 0);
-  const red = K.map(k => ({ c: [k].concat(G.map(y => (kk[k + "|" + y] || { n: 0 }).n)).concat([uk ? (kk[k + "|" + g] || { n: 0 }).n / uk : null, (() => { const o = kk[k + "|" + g]; return o && o.n ? (o.n - o.v) / o.n : null; })()]) }));
-  const kup = [...finGrp(D.L.filter(x => x.g === g), x => x.par, x => ({ n: x.neto })).entries()].map(([p, v]) => ({ p, n: D.P[p] || p, k: finKanal(D, p), v: v.n })).sort((a, b) => b.v - a.v);
-  return { naslov: "Kanali prodaje", opis: "Prodaja po kanalima. Kanal se određuje po nazivu kupca (trgovinski lanci, apoteke i veledrogerije) i po tome da li je kupac povezano lice. Domaće tržište i izvoz po glavnoj knjizi su u izveštaju „Prihodi po tržištima“.",
-    blokovi: [fin8Obj("Stubci pokazuju koliko se prodaje kroz koji kanal po godinama, a tabela i udeo i bruto maržu kanala u poslednjoj godini. Raspored po kanalima je automatski (po nazivu kupca) – ako je neki kupac pogrešno svrstan, javi pa ćemo dopuniti pravila. Regioni nisu u izvozu prodaje, pa ih za sada nema."),
-      { svg: graf, naslov: "Prodaja po kanalima" }, { tabela: { kol: [{ t: "Kanal", tip: "txt" }].concat(G.map(y => ({ t: String(y), tip: "hilj" }))).concat([{ t: "Udeo " + g, tip: "pct" }, { t: "Marža " + g, tip: "pct" }]), red } },
-      { tabela: { naslov: "Kupci i kanal (" + g + ")", kol: [{ t: "Kupac", tip: "txt" }, { t: "Kanal", tip: "txt" }, { t: "Prodaja", tip: "hilj" }], red: kup.slice(0, 40).map(x => ({ c: [x.n, x.k, x.v], klik: "kupac:" + x.p })) } },
-      fin8Zak([K.map(k => ({ k, v: (kk[k + "|" + g] || { n: 0 }).n })).sort((a, b) => b.v - a.v).slice(0, 2).map(o => o.k + " " + finPct(uk ? o.v / uk : 0, 0)).join(", ") + " prodaje u " + g + ".", "Zavisnost od povezanih lica: " + finPct(uk ? (kk["Povezana lica|" + g] || { n: 0 }).n / uk : 0, 0) + " prodaje."])] };
+  const mar = (k, y) => { const o = kk[k + "|" + y]; return o && o.n ? (o.n - o.v) / o.n : null; };
+  const red = K.map(k => ({ c: [k].concat(G.map(y => (kk[k + "|" + y] || { n: 0 }).n)).concat([uk ? (kk[k + "|" + g] || { n: 0 }).n / uk : null, mar(k, g)]) }));
+  red.push({ c: ["Ukupno"].concat(G.map(y => K.reduce((s, k) => s + (kk[k + "|" + y] || { n: 0 }).n, 0))).concat([1, null]), b: 1 });
+  const sviK = [...finGrp(D.L, x => x.par, x => ({ n: x.neto, z: x.dt })).entries()].map(([p, v]) => { const [k, iz] = finKanIzvor(D, p); return { p, n: D.P[p] || p, k, iz, v: v.n, g: D.L.filter(x => x.par === p && x.g === g).reduce((s, x) => s + x.neto, 0) }; }).sort((a, b) => b.v - a.v);
+  const sme = finSme(), pret = sviK.filter(x => x.iz === "pretpostavka");
+  const ed = '<section class="finBlok"><h3 class="finH3">Raspodela kupaca po kanalima</h3><p class="muted" style="font-size:13px;margin:0 0 8px">Izvor: tabela „Kanali prodaje“ koju si poslao 23.11.2026. Kupci kojih nema u tabeli su svrstani po pretpostavci (označeno žuto)' + (sme ? " – promeni kanal u padajućem meniju i izmena se odmah čuva za sve korisnike." : ".") + "</p>" +
+    '<div class="finTw"><table class="finT"><thead><tr><th>Kupac</th><th>Kanal</th><th>Izvor</th><th class="r">Prodaja ' + g + '</th><th class="r">Prodaja ukupno</th></tr></thead><tbody>' +
+    sviK.map(x => "<tr" + (x.iz === "pretpostavka" ? ' style="background:rgba(217,178,58,.14)"' : "") + "><td>" + esc(x.n) + "</td><td>" + (sme ? '<select data-fin-kan="' + esc(x.p) + '">' + K.map(k => "<option" + (k === x.k ? " selected" : "") + ">" + esc(k) + "</option>").join("") + "</select>" : esc(x.k)) + "</td><td>" + esc(x.iz) + '</td><td class="r num">' + finHilj(x.g) + '</td><td class="r num">' + finHilj(x.v) + "</td></tr>").join("") + "</tbody></table></div></section>";
+  const top2 = K.map(k => ({ k, v: (kk[k + "|" + g] || { n: 0 }).n })).sort((a, b) => b.v - a.v);
+  const lim0 = D.kraj && D.kraj.slice(5) !== "12-31" ? (g - 1) + D.kraj.slice(4) : "9999", isti = k => D.L.filter(x => x.g === g - 1 && x.dt <= lim0 && finKanal(D, x.par) === k).reduce((t, x) => t + x.neto, 0);
+  return { naslov: "Kanali prodaje", opis: "Prodaja po kanalima: povezana lica, private label (proizvodnja pod robnom markom kupca), izvoz i ostali kupci. Raspodela kupaca je iz tabele „Kanali prodaje“; može se menjati na dnu izveštaja.",
+    blokovi: [fin8Obj("Gornji grafikon pokazuje udeo kanala u prodaji po godinama, a drugi iznose. Tabela daje prodaju po godinama, udeo i bruto maržu kanala u " + g + ". (marža = prodaja − vrednost zaliha prodate robe). Na dnu je spisak svih kupaca sa kanalom: kupci iz tvoje tabele su označeni „tabela“, ručno promenjeni „ručno“, a ostali „pretpostavka“."),
+      { svg: graf, naslov: "Udeo kanala u prodaji" }, { svg: graf2, naslov: "Prodaja po kanalima (mil. din)" }, { tabela: { kol: [{ t: "Kanal", tip: "txt" }].concat(G.map(y => ({ t: String(y), tip: "hilj" }))).concat([{ t: "Udeo " + g, tip: "pct" }, { t: "Marža " + g, tip: "pct" }]), red } },
+      { html: ed }, { izvoz: 1, tabela: { naslov: "Kupci i kanal", kol: [{ t: "Kupac", tip: "txt" }, { t: "Kanal", tip: "txt" }, { t: "Prodaja " + g, tip: "hilj" }, { t: "Ukupno", tip: "hilj" }], red: sviK.map(x => ({ c: [x.n, x.k, x.g, x.v], klik: "kupac:" + x.p })) } },
+      fin8Zak([top2.slice(0, 2).map(o => o.k + " " + finPct(uk ? o.v / uk : 0, 0)).join(", ") + " prodaje u " + g + ".",
+        "Zavisnost od povezanih lica: " + finPct(uk ? (kk["Povezana lica|" + g] || { n: 0 }).n / uk : 0, 0) + " prodaje" + (mar("Povezana lica", g) != null ? ", marža " + finPct(mar("Povezana lica", g), 1) : "") + ".",
+        ...["Private Label", "Izvoz"].map(k => { const a = kk[k + "|" + g]; if (!a) return null; const b0 = isti(k); return k + ": " + finMil(a.n) + " mil." + (b0 ? " (" + finZnak(a.n / b0 - 1) + " u odnosu na isti period " + (g - 1) + ")" : "") + ", marža " + finPct(mar(k, g), 1) + "."; }),
+        pret.length ? finMn(pret.length, "kupac je svrstan", "kupca su svrstana", "kupaca je svrstano") + " po pretpostavci (nema ih u tabeli) – proveri ih u spisku na dnu." : null])] };
 }
+document.addEventListener("change", async e => {
+  const t = e.target; if (!t.dataset || t.dataset.finKan == null) return;
+  const m = Object.assign({}, finKanMapa()); m[t.dataset.finKan] = t.value;
+  try { await write(() => S.db.doc("finansije/kanali").set({ tip: "kanali", mapa: m })); FIN.cache = {}; toast("Kanal je sačuvan."); } catch (er) { dbErr(er); }
+});
 /* C5 – prosečna cena i rabati */
 function finIzvSCR(P) {
   const D = finProd(); if (!D.L.length) return fin8Nema("Prosečna cena i rabati", "uvezi prodaju");
@@ -23372,7 +23415,7 @@ finKatPosle("np", ["nmes", "Nabavka po mesecima", "Od početka godine, poređenj
 finKatPosle("nc", ["nca", "Cena artikla kroz vreme", "Jedan artikal, svi dobavljači"], ["nek", "Efekat cene i količine", "Da li je nabavka rasla zbog cena ili obima"]);
 finKatPosle("nu", ["nabc", "ABC analiza artikala", "Na koje artikle fokusirati kontrolu"], ["nxyz", "XYZ i ABC-XYZ matrica", "Stabilni i nepredvidivi artikli"], ["nuc", "Učestalost porudžbina", "Česti mali prijemi"], ["nod", "Ocena dobavljača", "Cena i ulazna kontrola"], ["nsez", "Sezonalnost nabavke", "Jaki i slabi meseci"]);
 finKatPosle("nsez", ["#", "Zalihe i magacin"], ["zob", "Obrt zaliha i pokrivenost", "Za koliko dana imamo robe"], ["zmrt", "Mrtve i spore zalihe", "Roba bez izlaza 90/180/365 dana"], ["znes", "Rizik nestašice", "Semafor: šta će ponestati"], ["zrok", "Rokovi i otpis", "Lotovi sirovina pred istekom"], ["zvr", "Vrednost zaliha kroz vreme", "Da li vezujemo sve više novca"], ["zpop", "Popisne razlike i kalo", "Manjkovi i viškovi"], ["muc", "Učinak magacina", "Prijemi i izdavanja po danu i korisniku"], ["mpred", "Predlog nabavke", "Šta poručiti u narednih 30 dana"]);
-finKatPosle("sk", ["srfm", "RFM segmentacija kupaca", "Verni, novi, u riziku, izgubljeni"], ["skan", "Kanali prodaje", "Lanci, apoteke, povezana lica"]);
+finKatPosle("sk", ["srfm", "RFM segmentacija kupaca", "Verni, novi, u riziku, izgubljeni"], ["skan", "Kanali prodaje", "Povezana lica, private label, izvoz"]);
 finKatPosle("sce", ["scr", "Prosečna cena i rabati", "Koliko popuštamo i kome"]);
 finKatPosle("pmr", ["pmp", "Proizvodi sa padom marže", "Gde korigovati prodajnu cenu"]);
 { const i = FIN_KAT.findIndex(x => x[0] === "#" && x[1] === "Proizvodnja"); if (i >= 0) FIN_KAT[i] = ["#", "Proizvodnja i profitabilnost"]; }
@@ -23460,9 +23503,34 @@ const FIN_U_IZV = { uprod: "prod", unab: "nab", upro: "pro", ufin: "fin" };
 const fuM = v => finMil(v) + " mil.";
 const fuD = (a, b) => b ? a / b - 1 : null;
 function fuDelta(x, obrnuto, txt) { if (x == null || !isFinite(x)) return ""; const dobro = obrnuto ? x < 0 : x > 0; return '<span class="uDel ' + (Math.abs(x) < 0.005 ? "" : dobro ? "up" : "dn") + '">' + (x > 0 ? "▲ +" : x < 0 ? "▼ " : "") + finPct(x, 1) + (txt ? " " + esc(txt) : "") + "</span>"; }
-function fuKpi(L) {
-  return '<div class="uKpi">' + L.map(k => '<div class="uK' + (k.klik ? " klik" : "") + '"' + (k.klik ? (/:$/.test(k.klik) ? ' data-fin-det="' + esc(k.klik.slice(0, -1)) + '"' : ' data-fin-df="' + esc(k.klik) + '"') + ' role="button" tabindex="0" title="Klik otvara detalje"' : "") + '><span>' + esc(k.n) + '</span><b class="num">' + k.v + "</b>" + (k.d || "") + (k.s ? "<small>" + esc(k.s) + "</small>" : "") + "</div>").join("") + "</div>";
+function fuKpi(L, I) {
+  FIN.uInfo = L.map((k, i) => Object.assign({ n: k.n, v: k.v, d: k.d, s: k.s, klik: k.klik }, (I || [])[i] || {}));
+  return '<div class="uKpi">' + L.map((k, i) => '<div class="uK klik" data-fin-ui="' + i + '" role="button" tabindex="0" title="Klik: šta je ovo i odakle je podatak"><span>' + esc(k.n) + ' <i class="uI">i</i></span><b class="num">' + k.v + "</b>" + (k.d || "") + (k.s ? "<small>" + esc(k.s) + "</small>" : "") + "</div>").join("") + "</div>";
 }
+/* prozor sa objašnjenjem pločice */
+function fuInfoOtvori(i) {
+  const k = (FIN.uInfo || [])[i]; if (!k) return;
+  const fil = [...document.querySelectorAll(".view.on .uTop [data-fin-ux]:not([data-fin-ux=sve])")].map(e => e.textContent.replace(/\s*×$/, ""));
+  const god = document.querySelector(".view.on .uTop [data-fin-ug].on");
+  const det = k.klik ? (/:$/.test(k.klik) ? 'data-fin-det="' + esc(k.klik.slice(0, -1)) + '"' : 'data-fin-df="' + esc(k.klik) + '"') : "";
+  const sek = (n, t) => t ? '<h4>' + n + "</h4><p>" + esc(String(t).replace(/mil\.\./g, "mil.")) + "</p>" : "";
+  let m = document.getElementById("uInfo"); if (!m) { m = document.createElement("div"); m.id = "uInfo"; m.className = "uInfoM"; document.body.appendChild(m); }
+  m.innerHTML = '<div class="uInfoK" role="dialog" aria-modal="true" aria-labelledby="uInfoN"><button type="button" class="uInfoX" data-fin-uix aria-label="Zatvori">×</button>' +
+    '<span class="muted" style="font-size:12px">' + esc((FIN_KAT.find(x => x[0] === FIN.izv) || ["", ""])[1]) + '</span><h3 id="uInfoN">' + esc(k.n) + '</h3><div class="uInfoV"><b class="num">' + k.v + "</b>" + (k.d || "") + "</div>" + (k.s ? '<p class="muted" style="margin:2px 0 0">' + esc(k.s) + "</p>" : "") +
+    sek("Šta predstavlja", k.sta) + sek("Odakle je podatak", k.izvor) + sek("Kako se računa", k.racun) +
+    (k.dod && k.dod.length ? '<h4>Brojevi</h4><table class="finT uInfoT"><tbody>' + k.dod.filter(x => x && x[1] != null && x[1] !== "").map(x => "<tr><td>" + esc(x[0]) + '</td><td class="r num">' + esc(x[1]) + "</td></tr>").join("") + "</tbody></table>" : "") +
+    sek("Kako tumačiti", k.tum) +
+    '<h4>Period i filteri</h4><p>' + esc((god ? "Godina " + god.textContent : "") + (fil.length ? " · " + fil.join(" · ") : " · bez filtera (cela firma)")) + "</p>" +
+    '<div class="uInfoA">' + (det ? '<button type="button" class="btn primary" ' + det + ' data-fin-uix>Otvori dokumente i detalje</button>' : "") + (k.izv ? '<button type="button" class="btn" data-fin-izv="' + k.izv + '" data-fin-uix>' + esc(k.izvN || "Detaljan izveštaj") + "</button>" : "") + '<button type="button" class="btn" data-fin-uix>Zatvori</button></div></div>';
+  m.classList.add("on"); const x = m.querySelector(".uInfoX"); if (x) x.focus();
+}
+function fuInfoZatvori() { const m = document.getElementById("uInfo"); if (m) m.classList.remove("on"); }
+document.addEventListener("click", e => {
+  const t = e.target;
+  if (t.closest("[data-fin-uix]") || t.id === "uInfo") { fuInfoZatvori(); const dt = t.closest("[data-fin-det]"); if (dt) { e.stopPropagation(); finDetOtvori(dt.dataset.finDet); } return; }
+  const k = t.closest("[data-fin-ui]"); if (k) fuInfoOtvori(+k.dataset.finUi);
+}, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") fuInfoZatvori(); if ((e.key === "Enter" || e.key === " ") && e.target.dataset && e.target.dataset.finUi != null) { e.preventDefault(); fuInfoOtvori(+e.target.dataset.finUi); } });
 /* lista sa trakama: klik na red filtrira tablu po dimenziji */
 function fuBar(R, dim, st, o) {
   o = o || {}; if (!R.length) return '<p class="muted" style="font-size:13px">Nema podataka za izabrane filtere.</p>';
@@ -23496,6 +23564,9 @@ function finIzvUPROD(P) {
   const s = (L, k) => L.reduce((t, x) => t + x[k], 0), n = s(T, "neto"), n0 = s(T0, "neto"), m = n - s(T, "vz"), m0 = n0 - s(T0, "vz"), mp = n ? m / n : null, mp0 = n0 ? m0 / n0 : null;
   const per = F.mesec ? fuMesN(F.mesec) + " " + g : (g === zad && lim0 !== "9999" ? g + " (do " + finDtxt(D.kraj) + ")" : String(g)), cmp = "vs " + (g - 1);
   const kup = new Set(T.filter(x => x.neto > 0).map(x => x.par)).size, kup0 = new Set(T0.filter(x => x.neto > 0).map(x => x.par)).size, isp = new Set(T.map(x => x.dok)).size, isp0 = new Set(T0.map(x => x.dok)).size;
+  const pop = s(T, "pop"), kol = s(T, "kol"), kol0 = s(T0, "kol"), setK = new Set(T.filter(x => x.neto > 0).map(x => x.par)), setK0 = new Set(T0.filter(x => x.neto > 0).map(x => x.par));
+  const ISP = "UPIS – izveštaj „Isporuka artikala“ (PDF), uvezen u Izveštaji → Uvoz podataka. Jedan red = jedan artikal na jednoj isporuci.";
+  const PER = lim0 !== "9999" && !F.mesec ? " Poređenje je sa istim periodom " + (g - 1) + ". (do " + finDtxt((g - 1) + D.kraj.slice(4)) + ")." : " Poređenje je sa istim mesecima " + (g - 1) + ".";
   const kpi = fuKpi([
     { n: "Prodaja " + per, v: fuM(n), d: fuDelta(fuD(n, n0), false, cmp), klik: F.kupac ? "kupac:" + F.kupac : F.proizvod ? "proizvod:" + F.proizvod : null },
     { n: "Bruto marža", v: fuM(m), d: fuDelta(fuD(m, m0), false, cmp) },
@@ -23503,6 +23574,25 @@ function finIzvUPROD(P) {
     { n: "Količina", v: finNum(s(T, "kol"), 0), d: fuDelta(fuD(s(T, "kol"), s(T0, "kol")), false, cmp) },
     { n: "Aktivnih kupaca", v: String(kup), s: (g - 1) + ": " + kup0 },
     { n: "Isporuka", v: finNum(isp, 0), s: "prosečno " + fuM(isp ? n / isp : 0) + " po isporuci" + (isp0 ? " · " + (g - 1) + ": " + isp0 : "") }
+  ], [
+    { sta: "Neto vrednost robe isporučene kupcima – fakturisana prodaja bez PDV-a, posle odobrenog rabata.", izvor: ISP + " Kolona „neto vrednost“.", racun: "Zbir neto vrednosti svih stavki isporuka u periodu za izabrane filtere." + PER,
+      dod: [["Prodaja " + per, fuM(n)], [(g - 1) + " isti period", fuM(n0)], ["Razlika", fuM(n - n0)], ["Promena", n0 ? finZnak(n / n0 - 1) : "–"], ["Odobreni rabat", fuM(pop)], ["Bruto prodaja pre rabata", fuM(n + pop)]],
+      tum: "Iznos se može malo razlikovati od prihoda u glavnoj knjizi: knjiga sadrži i usluge, knjižna odobrenja i razgraničenja, a ovde je samo isporučena roba.", izv: "sp", izvN: "Prodaja – pregled" },
+    { sta: "Koliko je ostalo od prodaje posle pokrića vrednosti prodate robe – zarada pre ostalih troškova (zarade, energija, usluge…).", izvor: ISP + " Kolone „neto vrednost“ i „vrednost zaliha“ (VZ) – vrednost po kojoj je roba razdužena iz magacina gotovih proizvoda.", racun: "Neto prodaja − vrednost zaliha prodate robe.",
+      dod: [["Neto prodaja", fuM(n)], ["Vrednost zaliha prodate robe", fuM(n - m)], ["Bruto marža", fuM(m)], ["Bruto marža " + (g - 1), fuM(m0)], ["Promena", m0 ? finZnak(m / m0 - 1) : "–"]],
+      tum: "Vrednost zaliha je knjigovodstvena cena proizvoda u trenutku isporuke, pa se marža menja i kad se promeni cena koštanja, a ne samo prodajna cena.", izv: "smr", izvN: "Marža po proizvodu i kupcu" },
+    { sta: "Koliko dinara bruto marže ostaje od svakih 100 dinara prodaje.", izvor: ISP, racun: "Bruto marža / neto prodaja × 100.",
+      dod: [["Marža " + per, mp != null ? finPct(mp, 1) : "–"], ["Marža " + (g - 1), mp0 != null ? finPct(mp0, 1) : "–"], ["Razlika", mp != null && mp0 != null ? finNum((mp - mp0) * 100, 1) + " p.p." : "–"], ["1 p.p. marže na ovoj prodaji", fuM(n * 0.01)]],
+      tum: "Jedan procentni poen marže na ovoj prodaji vredi " + fuM(n * 0.01) + ". Pad marže najčešće dolazi od većih rabata, promene asortimana ka jeftinijim proizvodima ili rasta cene koštanja.", izv: "pvm", izvN: "Zašto se promenila marža" },
+    { sta: "Ukupna isporučena količina u jedinicama mere proizvoda (komadi, pakovanja).", izvor: ISP + " Kolona „količina“.", racun: "Zbir količina svih stavki isporuka u periodu." + PER,
+      dod: [["Količina " + per, finNum(kol, 0)], [(g - 1) + " isti period", finNum(kol0, 0)], ["Promena", kol0 ? finZnak(kol / kol0 - 1) : "–"], ["Prosečna neto cena po jedinici", kol ? finNum(n / kol, 2) + " din" : "–"], ["Prosečna cena " + (g - 1), kol0 ? finNum(n0 / kol0, 2) + " din" : "–"]],
+      tum: "Količine različitih proizvoda se sabiraju bez obzira na veličinu pakovanja – broj je najkorisniji kad je izabran jedan proizvod ili jedna grupa sličnih. Ako prodaja raste brže od količine, rastu cene ili se prodaju skuplji proizvodi.", izv: "spr", izvN: "Proizvodi" },
+    { sta: "Broj različitih kupaca koji su u periodu imali bar jednu isporuku.", izvor: ISP + " Kolona „partner“.", racun: "Broj različitih šifara kupaca sa pozitivnom neto prodajom u periodu.",
+      dod: [["Aktivnih kupaca", String(kup)], ["Aktivnih " + (g - 1), String(kup0)], ["Novi (nisu kupovali u istom periodu " + (g - 1) + ")", String([...setK].filter(x => !setK0.has(x)).length)], ["Nisu kupovali ove godine", String([...setK0].filter(x => !setK.has(x)).length)], ["Prosečna prodaja po kupcu", fuM(kup ? n / kup : 0)]],
+      tum: "Mali broj kupaca sa velikim udelom znači veliku zavisnost; detaljan pregled ko je nov, ko je u riziku i ko je otišao je u RFM segmentaciji.", izv: "srfm", izvN: "RFM segmentacija kupaca" },
+    { sta: "Broj isporuka (dokumenata) u periodu i prosečna vrednost jedne isporuke.", izvor: ISP + " Kolona „broj dokumenta“.", racun: "Broj različitih brojeva dokumenata; prosečna isporuka = neto prodaja / broj isporuka.",
+      dod: [["Isporuka", finNum(isp, 0)], ["Isporuka " + (g - 1), finNum(isp0, 0)], ["Prosečna vrednost isporuke", fuM(isp ? n / isp : 0)], ["Prosečna vrednost " + (g - 1), fuM(isp0 ? n0 / isp0 : 0)], ["Prosečno stavki po isporuci", isp ? finNum(T.length / isp, 1) : "–"]],
+      tum: "Više manjih isporuka znači veći trošak komisioniranja i prevoza po dinaru prodaje.", izv: "sk", izvN: "Kupci" }
   ]);
   // mesečni grafikon (bez filtera meseca, da se vidi ceo trend)
   const mA = FIN_MES3.map((_, i) => s(A.filter(x => x.m === i + 1), "neto")), mB = FIN_MES3.map((_, i) => s(A0.filter(x => x.m === i + 1), "neto"));
@@ -23568,13 +23658,15 @@ function finIzvUNAB(P) {
   // indeks cena i efekat cene: isti artikli, ovogodišnje količine
   const pa = finGrp(T.filter(x => x.kol > 0), x => x.art, x => ({ k: x.kol, v: x.iz })), pb = finGrp(N.L.filter(x => x.g === g - 1 && x.kol > 0 && f(x)), x => x.art, x => ({ k: x.kol, v: x.iz }));
   let a1 = 0, a0 = 0; const pos = [];
-  for (const [k, o] of pa) { const b = pb.get(k); if (!b || !b.k || !o.k) continue; const c1 = o.v / o.k, c0 = b.v / b.k; a1 += o.v; a0 += c0 * o.k; pos.push({ k, r: c1 / c0 - 1, ef: (c1 - c0) * o.k }); }
+  for (const [k, o] of pa) { const b = pb.get(k); if (!b || !b.k || !o.k) continue; const c1 = o.v / o.k, c0 = b.v / b.k; if (!(c1 / c0 > 1 / 3 && c1 / c0 < 3)) continue; a1 += o.v; a0 += c0 * o.k; pos.push({ k, r: c1 / c0 - 1, ef: (c1 - c0) * o.k }); }
   const ind = a0 ? a1 / a0 - 1 : null, ef = a1 - a0;
   const Dp = finGrp(T, x => x.par, x => ({ v: x.iz })), Dp0 = finGrp(T0, x => x.par, x => ({ v: x.iz })), Gr = finGrp(T, x => grpA(x.art), x => ({ v: x.iz })), Gr0 = finGrp(T0, x => grpA(x.art), x => ({ v: x.iz })), Ar = finGrp(T, x => x.art, x => ({ v: x.iz, k: x.kol })), Ar0 = finGrp(T0, x => x.art, x => ({ v: x.iz }));
   const t5 = [...Dp.values()].sort((a, b) => b.v - a.v).slice(0, 5).reduce((t, x) => t + x.v, 0);
   const brD = {}; for (const x of N.L.filter(y => y.g === g)) (brD[x.art] = brD[x.art] || new Set()).add(x.par);
   const jedan = [...Ar.entries()].filter(([k]) => brD[k] && brD[k].size === 1), jedV = jedan.reduce((t, [, o]) => t + o.v, 0);
   const per = (F.mesec ? fuMesN(F.mesec) + " " : "") + (g === zad && zm < 12 ? g + " (" + FIN_MES3[0] + "–" + FIN_MES3[zm - 1] + ")" : String(g)), cmp = "vs " + (g - 1);
+  const NAB = "UPIS – pivot nabavke po artiklima i dobavljačima (Excel), uvezen u Izveštaji → Uvoz podataka.";
+  const topP = pos.filter(x => x.ef > 0).sort((a, b) => b.ef - a.ef).slice(0, 3), topD = [...Dp.entries()].sort((a, b) => b[1].v - a[1].v).slice(0, 5), topJ = jedan.slice().sort((a, b) => b[1].v - a[1].v).slice(0, 3);
   const kpi = fuKpi([
     { n: "Nabavka " + per, v: fuM(v), d: fuDelta(fuD(v, v0), true, cmp), klik: F.dobavljac ? "dobavljac:" + F.dobavljac : F.artikal ? "artikal:" + F.artikal : F.grupa ? "grupa:" + F.grupa : null },
     { n: "Promena nabavnih cena", v: ind != null ? (ind >= 0 ? "+" : "") + finPct(ind, 1) : "–", s: "isti artikli, ponder količina " + g },
@@ -23582,6 +23674,25 @@ function finIzvUNAB(P) {
     { n: "Dobavljača", v: String(Dp.size), s: "top 5 = " + finPct(v ? t5 / v : 0, 0) + " nabavke" },
     { n: "Artikala", v: String(Ar.size), s: jedan.length + " sa samo jednim dobavljačem" },
     { n: "Zavisnost od jednog dobavljača", v: finPct(v ? jedV / v : 0, 0), s: fuM(jedV) + " u artiklima bez alternative" }
+  ], [
+    { sta: "Vrednost nabavljenih artikala (sirovine, ambalaža, roba, rezervni delovi i ostalo što ide kroz nabavku) bez PDV-a.", izvor: NAB + " Kolona iznos.", racun: "Zbir iznosa nabavki u periodu za izabrane filtere. Za tekuću godinu poređenje je sa istim mesecima prethodne godine. Mesec nabavke je datum poslednje nabavke artikla po istoj ceni, pa je mesečni raspored približan.",
+      dod: [["Nabavka " + per, fuM(v)], [(g - 1) + " isti meseci", fuM(v0)], ["Razlika", fuM(v - v0)], ["Promena", v0 ? finZnak(v / v0 - 1) : "–"], ["Od toga zbog cena", fuM(ef)], ["Od toga zbog obima i asortimana", fuM(v - v0 - ef)]],
+      tum: "Rast nabavke nije sam po sebi loš ako prati proizvodnju i prodaju; razdvajanje na efekat cene i količine je u izveštaju „Efekat cene i količine“.", izv: "nek", izvN: "Efekat cene i količine" },
+    { sta: "Koliko su se promenile nabavne cene istih artikala u odnosu na prošlu godinu – naša „inflacija ulaza“.", izvor: NAB, racun: "Za svaki artikal kupljen i ove i prošle godine: prosečna cena = iznos / količina. Indeks = Σ(ovogodišnja cena × ovogodišnja količina) / Σ(prošlogodišnja cena × ovogodišnja količina) − 1. Novi artikli se ne računaju, a ni artikli čija se cena promenila više od tri puta (najčešće promena jedinice mere u UPIS-u).",
+      dod: [["Obuhvaćeno artikala", String(pos.length)], ["Vrednost obuhvaćenih artikala", fuM(a1) + " (" + finPct(v ? a1 / v : 0, 0) + " nabavke)"], ["Ista količina po prošlogodišnjim cenama", fuM(a0)], ["Poskupelo", String(pos.filter(x => x.r > 0.005).length)], ["Pojeftinilo", String(pos.filter(x => x.r < -0.005).length)]],
+      tum: "Ako indeks raste brže od prodajnih cena, marža se smanjuje. Uporedi sa promenom cene koštanja na tabli Proizvodnja.", izv: "nc", izvN: "Kretanje nabavnih cena" },
+    { sta: "Koliko dinara smo platili više (ili manje) samo zbog promene nabavnih cena, za iste količine.", izvor: NAB, racun: "Σ (ovogodišnja cena − prošlogodišnja cena) × ovogodišnja količina, za artikle kupljene obe godine.",
+      dod: [["Efekat cena", fuM(ef)]].concat(topP.map(x => [((N.A[x.k] || [x.k])[0]).slice(0, 48), "+" + finPct(x.r, 0) + " · " + fuM(x.ef)])),
+      tum: "Ovo je iznos o kome vredi pregovarati: najveći pojedinačni efekti su prvi kandidati za razgovor sa dobavljačem ili traženje alternative.", izv: "nc", izvN: "Poskupljenja" },
+    { sta: "Broj dobavljača od kojih smo nabavljali u periodu i koliko zavisimo od najvećih.", izvor: NAB + " Kolona dobavljač.", racun: "Broj različitih šifara dobavljača; udeo top 5 = nabavka od 5 najvećih / ukupna nabavka.",
+      dod: [["Dobavljača", String(Dp.size)], ["Udeo 5 najvećih", finPct(v ? t5 / v : 0, 0)]].concat(topD.map(([p, o]) => [((N.P[p] || [p])[0]).slice(0, 48), fuM(o.v) + " · " + finPct(v ? o.v / v : 0, 0)])),
+      izv: "nd", izvN: "Dobavljači (Pareto)" },
+    { sta: "Broj različitih artikala nabavljenih u periodu.", izvor: NAB + " Kolona artikal (šifra iz UPIS-a).", racun: "Broj različitih šifara artikala; „sa jednim dobavljačem“ = artikli koje smo u godini kupovali samo kod jednog dobavljača.",
+      dod: [["Artikala", String(Ar.size)], ["Sa jednim dobavljačem", String(jedan.length)], ["Sa dva ili više dobavljača", String(Ar.size - jedan.length)]],
+      tum: "Na artikle klase A (80 % vrednosti) treba usmeriti najviše pažnje – vidi ABC analizu.", izv: "nabc", izvN: "ABC analiza artikala" },
+    { sta: "Koliki deo nabavke je u artiklima za koje nemamo alternativnog dobavljača – rizik snabdevanja i slabija pozicija u pregovorima.", izvor: NAB, racun: "Vrednost nabavke artikala kupljenih samo kod jednog dobavljača u godini / ukupna nabavka.",
+      dod: [["Vrednost bez alternative", fuM(jedV)], ["Udeo u nabavci", finPct(v ? jedV / v : 0, 1)]].concat(topJ.map(([a, o]) => [((N.A[a] || [a])[0]).slice(0, 48), fuM(o.v) + " · " + ((N.P[[...brD[a]][0]] || [""])[0]).slice(0, 24)])),
+      tum: "Neki artikli namerno imaju jednog dobavljača (specifična ambalaža, odobrena sirovina); za velike stavke vredi imati bar jednu odobrenu rezervu.", izv: "nu", izvN: "Isti artikal, više dobavljača" }
   ]);
   const mA = FIN_MES3.map((_, i) => s(A.filter(x => x.m === i + 1), "iz")), mB = FIN_MES3.map((_, i) => s(N.L.filter(x => x.g === g - 1 && f(x) && x.m === i + 1), "iz"));
   const graf = fuMesKlik(finStubci({ kat: FIN_MES3, ser: [{ n: String(g), v: mA.map((x, i) => i < zm ? x : null), boja: P.s[3] }, { n: String(g - 1), v: mB, boja: P.s[6] }], vrednosti: false, H: 240, klik: FIN_MES3.map((_, i) => "mesec:" + (i + 1)) }, P));
@@ -23636,7 +23747,7 @@ function finIzvUPRO(P) {
   const s = (L, k) => L.reduce((t, x) => t + x[k], 0), v = s(T, "kos"), v0 = s(T0, "kos"), k = s(T, "kol"), k0 = s(T0, "kol"), mt = s(T, "mat");
   // cena koštanja po komadu: isti proizvodi, ponder ovogodišnje količine
   const pa = finGrp(T, x => x.sf, x => ({ k: x.kol, v: x.kos })), pb = finGrp(T0, x => x.sf, x => ({ k: x.kol, v: x.kos }));
-  let c1 = 0, c0 = 0; const rast = []; for (const [sf, o] of pa) { const b = pb.get(sf); if (!b || !b.k || !o.k) continue; c1 += o.v; c0 += b.v / b.k * o.k; rast.push({ k: sf, l: ime(sf), r: (o.v / o.k) / (b.v / b.k) - 1, ef: o.v - b.v / b.k * o.k }); }
+  let c1 = 0, c0 = 0; const rast = []; for (const [sf, o] of pa) { const b = pb.get(sf); if (!b || !b.k || !o.k) continue; { const q = (o.v / o.k) / (b.v / b.k); if (!(q > 1 / 3 && q < 3)) continue; } c1 += o.v; c0 += b.v / b.k * o.k; rast.push({ k: sf, l: ime(sf), r: (o.v / o.k) / (b.v / b.k) - 1, ef: o.v - b.v / b.k * o.k }); }
   const indC = c0 ? c1 / c0 - 1 : null;
   // marža na cenu koštanja iz prodaje
   const D = finProd(), CK = finCkGod(C, g), pd = finGrp(D.L.filter(x => x.g === g && x.kol > 0 && (!F.proizvod || x.art === F.proizvod) && (!F.klasa || kl(x.art) === F.klasa)), x => x.art, x => ({ k: x.kol, n: x.neto }));
@@ -23645,6 +23756,8 @@ function finIzvUPRO(P) {
   const S0 = C.STR[g] || {}, zb = new Array(7).fill(0); for (const sf in S0) { if (F.proizvod && sf !== F.proizvod) continue; if (F.klasa && kl(sf) !== F.klasa) continue; S0[sf].forEach((x, i) => zb[i] += x); }
   const zbU = zb.reduce((t, x) => t + x, 0);
   const per = (F.mesec ? fuMesN(F.mesec) + " " : "") + g + (zm < 12 && !F.mesec ? " (" + mes.size + " mes.)" : ""), cmp = "vs " + (g - 1);
+  const CKI = "UPIS – izveštaj cene koštanja (Excel), list „Po proizvodima i mesecima“, uvezen u Izveštaji → Uvoz podataka.";
+  const topPr = [...pa.entries()].sort((a, b) => b[1].v - a[1].v)[0];
   const kpi = fuKpi([
     { n: "Vrednost proizvodnje " + per, v: fuM(v), d: fuDelta(fuD(v, v0), false, cmp), klik: F.proizvod ? "proizvod:" + F.proizvod : null },
     { n: "Proizvedeno", v: finNum(k, 0), d: fuDelta(fuD(k, k0), false, cmp), s: "komada / jedinica mere" },
@@ -23652,6 +23765,24 @@ function finIzvUPRO(P) {
     { n: "Udeo materijala", v: zbU ? finPct((zb[0] + zb[1]) / zbU, 0) : "–", s: "sirovine i ambalaža u ceni koštanja" },
     { n: "Proizvoda", v: String(pa.size), s: [...new Set(T.map(x => kl(x.sf)))].length + " klasa" },
     { n: "Prodaje se ispod cene koštanja", v: String(gubitak.length), s: gubitak.length ? "gubitak " + fuM(-gubitak.reduce((t, x) => t + x.gub, 0)) : "nema gubitaša", klik: null }
+  ], [
+    { sta: "Ukupna cena koštanja svih proizvoda proizvedenih u periodu (radni nalozi) – koliko je proizvodnja „potrošila“.", izvor: CKI + " Kolona cena koštanja (vrednost naloga).", racun: "Zbir cene koštanja po radnim nalozima u periodu za izabrane filtere; poređenje sa istim mesecima prethodne godine. Mesec = mesec ulaza radnog naloga.",
+      dod: [["Vrednost " + per, fuM(v)], [(g - 1) + " isti meseci", fuM(v0)], ["Promena", v0 ? finZnak(v / v0 - 1) : "–"], ["Meseci sa podacima " + g, String(mes.size)]],
+      tum: "Vrednost raste i zbog veće količine i zbog skupljih ulaza – razdvajanje je u karticama „Proizvedeno“ i „Promena cene koštanja“.", izv: "prd", izvN: "Proizvodnja" },
+    { sta: "Proizvedena količina gotovih proizvoda i poluproizvoda u njihovim jedinicama mere.", izvor: CKI + " Kolona količina.", racun: "Zbir količina po radnim nalozima u periodu.",
+      dod: [["Proizvedeno", finNum(k, 0)], [(g - 1) + " isti meseci", finNum(k0, 0)], ["Promena", k0 ? finZnak(k / k0 - 1) : "–"], ["Prosečna cena koštanja po jedinici", k ? finNum(v / k, 2) + " din" : "–"]],
+      tum: "Količine različitih proizvoda se sabiraju – najkorisnije je posmatrati kad je izabran jedan proizvod ili klasa.", izv: "ppr", izvN: "Proizvedeno i prodato" },
+    { sta: "Koliko je poskupela (ili pojeftinila) proizvodnja istih proizvoda u odnosu na prošlu godinu.", izvor: CKI, racun: "Za proizvode proizvedene obe godine: Σ(ovogodišnja cena koštanja po komadu × ovogodišnja količina) / Σ(prošlogodišnja cena po komadu × ovogodišnja količina) − 1.",
+      dod: [["Po ovogodišnjim cenama", fuM(c1)], ["Iste količine po prošlogodišnjim cenama", fuM(c0)], ["Razlika", fuM(c1 - c0)], ["Obuhvaćeno proizvoda", String(rast.length)]],
+      tum: "Poredi sa promenom nabavnih cena (tabla Nabavka) i prodajnih cena: ako cena koštanja raste brže od prodajne cene, marža pada.", izv: "pck", izvN: "Cena koštanja po proizvodu" },
+    { sta: "Koliki deo cene koštanja čine sirovine i ambalaža (materijal), a koliki poluproizvodi, rad i ostali troškovi.", izvor: "UPIS – izveštaj cene koštanja, list „Po proizvodima i utošcima zbr“ (struktura po vrstama troškova).", racun: "(sirovine + ambalaža) / ukupna cena koštanja iz strukture za izabrane proizvode.",
+      dod: FIN_STR.map((nm, i) => [nm, zbU && zb[i] ? fuM(zb[i]) + " · " + finPct(zb[i] / zbU, 0) : null]),
+      tum: "Što je udeo materijala veći, to su marže osetljivije na nabavne cene – simulaciju „šta ako sirovine poskupe X %“ ima izveštaj Struktura i šta ako.", izv: "pms", izvN: "Struktura i šta ako" },
+    { sta: "Broj različitih proizvoda koji su proizvedeni u periodu.", izvor: CKI + " Šifra i klasa proizvoda.", racun: "Broj različitih šifara proizvoda sa radnim nalogom u periodu.",
+      dod: [["Proizvoda", String(pa.size)], ["Klasa", String([...new Set(T.map(x => kl(x.sf)))].length)], ["Najveći po vrednosti", topPr ? ime(topPr[0]).slice(0, 44) + " · " + fuM(topPr[1].v) : "–"]], izv: "pck", izvN: "Proizvodi" },
+    { sta: "Broj proizvoda čija je prosečna prodajna cena niža od cene koštanja po komadu – svaki prodati komad donosi gubitak.", izvor: "Prodaja: UPIS izveštaj isporuka (PDF). Cena koštanja: UPIS izveštaj cene koštanja za istu godinu.", racun: "Prosečna prodajna cena = neto prodaja / količina iz isporuka. Uzimaju se samo proizvodi sa prodajom preko 30.000 din. Gubitak = (prodajna cena − cena koštanja) × prodata količina.",
+      dod: [["Proizvoda ispod cene koštanja", String(gubitak.length)], ["Ukupan gubitak", fuM(-gubitak.reduce((t, x) => t + x.gub, 0))]].concat(gubitak.slice(0, 5).map(x => [x.l.slice(0, 48), "marža " + finPct(x.v, 0) + " · " + fuM(x.gub)])),
+      tum: "Uzrok može biti zastareo cenovnik, prevelik rabat ili skok cene koštanja; ponekad su to akcijske ili ugovorene cene za povezana lica.", izv: "pmr", izvN: "Stvarna marža" }
   ]);
   const mA = FIN_MES3.map((_, i) => mes.has(i + 1) ? s(A.filter(x => x.m === i + 1), "kos") : null), mB = FIN_MES3.map((_, i) => s(C.M.filter(x => x.g === g - 1 && f(x) && x.m === i + 1), "kos"));
   const graf = fuMesKlik(finStubci({ kat: FIN_MES3, ser: [{ n: String(g), v: mA, boja: P.s[2] }, { n: String(g - 1), v: mB, boja: P.s[6] }], vrednosti: false, H: 240, klik: FIN_MES3.map((_, i) => "mesec:" + (i + 1)) }, P));
@@ -23692,7 +23823,7 @@ function finIzvUPRO(P) {
 }
 
 /* ================= FINANSIJE ================= */
-const FU_GRK = [["Materijal i roba", /^5(0|1[0-14-9])/], ["Gorivo i energija", /^51[23]/], ["Zarade i naknade", /^52/], ["Proizvodne usluge", /^53/], ["Amortizacija", /^54/], ["Nematerijalni troškovi", /^55/], ["Finansijski i ostali", /^5[6-9]/]];
+const FU_GRK = [["Materijal i roba", /^5(0|1(?!3))/], ["Gorivo i energija", /^513/], ["Zarade i naknade", /^52/], ["Proizvodne usluge", /^53/], ["Amortizacija", /^54/], ["Nematerijalni troškovi", /^55/], ["Finansijski i ostali", /^5[6-9]/]];
 function finIzvUFIN(P) {
   const M = finMes(); if (M.length < 2) return fin8Nema("Finansije – kontrolna tabla", "potrebni su mesečni podaci glavne knjige");
   const st = FIN.upr.fin, F = st.f, G = [...new Set(M.map(x => x.g))].sort(), g = fuGod(st, G);
@@ -23703,6 +23834,8 @@ function finIzvUFIN(P) {
   const b = kr.bil, b0 = kr0 ? kr0.bil : null, dana = per.length * 30.4;
   const perN = (mi ? fuMesN(mi) + " " + g : g + (zm < 12 ? " (" + FIN_MES3[0] + "–" + FIN_MES3[zm - 1] + ")" : "")), cmp = "vs " + (g - 1);
   const dso = r.prodaja ? b.kupci / (r.prodaja * 1.2) * dana : null, dpo = (r.mat + r.roba + r.energ + r.usl) ? b.dobavljaci / ((r.mat + r.roba + r.energ + r.usl) * 1.2) * dana : null;
+  const GK = "Glavna knjiga – bruto bilans iz UPIS-a po mesecima (polje MESEC), uvezen u Izveštaji → Uvoz podataka.", BS = "Glavna knjiga – stanje konta na kraju meseca " + finMesNaziv(kr) + " (saldo duguje − potražuje).";
+  const PERF = per.length + (per.length === 1 ? " mesec" : " meseci") + "; poređenje sa istim mesecima " + (g - 1) + ".";
   const kpi = fuKpi([
     { n: "Prihodi od prodaje " + perN, v: fuM(r.prodaja), d: r0 ? fuDelta(fuD(r.prodaja, r0.prodaja), false, cmp) : "", klik: "prodaja:" },
     { n: "EBITDA", v: fuM(r.ebitda), s: "marža " + (r.posP ? finPct(r.ebitda / r.posP, 1) : "–") + (r0 && r0.posP ? " · " + (g - 1) + ": " + finPct(r0.ebitda / r0.posP, 1) : ""), d: r0 ? fuDelta(fuD(r.ebitda, r0.ebitda), false, cmp) : "", klik: "ebitda:" },
@@ -23712,6 +23845,31 @@ function finIzvUFIN(P) {
     { n: "Obaveze prema dobavljačima", v: fuM(b.dobavljaci), s: dpo != null ? "≈ " + finNum(dpo, 0) + " dana plaćanja" : "", klik: "dob:" },
     { n: "Zalihe", v: fuM(b.zalihe), d: b0 ? fuDelta(fuD(b.zalihe, b0.zalihe), true, "god/god") : "" },
     { n: "Troškovi zarada", v: fuM(r.zar), s: "učešće " + (r.posP ? finPct(r.zar / r.posP, 1) : "–"), d: r0 ? fuDelta(fuD(r.zar, r0.zar), true, cmp) : "", klik: "zar:" }
+  ], [
+    { sta: "Prihodi od prodaje proizvoda, robe i usluga – osnovni prihod firme.", izvor: GK + " Konta grupa 60 i 61.", racun: "Zbir potražnog prometa konta 60 i 61 u periodu (" + PERF + ")",
+      dod: [["Prihodi " + perN, fuM(r.prodaja)], [(g - 1) + " isti period", r0 ? fuM(r0.prodaja) : "–"], ["Matična i povezana lica (610–613)", fuM(r.povezana || 0)], ["Domaće tržište (614)", fuM(r.domace || 0)], ["Izvoz (615)", fuM(r.izvoz || 0)], ["Prodaja robe i ostalo (60, 616–619)", fuM((r.ostalaProd || 0) + (r.robaProd || 0))]],
+      tum: "Razlikuje se od prodaje na tabli Prodaja jer knjiga sadrži i usluge, knjižna odobrenja i ispravke, a prodajna tabla samo isporuke robe.", izv: "bu", izvN: "Bilans uspeha" },
+    { sta: "Poslovni rezultat pre amortizacije – koliko gotovine posao stvara iz redovnog poslovanja, pre kamata i poreza.", izvor: GK + " Klasa 6 (poslovni prihodi 60–65) i klasa 5 (poslovni rashodi 50–55).", racun: "Poslovni prihodi − poslovni rashodi + amortizacija (konto 540). EBITDA marža = EBITDA / poslovni prihodi.",
+      dod: [["Poslovni prihodi", fuM(r.posP)], ["Poslovni rashodi", fuM(r.posR)], ["Poslovni rezultat (EBIT)", fuM(r.ebit)], ["Amortizacija (540)", fuM(r.amort540)], ["EBITDA", fuM(r.ebitda)], ["EBITDA marža", r.posP ? finPct(r.ebitda / r.posP, 1) : "–"], ["EBITDA " + (g - 1), r0 ? fuM(r0.ebitda) : "–"]],
+      tum: "Banke najčešće gledaju odnos kredita i EBITDA: ispod 3 je sigurno, iznad 4 je opterećujuće.", izv: "kpi", izvN: "Pokazatelji" },
+    { sta: "Dobit ili gubitak pre poreza na dobit – svi prihodi minus svi rashodi.", izvor: GK + " Klase 5 i 6 (poslovni, finansijski i ostali prihodi i rashodi).", racun: "EBITDA − amortizacija + finansijski prihodi − finansijski rashodi + ostali prihodi − ostali rashodi.",
+      dod: [["EBITDA", fuM(r.ebitda)], ["Amortizacija", fuM(-r.amort540)], ["Finansijski prihodi (66)", fuM(r.finP)], ["Finansijski rashodi (56)", fuM(-r.finR)], ["Ostali prihodi (67–68)", fuM(r.ostP)], ["Ostali rashodi (57–58)", fuM(-r.ostR)], ["Rezultat pre poreza", fuM(r.pre)], ["Isti period " + (g - 1), r0 ? fuM(r0.pre) : "–"]],
+      tum: "Za decembar zaključene godine vrednost uključuje zaključna knjiženja, pa je mesečni rezultat decembra manje pouzdan od godišnjeg.", izv: "bu", izvN: "Bilans uspeha" },
+    { sta: "Novac na tekućim računima i u blagajni na kraju perioda.", izvor: BS + " Konta grupe 24.", racun: "Saldo konta 24 na poslednji dan izabranog perioda.",
+      dod: [["Gotovina", fuM(b.gotovina)], ["Krediti (41 + 42)", fuM(b.krediti)], ["Neto dug (krediti − gotovina)", fuM(b.krediti - b.gotovina)], ["Gotovina pre godinu dana", b0 ? fuM(b0.gotovina) : "–"]],
+      tum: "Gotovina je stanje jednog dana; za plan plaćanja koristi projekciju novčanog toka u Prognozama.", izv: "nt", izvN: "Novčani tok" },
+    { sta: "Koliko nam kupci duguju na kraju perioda (fakturisano, a nenaplaćeno), sa PDV-om.", izvor: BS + " Konta grupe 20. Spisak po kupcima je iz otvorenih stavki (PDF).", racun: "Saldo konta 20. Dani naplate ≈ potraživanja / (prihodi od prodaje × 1,2 zbog PDV-a) × broj dana perioda.",
+      dod: [["Potraživanja", fuM(b.kupci)], ["Pre godinu dana", b0 ? fuM(b0.kupci) : "–"], ["Dani naplate (približno)", dso != null ? finNum(dso, 0) : "–"]],
+      tum: "Svakih 10 dana kraće naplate oslobađa oko " + fuM(r.prodaja * 1.2 / Math.max(1, dana) * 10) + " gotovine. Najveći dužnici su u kartici „Ko nam duguje“.", izv: "ns", izvN: "Naplata potraživanja" },
+    { sta: "Koliko dugujemo dobavljačima na kraju perioda, sa PDV-om.", izvor: BS + " Konta 431–439. Spisak po dobavljačima je iz otvorenih stavki (PDF).", racun: "Saldo konta 431–439 (potražni). Dani plaćanja ≈ obaveze / ((materijal + roba + energija + usluge) × 1,2) × broj dana perioda.",
+      dod: [["Obaveze prema dobavljačima", fuM(b.dobavljaci)], ["Pre godinu dana", b0 ? fuM(b0.dobavljaci) : "–"], ["Dani plaćanja (približno)", dpo != null ? finNum(dpo, 0) : "–"], ["Dani naplate − dani plaćanja", dso != null && dpo != null ? finNum(dso - dpo, 0) + " dana" : "–"]],
+      tum: "Kad kupci plaćaju sporije nego što mi plaćamo dobavljačima, razliku finansiramo iz kredita.", izv: "dob", izvN: "Obaveze prema dobavljačima" },
+    { sta: "Vrednost materijala, nedovršene proizvodnje, gotovih proizvoda i robe na kraju perioda.", izvor: BS + " Konta 10–14.", racun: "Saldo konta 10–14. Dani pokrivenosti ≈ zalihe / (trošak materijala i robe u periodu) × broj dana perioda.",
+      dod: [["Zalihe", fuM(b.zalihe)], ["Pre godinu dana", b0 ? fuM(b0.zalihe) : "–"], ["Trošak materijala i robe u periodu", fuM(r.mat + r.roba)], ["Dani pokrivenosti (približno)", (r.mat + r.roba) ? finNum(b.zalihe / (r.mat + r.roba) * dana, 0) : "–"]],
+      tum: "Rast zaliha brži od proizvodnje vezuje novac; spore i mrtve zalihe po artiklima su u grupi Zalihe i magacin.", izv: "zvr", izvN: "Vrednost zaliha kroz vreme" },
+    { sta: "Bruto zarade, porezi i doprinosi na teret poslodavca i ostala lična primanja.", izvor: GK + " Konta grupe 52.", racun: "Zbir dugovnog prometa konta 52 u periodu; učešće = zarade / poslovni prihodi.",
+      dod: [["Troškovi zarada", fuM(r.zar)], ["Isti period " + (g - 1), r0 ? fuM(r0.zar) : "–"], ["Učešće u poslovnim prihodima", r.posP ? finPct(r.zar / r.posP, 1) : "–"], ["Prosečno mesečno", fuM(r.zar / Math.max(1, per.length))]],
+      tum: "Ako zarade rastu brže od prihoda, produktivnost pada; prati učešće kroz godine.", izv: "tr", izvN: "Struktura troškova" }
   ]);
   // grafikon: prihodi, rashodi i rezultat po mesecima izabrane godine
   const mm = FIN_MES3.map((_, i) => M.find(x => x.g === g && x.m === i + 1));
@@ -23779,7 +23937,6 @@ document.addEventListener("click", e => {
   if (ux) { const k = ux.dataset.finUx; if (k === "sve") st.f = {}; else delete st.f[k]; fuPrikazi(); return; }
   if (ug) { st.g = +ug.dataset.finUg; fuPrikazi(); return; }
 });
-document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches(".uK.klik[data-fin-df]")) { e.preventDefault(); e.target.click(); } });
 
 start();
 })();
