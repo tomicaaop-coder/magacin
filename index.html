@@ -821,6 +821,8 @@ button.uR{ cursor:pointer; } button.uR:hover{ background:var(--brand-soft); }
 .uInfoK p{ margin:0; font-size:14px; line-height:1.55; } .uInfoV{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; } .uInfoV b{ font-size:26px; }
 .uInfoX{ position:absolute; top:10px; right:12px; border:0; background:none; font-size:24px; line-height:1; cursor:pointer; color:var(--muted); }
 .uInfoT td{ padding:4px 6px; font-size:13.5px; } .uInfoA{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+.finAi{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; padding:12px 16px; border-left:4px solid var(--brand); }
+.finAi .muted{ font-size:13px; } .finAiB{ display:flex; gap:8px; flex-wrap:wrap; }
 .finMojS{ display:flex; align-items:stretch; }
 .finMoj input#finMojF{ font:14px var(--body); }
 .finMojS button[data-fin-moj-otv]{ flex:1; padding-left:22px !important; }
@@ -13942,7 +13944,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "18.11.l";
+const APP_VERZIJA = "18.11.m";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -23937,6 +23939,89 @@ document.addEventListener("click", e => {
   if (ux) { const k = ux.dataset.finUx; if (k === "sve") st.f = {}; else delete st.f[k]; fuPrikazi(); return; }
   if (ug) { st.g = +ug.dataset.finUg; fuPrikazi(); return; }
 });
+
+
+/* =====================================================================
+   FINANSIJE 10 – „Podaci za AI“: sažeti podaci za Claude stranicu
+   „AI izveštaji“ (koristi Claude pretplatu korisnika). Vidi ga samo Tomislav.
+   ===================================================================== */
+const FIN_AI_URL = "https://claude.ai/artifact/MnSK6cZSRX3CszTHDA5rDa";
+function finAiSme() { const n = finN(S.me || (S.names && S.names[S.uid]) || ""); return /tomislav/.test(n) && /maskovic/.test(n); }
+function finAiPodaci() {
+  const out = { aplikacija: "magacin-nevena-ai", verzija: 1, napravljeno: new Date().toISOString(), firma: (S.firma && S.firma.naziv) || "HI Nevena doo",
+    kanali: typeof FIN_KANALI !== "undefined" ? FIN_KANALI : [], kupci: {}, proizvodi: {}, dobavljaci: {}, artikli: {}, konta: {} };
+  const r0 = v => Math.round(v), r2 = v => Math.round(v * 100) / 100;
+  // prodaja: zbir po godina/mesec/kupac/proizvod
+  const D = finProd();
+  if (D.L.length) {
+    const m = new Map();
+    for (const x of D.L) { const k = x.g + "|" + x.m + "|" + x.par + "|" + x.art; let o = m.get(k); if (!o) { o = [x.g, x.m, x.par, x.art, 0, 0, 0, 0, new Set()]; m.set(k, o); } o[4] += x.neto; o[5] += x.vz; o[6] += x.kol; o[7] += x.pop; o[8].add(x.dok); }
+    out.prodaja = { kraj: D.kraj, kolone: ["godina", "mesec", "kupac", "proizvod", "neto", "vrednost_zaliha", "kolicina", "rabat", "isporuka"], redovi: [...m.values()].map(o => [o[0], o[1], o[2], o[3], r0(o[4]), r0(o[5]), r2(o[6]), r0(o[7]), o[8].size]) };
+    for (const p in D.P) out.kupci[p] = [D.P[p], typeof finKanal === "function" ? finKanal(D, p) : ""];
+    for (const a in D.A) out.proizvodi[a] = [D.A[a], ""];
+  }
+  // nabavka
+  const N = finNab();
+  if (N.L.length) {
+    const m = new Map();
+    for (const x of N.L) { const k = x.g + "|" + (x.m || 0) + "|" + x.par + "|" + x.art; let o = m.get(k); if (!o) { o = [x.g, x.m || 0, x.par, x.art, 0, 0]; m.set(k, o); } o[4] += x.iz; o[5] += x.kol; }
+    out.nabavka = { napomena: "mesec je datum poslednje nabavke po istoj ceni – mesečni raspored je približan, godišnji zbir tačan", kolone: ["godina", "mesec", "dobavljac", "artikal", "iznos", "kolicina"], redovi: [...m.values()].map(o => [o[0], o[1], o[2], o[3], r0(o[4]), r2(o[5])]) };
+    for (const p in N.P) out.dobavljaci[p] = (N.P[p] || [p])[0];
+    for (const a in N.A) out.artikli[a] = [N.A[a][0], N.A[a][1] || "", N.A[a][3] || ""];
+  }
+  // proizvodnja (cene koštanja)
+  const C = finCk();
+  if (C.M.length) {
+    out.proizvodnja = { kolone: ["godina", "mesec", "proizvod", "kolicina", "cena_kostanja_ukupno", "materijal"], redovi: C.M.map(x => [x.g, x.m, x.sf, r2(x.kol), r0(x.kos), r0(x.mat || 0)]),
+      struktura_nazivi: typeof FIN_STR !== "undefined" ? FIN_STR : [], struktura: {} };
+    for (const g in C.STR) { out.proizvodnja.struktura[g] = {}; for (const sf in C.STR[g]) out.proizvodnja.struktura[g][sf] = C.STR[g][sf].map(r0); }
+    for (const sf in C.PR) { const o = out.proizvodi[sf] || [C.PR[sf][0], ""]; o[1] = C.PR[sf][1] || ""; if (!o[0]) o[0] = C.PR[sf][0]; out.proizvodi[sf] = o; }
+  }
+  // glavna knjiga po mesecima: konta klasa 5 i 6 + bilans i rezultat
+  try {
+    const M = finMes();
+    if (M.length) {
+      const red = [], rez = [], bil = [];
+      for (const x of M) {
+        for (const [k, v] of x.V) if (/^[56]\d/.test(k) && Math.abs(v) >= 1) red.push([x.g, x.m, k, r0(v)]);
+        const r = x.r; rez.push([x.g, x.m, r0(r.prodaja), r0(r.posP), r0(r.posR), r0(r.mat + r.roba), r0(r.energ), r0(r.zar), r0(r.usl), r0(r.amort), r0(r.nemat), r0(r.ebitda), r0(r.finR), r0(r.pre)]);
+        const b = x.bil; bil.push([x.g, x.m, r0(b.gotovina), r0(b.kupci), r0(b.dobavljaci), r0(b.zalihe), r0(b.krediti), r0(b.kapital || 0)]);
+        for (const [k, o] of x.K) if (o && o.n && !out.konta[k]) out.konta[k] = o.n;
+      }
+      out.gk = { napomena: "iznosi u dinarima; prihodi pozitivni, rashodi pozitivni; decembar zaključene godine sadrži zaključna knjiženja",
+        konta_kolone: ["godina", "mesec", "konto", "iznos"], konta_redovi: red,
+        rezultat_kolone: ["godina", "mesec", "prihodi_od_prodaje", "poslovni_prihodi", "poslovni_rashodi", "materijal_i_roba", "energija", "zarade", "usluge", "amortizacija", "nematerijalni", "ebitda", "finansijski_rashodi", "rezultat_pre_poreza"], rezultat_redovi: rez,
+        bilans_kolone: ["godina", "mesec", "gotovina", "kupci", "dobavljaci", "zalihe", "krediti", "kapital"], bilans_redovi: bil };
+    }
+  } catch (e) { console.error(e); }
+  // dugovanja (otvorene stavke)
+  try {
+    const o = finOsZadnji();
+    if (o) {
+      const sk = finStarost(o, "k"), sd = finStarost(o, "d"), red = s => s.P.map(x => [x.p, x.n, r0(x.uk), r0(x.dosp), Math.round(x.kasni)]);
+      out.dugovanja = { datum: o.datum, kolone: ["sifra", "naziv", "ukupno", "dospelo", "prosecno_kasni_dana"], kupci: red(sk), dobavljaci: red(sd) };
+    }
+  } catch (e) { console.error(e); }
+  return out;
+}
+async function finAiIzvoz() {
+  const data = JSON.stringify(finAiPodaci()), ime = "nevena-ai-podaci-" + today() + ".json";
+  const buf = new TextEncoder().encode(data);
+  if (S.downloads) { try { await S.downloads.save({ filename: ime, data: buf.buffer }); toast("Fajl za AI je sačuvan (" + finNum(buf.length / 1048576, 1) + " MB)."); return; } catch (e) { if (e && e.code === "declined") return; } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: "application/json" })); a.download = ime; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  toast("Fajl za AI je preuzet (" + finNum(buf.length / 1048576, 1) + " MB).");
+}
+function finAiHtml() {
+  if (!finAiSme()) return "";
+  return '<section class="card finAi"><div><b>AI izveštaji</b><span class="muted"> – pitaj Claude-a o prodaji, nabavci, proizvodnji i finansijama. Radi u okviru tvoje Claude pretplate. Vidiš samo ti.</span></div>' +
+    '<div class="finAiB"><button type="button" class="btn" id="finAiIzvoz">' + ikona("ulaz", 15) + ' 1. Preuzmi podatke za AI</button><a class="btn primary" href="' + FIN_AI_URL + '" target="_blank" rel="noopener">2. Otvori AI izveštaje ↗</a></div></section>';
+}
+document.addEventListener("click", e => { if (e.target.closest("#finAiIzvoz") && finAiSme()) finAiIzvoz(); });
+{
+  const _rfi = renderFinIzv;
+  renderFinIzv = function () { _rfi(); try { const box = $("#fizvBox"), iz = box && box.querySelector(".finIzv"); if (iz && finAiSme()) iz.insertAdjacentHTML("beforebegin", finAiHtml()); } catch (e) { console.error(e); } };
+}
+window.__finAi = { podaci: finAiPodaci };
 
 start();
 })();
