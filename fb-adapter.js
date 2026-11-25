@@ -7,7 +7,7 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
-  const FB_VERZIJA = "18.11.p";
+  const FB_VERZIJA = "18.11.q";
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],

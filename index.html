@@ -13964,7 +13964,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "18.11.p";
+const APP_VERZIJA = "18.11.q";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -24073,8 +24073,11 @@ const fnIz = v => Math.abs(v) >= 1e6 ? finMil(v) + " mil. din" : finNum(v, 0) + 
 function fnArtikli() {
   if (FIN.cache.nart) return FIN.cache.nart;
   const N = finNab(), M = new Map();
-  for (const x of N.L) {
+  /* sirovine koje fakturiše RIM GROUP stvarno nabavlja Interallis – prikazuju se pod Interallis-om */
+  const kod = re => Object.keys(N.P).find(k => re.test((N.P[k] || [""])[0])), RIM = kod(/^RIM GROUP/i), INT = kod(/INTERALLIS/i);
+  for (let x of N.L) {
     if (!(x.kol > 0) || !(x.iz > 0)) continue;
+    if (RIM && INT && x.par === RIM && /MATERIJAL OSNOVNI/i.test((N.A[x.art] || [])[2] || "")) x = Object.assign({}, x, { par: INT, rim: true });
     let o = M.get(x.art); if (!o) { o = { k: x.art, a: N.A[x.art] || [x.art, "", "", ""], L: [] }; M.set(x.art, o); }
     o.L.push(x);
   }
@@ -24144,7 +24147,7 @@ function renderNart() {
   const delta = (a, b) => b && Math.abs(a / b - 1) >= 0.0005 ? '<em class="' + (a > b ? "dn" : a < b ? "up" : "") + '">' + (a > b ? "▲ +" : a < b ? "▼ " : "") + finPct(a / b - 1, 1) + "</em>" : "";
   const glavne = pl("Poslednja nabavna cena", fnC(cena(z)) + " <small>din" + (mera ? "/" + esc(mera.toLowerCase()) : "") + "</small>", pre ? "prethodna cena " + fnC(cena(pre)) + " din " + delta(cena(z), cena(pre)) : "jedina zabeležena cena", "glavna") +
     pl("Datum poslednje nabavke", finDtxt(z.dt) || "–", dana != null ? "pre " + finMn(dana, "dan", "dana", "dana") : "", "glavna") +
-    pl("Dobavljač", esc(imeD(z.par)), "količina " + finNum(z.kol, 0) + " " + esc(mera) + " po ovoj ceni u " + z.g + ".", "glavna dob");
+    pl("Dobavljač", esc(imeD(z.par)) + (z.rim ? ' <small style="font-size:12px">(fakturisao RIM GROUP)</small>' : ""), "količina " + finNum(z.kol, 0) + " " + esc(mera) + " po ovoj ceni u " + z.g + ".", "glavna dob");
   const ostale = pl("Najniža cena (12 meseci)", naj12 ? fnC(cena(naj12)) + " din" : "–", naj12 ? esc(imeD(naj12.par)) + " · " + finDtxt(naj12.dt) + (cena(z) > cena(naj12) ? " · poslednja je " + finPct(cena(z) / cena(naj12) - 1, 1) + " skuplja" : "") : "") +
     pl("Prosečna cena " + gz, fnC(pc(gz)) + " din", gp ? gp + ": " + fnC(pc(gp)) + " din " + delta(pc(gz), pc(gp)) : "ponderisano količinom") +
     pl("Nabavljeno " + gz, finNum(gg.get(gz).k, 0) + " " + esc(mera), fnIz(gg.get(gz).v) + (gp ? " · " + gp + ": " + finNum(gg.get(gp).k, 0) : "")) +
@@ -24174,8 +24177,8 @@ function renderNart() {
     '<div class="card"><h2>Po godinama</h2><div class="finTw"><table class="finT"><thead><tr><th>Godina</th><th class="r">Količina</th><th class="r">Iznos</th><th class="r">Prosečna cena</th><th class="r">Najniža</th><th class="r">Najviša</th></tr></thead><tbody>' +
     G.slice().reverse().map(y => { const l = L.filter(x => x.g === y), c = l.map(cena); return "<tr><td>" + y + '</td><td class="r num">' + finNum(gg.get(y).k, 0) + '</td><td class="r num">' + finNum(gg.get(y).v, 0) + '</td><td class="r num"><b>' + fnC(pc(y)) + '</b></td><td class="r num">' + fnC(Math.min(...c)) + '</td><td class="r num">' + fnC(Math.max(...c)) + "</td></tr>"; }).join("") + "</tbody></table></div></div></div>" +
     '<div class="card"><h2>Sve nabavke po cenama</h2><div class="finTw"><table class="finT"><thead><tr><th>Datum</th><th>Dobavljač</th><th class="r">Cena</th><th class="r">Količina</th><th class="r">Iznos</th></tr></thead><tbody>' +
-    L.slice().reverse().map(x => "<tr><td>" + (finDtxt(x.dt) || x.g) + "</td><td>" + esc(imeD(x.par)) + '</td><td class="r num">' + fnC(cena(x)) + '</td><td class="r num">' + finNum(x.kol, 0) + '</td><td class="r num">' + finNum(x.iz, 0) + "</td></tr>").join("") + "</tbody></table></div>" +
-    '<p class="muted" style="font-size:12px;margin:8px 0 0">Izvor: tabele nabavke iz UPIS-a (' + G.join(", ") + '). U tabeli je jedan red za svaku cenu kod svakog dobavljača u godini; datum je poslednja nabavka po toj ceni, a količina zbir svih nabavki po toj ceni.</p></div>';
+    L.slice().reverse().map(x => "<tr><td>" + (finDtxt(x.dt) || x.g) + "</td><td>" + esc(imeD(x.par)) + (x.rim ? ' <span class="muted" style="font-size:12px">(fakturisao RIM GROUP)</span>' : "") + '</td><td class="r num">' + fnC(cena(x)) + '</td><td class="r num">' + finNum(x.kol, 0) + '</td><td class="r num">' + finNum(x.iz, 0) + "</td></tr>").join("") + "</tbody></table></div>" +
+    '<p class="muted" style="font-size:12px;margin:8px 0 0">Izvor: tabele nabavke iz UPIS-a (' + G.join(", ") + '). U tabeli je jedan red za svaku cenu kod svakog dobavljača u godini; datum je poslednja nabavka po toj ceni, a količina zbir svih nabavki po toj ceni.' + (L.some(x => x.rim) ? " Sirovine fakturisane preko RIM GROUP-a prikazane su kao nabavka od Interallis-a." : "") + '</p></div>';
   fnLista();
 }
 function fnLista() {
