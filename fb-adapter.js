@@ -7,14 +7,14 @@
   "use strict";
   const CFG = window.FIREBASE_CONFIG || {};
   // Uloge se dodeljuju po glavnim menijima; svaki meni može biti "pun" (unos i izmene) ili "pregled" (samo gledanje)
-  const FB_VERZIJA = "18.11.m";
+  const FB_VERZIJA = "18.11.p";
   const MENIJI = [
     ["pregled", "Pregled", ["pregled"]],
     ["magacin", "Magacin ambalaže", ["unos", "stanje", "prijem", "promet", "popis", "uskl"]],
     ["ucinak", "Učinak magacionera", ["ucinak"]],
     ["sirovine", "Magacin sirovina", ["sunos", "szbirno", "sstanje", "sprijem", "spromet", "spopis", "usklsir", "srokovi"]],
     ["proizvodnja", "Proizvodnja", ["proizvodnja", "plan", "zalihe"]],
-    ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "ngrupe"]],
+    ["nabavka", "Nabavka", ["zahtevi", "porudzbenice", "dobavljaci", "analitika", "nartikal", "ngrupe"]],
     ["kontrola", "Kontrola", ["kamb", "kgal"]],
     ["kuvaona", "Kuvaona", ["izdavanje"]],
     ["artikli", "Artikli", ["artikli"]],
@@ -91,6 +91,7 @@
   });
   const upit = (q, putanja) => ({
     limit: n => upit(q.limit(n), putanja),
+    where: (f, o, v) => upit(q.where(f, o, v), putanja),
     doc: id => omot(fs.collection(putanja).doc(id)),
     onSnapshot: (cb, err) => q.onSnapshot(s => cb({ docs: s.docs.map(snap), size: s.size, empty: s.empty }), e => err && err(greska(e)))
   });

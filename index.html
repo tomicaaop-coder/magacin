@@ -823,6 +823,25 @@ button.uR{ cursor:pointer; } button.uR:hover{ background:var(--brand-soft); }
 .uInfoT td{ padding:4px 6px; font-size:13.5px; } .uInfoA{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
 .finAi{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; padding:12px 16px; border-left:4px solid var(--brand); }
 .finAi .muted{ font-size:13px; } .finAiB{ display:flex; gap:8px; flex-wrap:wrap; }
+.nartQ{ position:relative; margin-bottom:14px; } .nartQ .inp{ width:100%; font-size:17px; padding:12px 14px; margin-top:4px; box-sizing:border-box; }
+.nartL{ display:flex; flex-direction:column; gap:2px; max-height:420px; overflow:auto; margin-top:6px; }
+.nartL button{ text-align:left; border:0; background:none; padding:8px 10px; border-radius:8px; cursor:pointer; color:var(--ink); font:inherit; display:flex; flex-direction:column; gap:1px; }
+.nartL button:hover, .nartL button:focus-visible{ background:var(--brand-soft); } .nartL span{ font-size:12.5px; color:var(--muted); }
+.nartH{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:4px 0 12px; } .nartH h2{ margin:0; font:700 24px var(--head); }
+.nartG{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:12px; }
+.nartO{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:14px; }
+.nartK{ padding:12px 16px; display:flex; flex-direction:column; gap:3px; } .nartK span{ font-size:12.5px; color:var(--muted); } .nartK b{ font:700 20px var(--head); } .nartK small{ font-size:12.5px; color:var(--muted); line-height:1.4; }
+.nartK.glavna{ border:2px solid var(--brand); } .nartK.glavna b{ font-size:28px; } .nartK.glavna.dob b{ font-size:20px; line-height:1.2; } .nartK b small{ font-size:14px; font-weight:400; }
+.nartK em{ font-style:normal; font-weight:600; } .nartK em.dn{ color:var(--izlaz); } .nartK em.up{ color:var(--ulaz); }
+.nartM{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:14px; margin-bottom:14px; } .nartM > .card{ margin:0; }
+.nartZ{ margin:0; padding-left:18px; } .nartZ li{ margin:6px 0; font-size:14px; line-height:1.45; }
+@media (max-width: 800px){ .nartG, .nartM{ grid-template-columns:minmax(0,1fr); } .nartK.glavna b{ font-size:24px; } }
+.finDetA{ display:flex; gap:6px; align-items:center; } .finDetA .btn{ padding:6px 10px; min-height:36px; font-size:13px; }
+.finTf{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end; padding:10px 12px; margin:-4px 0 14px; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; }
+.finTf.on{ border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft); }
+.finTf label{ display:flex; flex-direction:column; gap:3px; flex:1 1 220px; min-width:0; } .finTf label span{ font-size:12px; color:var(--muted); }
+.finTf input{ font:15px var(--body); padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--ink); width:100%; box-sizing:border-box; }
+.finTf input:focus{ outline:2px solid var(--brand); outline-offset:1px; } .finTfN{ flex-basis:100%; margin:0; font-size:12.5px; color:var(--muted); }
 .finMojS{ display:flex; align-items:stretch; }
 .finMoj input#finMojF{ font:14px var(--body); }
 .finMojS button[data-fin-moj-otv]{ flex:1; padding-left:22px !important; }
@@ -952,6 +971,7 @@ body.finDetOtv{ overflow:hidden; }
   <section class="view" id="v-dobavljaci"><div id="dobBox"></div></section>
   <section class="view" id="v-ngrupe"><div id="ngBox"></div></section>
   <section class="view" id="v-analitika"><div id="anaBox"></div></section>
+  <section class="view" id="v-nartikal"><div id="nartBox"></div></section>
 
   <!-- POPIS -->
   <section class="view" id="v-popis"><div id="popisBox"></div></section>
@@ -13944,7 +13964,7 @@ const VR = { U: "Ulaz", I: "Izlaz", P: "Povrat", K: "Popis" };
 const parseQty = v => { let s = String(v || "").replace(/\s/g, ""); if (!s) return NaN; if (s.includes(",")) s = s.replace(/\./g, "").replace(",", "."); return Number(s); };
 
 let slusa = false;
-const APP_VERZIJA = "18.11.m";
+const APP_VERZIJA = "18.11.p";
 const S = {
   db: null, user: null, uid: null, canEdit: false, downloads: null,
   art: [], grupe: [], byId: {}, poc: { datum: null, kolicine: {} },
@@ -14628,6 +14648,7 @@ function renderAll() {
   else if (v === "v-porudzbenice") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#porBox") && /INPUT|SELECT/.test(ae.tagName))) renderPorudzbenice(); }
   else if (v === "v-dobavljaci") renderDobavljaci();
   else if (v === "v-ngrupe") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#ngBox") && /INPUT|SELECT/.test(ae.tagName))) renderNGrupe(); }
+  else if (v === "v-nartikal") { const ae = document.activeElement; if (!(ae && ae.id === "nartQ")) renderNart(); }
   else if (v === "v-analitika") { const ae = document.activeElement; if (!(ae && ae.id === "aQ")) renderAnalitika(); }
   else if (v === "v-popis") { const ae = document.activeElement; if (!(ae && ae.closest && ae.closest("#popisBox") && (ae.dataset.po || ae.id === "erpQ"))) renderPopis(); }
   else if (v === "v-promet") renderPromet();
@@ -14642,7 +14663,7 @@ const GRUPE = {
   magacin: [["unos", "Unos"], ["stanje", "Stanje"], ["prijem", "Prijem"], ["promet", "Promet"], ["popis", "Popis ambalaže"], ["uskl", "Usklađivanje sa UPIS-om"], ["ucinak", "Učinak magacionera"]],
   sirovine: [["sunos", "Unos"], ["szbirno", "Zbirno stanje"], ["sstanje", "Stanje po lotovima"], ["sprijem", "Prijem"], ["spromet", "Promet"], ["spopis", "Popis sirovina"], ["usklsir", "Usklađivanje sa UPIS-om"], ["srokovi", "Rokovi trajanja"]],
   proizvodnja: [["proizvodnja", "Proizvodnja"], ["plan", "Plan"], ["zalihe", "Zalihe"]],
-  nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["analitika", "Analitika"], ["ngrupe", "Grupe nabavke"]],
+  nabavka: [["zahtevi", "Zahtevi"], ["porudzbenice", "Porudžbenice"], ["dobavljaci", "Dobavljači"], ["analitika", "Analitika"], ["nartikal", "Artikal – cene"], ["ngrupe", "Grupe nabavke"]],
   kontrola: [["kamb", "Ambalaža"], ["kgal", "Galenika"]],
   kuvaona: [["izdavanje", "Etikete izdavanja materijala"]],
   artikli: [["artikli", "Artikli"]],
@@ -20124,9 +20145,9 @@ function finPretplata(db) {
     FIN.spreman = true; FIN.greska = false; FIN.cache = {};
     finPodsetnik();
     const v = document.querySelector(".view.on");
-    if (v && /^v-f/.test(v.id)) renderAll();
+    if (v && (/^v-f/.test(v.id) || v.id === "v-nartikal")) renderAll();
     else if (v && v.id === "v-pregled") { /* bez promene */ }
-  }, () => { FIN.spreman = true; FIN.greska = true; });
+  }, () => { FIN.spreman = true; FIN.greska = true; if (window.PRAVO && window.PRAVO("nartikal") && typeof finPretplataNab === "function") finPretplataNab(db); });
 }
 
 /* ---------- čitanje Excel fajla iz UPIS-a ---------- */
@@ -20853,8 +20874,8 @@ async function finSnimi() {
     FIN.uvoz = []; renderFinUvoz();
   } catch (e) { dbErr(e); }
 }
-async function finExcel() {
-  const rep = FIN.rep; if (!rep || !window.XLSX) return;
+async function finExcel(repArg) {
+  const rep = repArg || FIN.rep; if (!rep || !window.XLSX) return;
   const wb = XLSX.utils.book_new(); let n = 0;
   rep.blokovi.filter(b => b.tabela).forEach(b => {
     const t = b.tabela;
@@ -20876,9 +20897,9 @@ function finSvgUSliku(svg, sirPx) {
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
   });
 }
-async function finPdf() {
+async function finPdf(repArg) {
   if (!window.jspdf) { toast("Biblioteka za PDF nije učitana."); return; }
-  let rep; try { rep = (FIN.repFn || FIN_IZV[FIN.izv])(finPal(true)); } catch (e) { console.error(e); toast("PDF nije napravljen."); return; }
+  let rep = repArg; if (!rep) try { rep = (FIN.repFn || FIN_IZV[FIN.izv])(finPal(true)); } catch (e) { console.error(e); toast("PDF nije napravljen."); return; }
   const doc = new jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "landscape", compress: true });
   doc.addFileToVFS("LS-R.ttf", FONT_R); doc.addFont("LS-R.ttf", "LS", "normal");
   doc.addFileToVFS("LS-B.ttf", FONT_B); doc.addFont("LS-B.ttf", "LS", "bold");
@@ -22228,6 +22249,11 @@ function finDetFilter(k, v) {
   if (FIN.det.vrsta === "dob" && k === "dobavljac") FIN.det.vrsta = "nabavka";
   FIN.det.f[k] = v; finDetCrtaj();
 }
+document.addEventListener("click", e => {
+  const t = e.target; if (!t.closest) return;
+  if (t.closest("#finDetPdf")) { let rep; try { rep = finDetIzvestaj(); } catch (er) { console.error(er); } if (rep) finPdf(rep); return; }
+  if (t.closest("#finDetXls")) { let rep; try { rep = finDetIzvestaj(); } catch (er) { console.error(er); } if (rep) finExcel(rep); return; }
+});
 function finDetZatvori() { FIN.det = null; const el = $("#finDet"); if (el) el.remove(); document.body.classList.remove("finDetOtv"); }
 function finChip(t, attr) { return '<button type="button" class="finChip"' + attr + ">" + esc(t) + (/data-fin-dx/.test(attr) ? " ×" : "") + "</button>"; }
 function finDetCrtaj() {
@@ -22239,12 +22265,24 @@ function finDetCrtaj() {
   try { r = (FIN_DET[d.vrsta] || FIN_DET.prodaja)(P, d); } catch (e) { console.error(e); r = { naslov: FIN_DET_NAZ[d.vrsta] || "Detalji", blokovi: [{ tekst: "Detalji nisu dostupni: " + e.message }] }; }
   const imena = { kupac: k => "Kupac: " + (finProd().P[k] || k), proizvod: k => "Proizvod: " + (finProd().A[k] || (finCk().PR[k] || [k])[0]), dobavljac: k => "Dobavljač: " + ((finNab().P[k] || [k])[0]), grupa: k => "Grupa: " + k, artikal: k => "Artikal: " + ((finNab().A[k] || [k])[0]) };
   const chips = Object.entries(d.f).filter(([, v]) => v).map(([k, v]) => finChip((imena[k] || (x => k + ": " + x))(v), ' data-fin-dx="' + k + '"')).join("") + (d.mes ? finChip(d.mes.length === 10 ? "Dan: " + finDtxt(d.mes) : "Mesec: " + FIN_MES[+d.mes.slice(5) - 1] + " " + d.mes.slice(0, 4), ' data-fin-dx="mes"') : "");
-  el.querySelector(".finDetP").innerHTML = '<div class="finDetH"><div><div class="muted" style="font-size:12px">Detalji</div><h2>' + esc(r.naslov) + '</h2></div><button type="button" class="finDetX" data-fin-dz aria-label="Zatvori">×</button></div>' +
+  el.querySelector(".finDetP").innerHTML = '<div class="finDetH"><div><div class="muted" style="font-size:12px">Detalji</div><h2>' + esc(r.naslov) + '</h2></div><div class="finDetA"><button type="button" class="btn" id="finDetPdf">PDF</button><button type="button" class="btn" id="finDetXls">Excel</button><button type="button" class="finDetX" data-fin-dz aria-label="Zatvori">×</button></div></div>' +
     (r.izbor || "") + (chips ? '<div class="finChips">' + chips + '<button type="button" class="lnk" data-fin-dx="sve">Poništi filtere</button></div>' : "") +
     (r.kpi ? '<div class="finDetK">' + r.kpi.map(([n, v, s]) => '<div><span class="muted">' + esc(n) + '</span><b class="num">' + esc(v) + "</b>" + (s ? '<small class="muted">' + esc(s) + "</small>" : "") + "</div>").join("") + "</div>" : "") +
     finBlokoviHtml(r.blokovi || []) + '<p class="muted" style="font-size:12px;margin-top:10px">Klik na stubac bira mesec, klik na red dodaje filter.</p>';
   if (matchMedia("(max-width: 640px)").matches) el.querySelectorAll(".finBlok").forEach(b => { b.scrollLeft = b.scrollWidth; });
   if (d.mes) el.querySelectorAll('[data-fin-dm]').forEach(x => { if (x.getAttribute("data-fin-dm") !== d.mes) x.setAttribute("fill-opacity", ".35"); });
+}
+/* izvoz filtriranog prikaza iz desnog prozora */
+function finDetIzvestaj() {
+  const d = FIN.det; if (!d) return null;
+  const r = (FIN_DET[d.vrsta] || FIN_DET.prodaja)(finPal(true), d);
+  const chips = [...document.querySelectorAll("#finDet [data-fin-dx]:not([data-fin-dx=sve])")].map(e => e.textContent.replace(/\s*×$/, "").trim());
+  const god = document.querySelector("#finDet [data-fin-dg].on");
+  const opis = ["Filtrirani prikaz (detalji)"].concat(god && !d.mes ? ["Godina: " + god.textContent] : []).concat(chips.length ? chips : ["bez dodatnih filtera"]).concat(d.q ? ["Pretraga: " + d.q] : []).join(" · ");
+  const bl = [];
+  if (r.kpi) bl.push({ tabela: { naslov: "Pokazatelji", kol: [{ t: "Pokazatelj", tip: "txt" }, { t: "Vrednost", tip: "txt" }, { t: "Napomena", tip: "txt" }], red: r.kpi.map(([n, v, s]) => ({ c: [n, v, s || ""] })) } });
+  for (const b of r.blokovi || []) if (b.svg || b.tabela || b.tekst) bl.push(b);
+  return { naslov: "Detalji – " + r.naslov, opis, blokovi: bl };
 }
 function finGodChips(lista, g, kljuc) { return '<div class="finChips">' + lista.slice(-6).map(x => '<button type="button" class="finChip' + (x === g ? " on" : "") + '" data-fin-dg="' + x + '">' + x + "</button>").join("") + "</div>"; }
 function finMesStubci(P, mapa, kljucevi, naziv, boja) {
@@ -24022,6 +24060,251 @@ document.addEventListener("click", e => { if (e.target.closest("#finAiIzvoz") &&
   renderFinIzv = function () { _rfi(); try { const box = $("#fizvBox"), iz = box && box.querySelector(".finIzv"); if (iz && finAiSme()) iz.insertAdjacentHTML("beforebegin", finAiHtml()); } catch (e) { console.error(e); } };
 }
 window.__finAi = { podaci: finAiPodaci };
+
+
+/* =====================================================================
+   NABAVKA – „Artikal – cene“: radnik u nabavci ukuca deo naziva artikla
+   i dobija poslednju nabavnu cenu, datum, dobavljača i sve o ceni artikla.
+   Podaci: uvezene tabele nabavke (finansije/nab_<godina>).
+   ===================================================================== */
+FIN.nart = FIN.nart || { art: null, q: "" };
+const fnC = c => c == null || !isFinite(c) ? "–" : finNum(c, c < 1 ? 4 : 2);
+const fnIz = v => Math.abs(v) >= 1e6 ? finMil(v) + " mil. din" : finNum(v, 0) + " din";
+function fnArtikli() {
+  if (FIN.cache.nart) return FIN.cache.nart;
+  const N = finNab(), M = new Map();
+  for (const x of N.L) {
+    if (!(x.kol > 0) || !(x.iz > 0)) continue;
+    let o = M.get(x.art); if (!o) { o = { k: x.art, a: N.A[x.art] || [x.art, "", "", ""], L: [] }; M.set(x.art, o); }
+    o.L.push(x);
+  }
+  for (const o of M.values()) {
+    o.L.sort((p, q) => (p.dt || "") < (q.dt || "") ? -1 : (p.dt || "") > (q.dt || "") ? 1 : 0);
+    o.z = o.L[o.L.length - 1]; o.iz = o.L.reduce((s, x) => s + x.iz, 0);
+    o.n = finN(o.k + " " + o.a[0] + " " + (o.a[1] || ""));
+  }
+  return (FIN.cache.nart = { N, M });
+}
+function fnTrazi(q) {
+  const { M } = fnArtikli(), w = finN(q).split(/\s+/).filter(Boolean); if (!w.length) return [];
+  return [...M.values()].filter(o => w.every(x => o.n.includes(x))).sort((a, b) => (b.z.dt || "").localeCompare(a.z.dt || "") || b.iz - a.iz).slice(0, 20);
+}
+/* grafikon cene kroz vreme: tačke po dobavljaču na vremenskoj osi */
+function fnGrafCena(L, imeD) {
+  const P = finPal(), W = 760, H = 260, l = 60, r = 16, t = 16, b = 34;
+  const pts = L.filter(x => x.dt && /^\d{4}-\d\d-\d\d/.test(x.dt)).map(x => ({ x: new Date(x.dt + "T12:00:00").getTime(), y: x.cena || x.iz / x.kol, p: x.par, dt: x.dt, k: x.kol }));
+  if (pts.length < 1) return "";
+  const x0 = Math.min(...pts.map(p => p.x)), x1 = Math.max(...pts.map(p => p.x)), dx = x1 - x0 || 864e5 * 30;
+  let y0 = Math.min(...pts.map(p => p.y)), y1 = Math.max(...pts.map(p => p.y)); const pad = (y1 - y0) * 0.15 || y1 * 0.1 || 1; y0 = Math.max(0, y0 - pad); y1 += pad;
+  const X = v => l + (v - x0) / dx * (W - l - r), Y = v => t + (1 - (v - y0) / (y1 - y0)) * (H - t - b);
+  const dob = [...new Set(pts.map(p => p.p))], boja = p => P.s[dob.indexOf(p) % P.s.length];
+  let g = "";
+  for (let i = 0; i <= 4; i++) { const v = y0 + (y1 - y0) * i / 4; g += '<line x1="' + l + '" x2="' + (W - r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + P.line + '"/>' + finT(l - 6, Y(v) + 4, fnC(v), ' text-anchor="end" fill="' + P.muted + '" font-size="11"'); }
+  const god = []; for (let y = new Date(x0).getFullYear(); y <= new Date(x1).getFullYear() + 1; y++) { const v = new Date(y, 0, 1).getTime(); if (v >= x0 - 1 && v <= x1 + 1) god.push(v); }
+  for (const v of god) g += '<line x1="' + X(v) + '" x2="' + X(v) + '" y1="' + t + '" y2="' + (H - b) + '" stroke="' + P.line + '" stroke-dasharray="3 3"/>' + finT(X(v) + 4, H - 12, String(new Date(v).getFullYear()), ' fill="' + P.muted + '" font-size="11"');
+  for (const d of dob) { const q = pts.filter(p => p.p === d); if (q.length > 1) g += '<path d="' + q.map((p, i) => (i ? "L" : "M") + X(p.x).toFixed(1) + " " + Y(p.y).toFixed(1)).join("") + '" fill="none" stroke="' + boja(d) + '" stroke-width="1.5" opacity=".6"/>'; }
+  for (const p of pts) g += '<circle cx="' + X(p.x).toFixed(1) + '" cy="' + Y(p.y).toFixed(1) + '" r="5" fill="' + boja(p.p) + '" stroke="' + P.bg + '" stroke-width="1.5"><title>' + esc(finDtxt(p.dt) + " · " + imeD(p.p) + " · " + fnC(p.y) + " din · " + finNum(p.k, 0)) + "</title></circle>";
+  const leg = dob.map(d => '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12.5px"><i style="width:10px;height:10px;border-radius:50%;background:' + boja(d) + '"></i>' + esc(imeD(d)) + "</span>").join("");
+  return '<div style="margin-bottom:6px">' + leg + '</div><svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="Kretanje nabavne cene">' + g + "</svg>";
+}
+function fnMagacin(sif) {
+  try {
+    const a = (S.art || []).find(x => String(x.sifra || "").trim() === String(sif).trim() && !x.izbacen);
+    if (a) { const pn = planNabavke(a); return { mag: "Magacin ambalaže", st: pn.st, mera: a.mera || "", mes: pn.mes, dana: pn.mes > 0 ? pn.st / (pn.mes / 30.4) : null, porDo: pn.porDo, pred: pn.pred, min: pn.min }; }
+    const s = S.sir && (S.sir.art || []).find(x => String(x.sifra || "").trim() === String(sif).trim() && !x.izbacen);
+    if (s) return { mag: "Magacin sirovina", st: sirUkupno(s.id), mera: s.mera || s.jm || "" };
+  } catch (e) {}
+  return null;
+}
+function renderNart() {
+  const box = $("#nartBox"); if (!box) return;
+  if (!FIN.spreman) { box.innerHTML = '<div class="toolbar"><h1>Artikal – cene nabavke</h1></div><div class="card"><p class="muted">Učitavanje podataka o nabavci…</p></div>'; return; }
+  const { N, M } = fnArtikli(), imeD = p => (N.P[p] || [p])[0];
+  const traka = '<div class="toolbar"><h1>Artikal – cene nabavke</h1></div>' +
+    '<div class="card nartQ"><label for="nartQ" class="muted" style="font-size:13px">Ukucaj deo naziva ili šifru artikla</label><input id="nartQ" class="inp" autocomplete="off" placeholder="npr. etiketa nega, platno 50, 200004" value="' + esc(FIN.nart.q) + '"><div id="nartL" class="nartL"></div></div>';
+  if (!M.size) { box.innerHTML = traka + '<div class="card"><p>Još nema uvezenih tabela nabavke. Tabele uvozi korisnik sa pravom na Izveštaje (Izveštaji → Uvoz podataka).</p></div>'; fnLista(); return; }
+  const o = FIN.nart.art && M.get(FIN.nart.art);
+  if (!o) {
+    const sve = [...M.values()].sort((a, b) => (b.z.dt || "").localeCompare(a.z.dt || "")).slice(0, 25);
+    box.innerHTML = traka + '<div class="card"><h2>Poslednje nabavke</h2><p class="muted" style="font-size:13px;margin-top:-4px">Klik na red otvara karticu artikla.</p><div class="finTw"><table class="finT"><thead><tr><th>Datum</th><th>Artikal</th><th>Dobavljač</th><th class="r">Cena</th></tr></thead><tbody>' +
+      sve.map(x => '<tr class="klik" data-nart="' + esc(x.k) + '"><td>' + finDtxt(x.z.dt) + "</td><td>" + esc(x.a[0]) + ' <span class="muted">' + esc(x.k) + "</span></td><td>" + esc(imeD(x.z.par)) + '</td><td class="r num">' + fnC(x.z.cena) + "</td></tr>").join("") + "</tbody></table></div></div>";
+    fnLista(); return;
+  }
+  const L = o.L, z = o.z, mera = o.a[3] || "", T = today(), gT = +T.slice(0, 4);
+  const cena = x => x.cena || x.iz / x.kol;
+  const pre = L.slice(0, -1).reverse().find(x => Math.abs(cena(x) - cena(z)) > 1e-9);
+  const d12 = L.filter(x => x.dt && fin8Dana(x.dt, T) <= 365), naj12 = d12.length ? d12.reduce((a, b) => cena(b) < cena(a) ? b : a) : null;
+  const gg = finGrp(L, x => x.g, x => ({ k: x.kol, v: x.iz })), G = [...gg.keys()].sort(), gz = G[G.length - 1], gp = G.length > 1 ? G[G.length - 2] : null;
+  const pc = y => { const q = gg.get(y); return q && q.k ? q.v / q.k : null; };
+  const dob = [...finGrp(L, x => x.par, x => ({ k: x.kol, v: x.iz })).entries()].map(([p, s]) => { const l = L.filter(x => x.par === p), zl = l[l.length - 1]; return { p, n: imeD(p), zl, min: Math.min(...l.map(cena)), k: s.k, v: s.v, br: l.length }; }).sort((a, b) => (b.zl.dt || "").localeCompare(a.zl.dt || ""));
+  const najD = dob.slice().sort((a, b) => cena(a.zl) - cena(b.zl))[0];
+  const mag = fnMagacin(o.k);
+  const dana = z.dt ? fin8Dana(z.dt, T) : null;
+  const pl = (n, v, s, kl) => '<div class="card nartK' + (kl ? " " + kl : "") + '"><span>' + esc(n) + "</span><b>" + v + "</b>" + (s ? "<small>" + s + "</small>" : "") + "</div>";
+  const delta = (a, b) => b && Math.abs(a / b - 1) >= 0.0005 ? '<em class="' + (a > b ? "dn" : a < b ? "up" : "") + '">' + (a > b ? "▲ +" : a < b ? "▼ " : "") + finPct(a / b - 1, 1) + "</em>" : "";
+  const glavne = pl("Poslednja nabavna cena", fnC(cena(z)) + " <small>din" + (mera ? "/" + esc(mera.toLowerCase()) : "") + "</small>", pre ? "prethodna cena " + fnC(cena(pre)) + " din " + delta(cena(z), cena(pre)) : "jedina zabeležena cena", "glavna") +
+    pl("Datum poslednje nabavke", finDtxt(z.dt) || "–", dana != null ? "pre " + finMn(dana, "dan", "dana", "dana") : "", "glavna") +
+    pl("Dobavljač", esc(imeD(z.par)), "količina " + finNum(z.kol, 0) + " " + esc(mera) + " po ovoj ceni u " + z.g + ".", "glavna dob");
+  const ostale = pl("Najniža cena (12 meseci)", naj12 ? fnC(cena(naj12)) + " din" : "–", naj12 ? esc(imeD(naj12.par)) + " · " + finDtxt(naj12.dt) + (cena(z) > cena(naj12) ? " · poslednja je " + finPct(cena(z) / cena(naj12) - 1, 1) + " skuplja" : "") : "") +
+    pl("Prosečna cena " + gz, fnC(pc(gz)) + " din", gp ? gp + ": " + fnC(pc(gp)) + " din " + delta(pc(gz), pc(gp)) : "ponderisano količinom") +
+    pl("Nabavljeno " + gz, finNum(gg.get(gz).k, 0) + " " + esc(mera), fnIz(gg.get(gz).v) + (gp ? " · " + gp + ": " + finNum(gg.get(gp).k, 0) : "")) +
+    pl("Dobavljača", String(dob.length), dob.length > 1 && najD ? "najniža poslednja cena: " + esc(najD.n) + " (" + fnC(cena(najD.zl)) + ")" : "kupuje se samo kod jednog dobavljača") +
+    (mag ? pl("Stanje – " + mag.mag, finNum(mag.st, 0) + " " + esc(mag.mera), mag.dana != null ? "dovoljno za ≈ " + finNum(mag.dana, 0) + " dana" + (mag.porDo ? " · poručiti do " + finDtxt(mag.porDo) : "") : mag.min ? "minimum " + finNum(mag.min, 0) : "") : "");
+  // sezonalnost: količina po mesecima (poslednje 3 godine)
+  const G3 = G.slice(-3), P = finPal(), sm = G3.map(y => FIN_MES3.map((_, i) => L.filter(x => x.g === y && x.m === i + 1).reduce((s, x) => s + x.kol, 0)));
+  const sez = finStubci({ kat: FIN_MES3, ser: G3.map((y, i) => ({ n: String(y), v: sm[i], boja: P.s[[6, 3, 1][3 - G3.length + i]] })), vrednosti: false, div: 1, jed: mera ? mera.toLowerCase() : "kom", H: 220 }, P);
+  const uk = FIN_MES3.map((_, i) => sm.reduce((s, r) => s + r[i], 0)), uS = uk.reduce((s, v) => s + v, 0), jaki = uk.map((v, i) => ({ v, i })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 3);
+  // zaključci
+  const zk = [];
+  zk.push("Poslednja nabavka: " + finDtxt(z.dt) + " od " + imeD(z.par) + " po " + fnC(cena(z)) + " din" + (mera ? "/" + mera.toLowerCase() : "") + ".");
+  if (pre) zk.push("U odnosu na prethodnu cenu (" + fnC(cena(pre)) + " din, " + imeD(pre.par) + ", " + finDtxt(pre.dt) + ") cena je " + (cena(z) > cena(pre) ? "viša" : "niža") + " za " + finPct(Math.abs(cena(z) / cena(pre) - 1), 1) + ".");
+  if (najD && najD.p !== z.par && cena(najD.zl) < cena(z)) zk.push(najD.n + " je poslednji put isporučio po " + fnC(cena(najD.zl)) + " din (" + finDtxt(najD.zl.dt) + "), " + finPct(1 - cena(najD.zl) / cena(z), 1) + " jeftinije – vredi tražiti ponudu.");
+  if (gp && pc(gz) && pc(gp) && Math.abs(pc(gz) / pc(gp) - 1) >= 0.0005) zk.push("Prosečna cena " + gz + ". je " + (pc(gz) >= pc(gp) ? "viša" : "niža") + " nego " + gp + ". za " + finPct(Math.abs(pc(gz) / pc(gp) - 1), 1) + ".");
+  if (jaki.length && uS) zk.push("Najviše se nabavlja u mesecima: " + jaki.map(x => FIN_MES[x.i] + " (" + finPct(x.v / uS, 0) + ")").join(", ") + ".");
+  if (dob.length === 1) zk.push("Artikal ima samo jednog dobavljača – nema alternative ako dođe do kašnjenja ili poskupljenja.");
+  if (mag && mag.dana != null) zk.push("Na stanju je " + finNum(mag.st, 0) + " " + mag.mera + ", dovoljno za oko " + finNum(mag.dana, 0) + " dana" + (mag.pred ? "; predlog porudžbine " + finNum(mag.pred, 0) + " " + mag.mera : "") + ".");
+  box.innerHTML = traka +
+    '<div class="nartH"><h2>' + esc(o.a[0]) + '</h2><span class="muted">Šifra ' + esc(o.k) + (o.a[1] ? " · " + esc(o.a[1]) : "") + (mera ? " · " + esc(mera) : "") + '</span> <button type="button" class="lnk" data-nart="">← drugi artikal</button></div>' +
+    '<div class="nartG">' + glavne + "</div><div class=\"nartO\">" + ostale + "</div>" +
+    '<div class="nartM"><div class="card"><h2>Kretanje cene</h2>' + fnGrafCena(L, imeD) + '<p class="muted" style="font-size:12px;margin:6px 0 0">Svaka tačka je jedna cena po kojoj je artikal nabavljen, na datum poslednje nabavke po toj ceni.</p></div>' +
+    '<div class="card"><h2>Šta treba znati</h2><ul class="nartZ">' + zk.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul></div></div>" +
+    '<div class="card"><h2>Dobavljači i njihove cene</h2><div class="finTw"><table class="finT"><thead><tr><th>Dobavljač</th><th class="r">Poslednja cena</th><th>Datum</th><th class="r">Razlika prema najjeftinijoj</th><th class="r">Najniža cena</th><th class="r">Ukupno količina</th><th class="r">Iznos</th></tr></thead><tbody>' +
+    dob.map(d => "<tr" + (d === najD && dob.length > 1 ? ' style="background:color-mix(in srgb,var(--ulaz) 10%,transparent)"' : "") + "><td>" + esc(d.n) + (d.p === z.par ? ' <span class="tag P">poslednji</span>' : "") + '</td><td class="r num"><b>' + fnC(cena(d.zl)) + "</b></td><td>" + finDtxt(d.zl.dt) + '</td><td class="r num">' + (najD && d !== najD ? "+" + finPct(cena(d.zl) / cena(najD.zl) - 1, 1) : "–") + '</td><td class="r num">' + fnC(d.min) + '</td><td class="r num">' + finNum(d.k, 0) + '</td><td class="r num">' + finNum(d.v, 0) + "</td></tr>").join("") + "</tbody></table></div></div>" +
+    '<div class="nartM"><div class="card"><h2>Kada se nabavlja</h2>' + sez + '<p class="muted" style="font-size:12px;margin:4px 0 0">Količina po mesecima (mesec poslednje nabavke po istoj ceni – raspored je približan).</p></div>' +
+    '<div class="card"><h2>Po godinama</h2><div class="finTw"><table class="finT"><thead><tr><th>Godina</th><th class="r">Količina</th><th class="r">Iznos</th><th class="r">Prosečna cena</th><th class="r">Najniža</th><th class="r">Najviša</th></tr></thead><tbody>' +
+    G.slice().reverse().map(y => { const l = L.filter(x => x.g === y), c = l.map(cena); return "<tr><td>" + y + '</td><td class="r num">' + finNum(gg.get(y).k, 0) + '</td><td class="r num">' + finNum(gg.get(y).v, 0) + '</td><td class="r num"><b>' + fnC(pc(y)) + '</b></td><td class="r num">' + fnC(Math.min(...c)) + '</td><td class="r num">' + fnC(Math.max(...c)) + "</td></tr>"; }).join("") + "</tbody></table></div></div></div>" +
+    '<div class="card"><h2>Sve nabavke po cenama</h2><div class="finTw"><table class="finT"><thead><tr><th>Datum</th><th>Dobavljač</th><th class="r">Cena</th><th class="r">Količina</th><th class="r">Iznos</th></tr></thead><tbody>' +
+    L.slice().reverse().map(x => "<tr><td>" + (finDtxt(x.dt) || x.g) + "</td><td>" + esc(imeD(x.par)) + '</td><td class="r num">' + fnC(cena(x)) + '</td><td class="r num">' + finNum(x.kol, 0) + '</td><td class="r num">' + finNum(x.iz, 0) + "</td></tr>").join("") + "</tbody></table></div>" +
+    '<p class="muted" style="font-size:12px;margin:8px 0 0">Izvor: tabele nabavke iz UPIS-a (' + G.join(", ") + '). U tabeli je jedan red za svaku cenu kod svakog dobavljača u godini; datum je poslednja nabavka po toj ceni, a količina zbir svih nabavki po toj ceni.</p></div>';
+  fnLista();
+}
+function fnLista() {
+  const el = $("#nartL"), q = $("#nartQ"); if (!el || !q) return;
+  const v = q.value.trim(); if (v.length < 2 || (FIN.nart.art && v === FIN.nart.q && !FIN.nart.otv)) { el.innerHTML = ""; return; }
+  const { N } = fnArtikli(), R = fnTrazi(v);
+  el.innerHTML = R.length ? R.map(o => '<button type="button" data-nart="' + esc(o.k) + '"><b>' + esc(o.a[0]) + '</b><span>' + esc(o.k) + (o.a[1] ? " · " + esc(o.a[1]) : "") + " · poslednja " + fnC(o.z.cena || o.z.iz / o.z.kol) + " din, " + finDtxt(o.z.dt) + ", " + esc((N.P[o.z.par] || [o.z.par])[0]) + "</span></button>").join("") : '<p class="muted" style="margin:6px 2px">Nema artikla sa tim nazivom u tabelama nabavke.</p>';
+}
+document.addEventListener("input", e => { if (e.target.id === "nartQ") { FIN.nart.q = e.target.value; FIN.nart.otv = true; fnLista(); } });
+document.addEventListener("keydown", e => { if (e.target.id === "nartQ" && e.key === "Enter") { const b = document.querySelector("#nartL [data-nart]"); if (b) { e.preventDefault(); b.click(); } } });
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-nart]"); if (!b || !document.getElementById("nartBox")) return;
+  const k = b.dataset.nart; FIN.nart.art = k || null; FIN.nart.otv = false;
+  if (k) { const o = fnArtikli().M.get(k); FIN.nart.q = o ? o.a[0] : ""; } else FIN.nart.q = "";
+  renderNart(); window.scrollTo(0, 0); if (!k) { const q = $("#nartQ"); if (q) q.focus(); }
+});
+/* korisnici nabavke bez prava na finansije čitaju samo tabele nabavke */
+function finPretplataNab(db) {
+  try {
+    db.collection("finansije").where("tip", "==", "nab").onSnapshot(s => {
+      FIN.docs2 = s.docs.map(d => Object.assign({ _id: d.id }, d.data())); FIN.docs = [];
+      FIN.spreman = true; FIN.greska = false; FIN.cache = {};
+      const v = document.querySelector(".view.on"); if (v && v.id === "v-nartikal") renderNart();
+    }, () => { FIN.spreman = true; });
+  } catch (e) { console.error(e); }
+}
+
+
+/* =====================================================================
+   FINANSIJE 12 – tekstualni filter po artiklu i partneru za sve izveštaje.
+   Filter se primenjuje na izvore (prodaja, nabavka, cene koštanja, otvorene
+   stavke) dok se crta izveštaj, prognoza, desni prozor ili izvoz.
+   ===================================================================== */
+FIN.tf = FIN.tf || { a: "", p: "" };
+function finTfReci(s) { return finN(s).split(/[\s,;]+/).filter(Boolean); }
+function finTfKljuc() { const a = finTfReci(FIN.tf.a).join(" "), p = finTfReci(FIN.tf.p).join(" "); return a || p ? a + "|" + p : ""; }
+function finTfPog(reci, kod, naziv) { if (!reci.length) return true; const t = finN(kod + " " + (naziv || "")); return reci.every(w => t.includes(w)); }
+/* izvršava fn sa filtriranim izvorima; keš filtriranih podataka je odvojen od glavnog */
+function finSaFilterom(fn) {
+  const k = finTfKljuc(); if (!k || FIN.tfOn) return fn();
+  const base = FIN.cache; base._tf = base._tf || {}; const c = base._tf[k] = base._tf[k] || {};
+  FIN._baseCache = base; FIN.cache = c; FIN.tfOn = true; FIN.tfKor = false; FIN.tfGk = false;
+  try { return fn(); } finally { if (FIN.cache === c) FIN.cache = base; FIN.tfOn = false; }
+}
+function finTfBazno(f) { const cur = FIN.cache; FIN.cache = FIN._baseCache || cur; FIN.tfOn = false; try { return f(); } finally { FIN.cache = cur; FIN.tfOn = true; } }
+{
+  const _fp = finProd, _fn = finNab, _fc = finCk, _fs = finStarost, _fm = finMes, _fg = finSveGod;
+  finMes = function () { if (FIN.tfOn) FIN.tfGk = true; return _fm.apply(this, arguments); };
+  finSveGod = function () { if (FIN.tfOn) FIN.tfGk = true; return _fg.apply(this, arguments); };
+  finProd = function () {
+    if (!FIN.tfOn) return _fp(); FIN.tfKor = true;
+    if (FIN.cache.prod) return FIN.cache.prod;
+    const D = finTfBazno(_fp), A = finTfReci(FIN.tf.a), Pp = finTfReci(FIN.tf.p);
+    const okA = new Map(), okP = new Map(), fa = k => { if (!okA.has(k)) okA.set(k, finTfPog(A, k, D.A[k] || (finTfBazno(_fc).PR[k] || [])[0])); return okA.get(k); }, fp = k => { if (!okP.has(k)) okP.set(k, finTfPog(Pp, k, D.P[k])); return okP.get(k); };
+    const L = D.L.filter(x => fa(x.art) && fp(x.par));
+    return (FIN.cache.prod = Object.assign({}, D, { L, god: L.length ? [...new Set(L.map(x => x.g))].sort() : D.god }));
+  };
+  finNab = function () {
+    if (!FIN.tfOn) return _fn(); FIN.tfKor = true;
+    if (FIN.cache.nab) return FIN.cache.nab;
+    const N = finTfBazno(_fn), A = finTfReci(FIN.tf.a), Pp = finTfReci(FIN.tf.p);
+    const okA = new Map(), okP = new Map(), fa = k => { if (!okA.has(k)) okA.set(k, finTfPog(A, k, (N.A[k] || [])[0] + " " + ((N.A[k] || [])[1] || ""))); return okA.get(k); }, fp = k => { if (!okP.has(k)) okP.set(k, finTfPog(Pp, k, (N.P[k] || [])[0])); return okP.get(k); };
+    const L = N.L.filter(x => fa(x.art) && fp(x.par));
+    return (FIN.cache.nab = Object.assign({}, N, { L, god: L.length ? [...new Set(L.map(x => x.g))].sort() : N.god }));
+  };
+  finCk = function () {
+    if (!FIN.tfOn) return _fc(); FIN.tfKor = true;
+    if (FIN.cache.ck) return FIN.cache.ck;
+    const C = finTfBazno(_fc), A = finTfReci(FIN.tf.a); if (!A.length) return (FIN.cache.ck = C);
+    const ok = new Map(), fa = k => { if (!ok.has(k)) ok.set(k, finTfPog(A, k, (C.PR[k] || [])[0] + " " + ((C.PR[k] || [])[1] || ""))); return ok.get(k); };
+    const STR = {}; for (const g in C.STR) { STR[g] = {}; for (const sf in C.STR[g]) if (fa(sf)) STR[g][sf] = C.STR[g][sf]; }
+    const M = C.M.filter(x => fa(x.sf));
+    return (FIN.cache.ck = Object.assign({}, C, { M, STR, god: M.length ? [...new Set(M.map(x => x.g))].sort() : C.god }));
+  };
+  finStarost = function (os, tip) {
+    if (!FIN.tfOn || !os) return _fs(os, tip); const Pp = finTfReci(FIN.tf.p); if (!Pp.length) return _fs(os, tip); FIN.tfKor = true;
+    return _fs(Object.assign({}, os, { st: os.st.filter(x => finTfPog(Pp, x[0], os.partneri[x[0]])) }), tip);
+  };
+}
+function finTfOpis() { const d = []; if (FIN.tf.a.trim()) d.push("artikal sadrži „" + FIN.tf.a.trim() + "“"); if (FIN.tf.p.trim()) d.push("partner sadrži „" + FIN.tf.p.trim() + "“"); return d.join(" · "); }
+function finTfTraka(koristi) {
+  const ak = !!finTfKljuc();
+  return '<div class="finTf' + (ak ? " on" : "") + '"><label><span>Artikal / proizvod</span><input id="finTfA" type="search" autocomplete="off" placeholder="deo naziva ili šifra, npr. maramice 72" value="' + esc(FIN.tf.a) + '"></label>' +
+    '<label><span>Partner (kupac / dobavljač)</span><input id="finTfP" type="search" autocomplete="off" placeholder="npr. lidl, galenika" value="' + esc(FIN.tf.p) + '"></label>' +
+    (ak ? '<button type="button" class="lnk" id="finTfX">Poništi filter</button>' : "") +
+    (ak && koristi === false ? '<p class="finTfN">Ovaj izveštaj je iz glavne knjige i ne razlikuje artikle i partnere – filter na njega ne utiče.</p>' : ak ? '<p class="finTfN">Prikazani su samo podaci za: ' + esc(finTfOpis()) + ". Više reči = moraju sve da se nađu u nazivu." + (FIN.tfGk ? " Brojevi iz glavne knjige (prihodi, rezultat, gotovina, troškovi) nisu filtrirani – filter važi za prodaju, nabavku, proizvodnju i dugovanja." : "") + "</p>" : "") + "</div>";
+}
+function finTfUbaci(boxSel, koristi) {
+  const rep = document.querySelector(boxSel + " .finRep"); if (!rep) return;
+  const st = rep.querySelector(".finTf"); if (st) st.remove();
+  rep.insertAdjacentHTML("afterbegin", finTfTraka(koristi));
+}
+function finTfFokus(fn) {
+  const ae = document.activeElement, id = ae && (ae.id === "finTfA" || ae.id === "finTfP") ? ae.id : null, s = id ? [ae.selectionStart, ae.selectionEnd] : null;
+  fn();
+  if (id) { const el = document.getElementById(id); if (el) { el.focus(); try { el.setSelectionRange(s[0], s[1]); } catch (e) {} } }
+}
+{
+  const _rfi = renderFinIzv;
+  renderFinIzv = function () { finTfFokus(() => { FIN.tfKor = false; finSaFilterom(_rfi); finTfUbaci("#fizvBox", finTfKljuc() ? FIN.tfKor : null); }); };
+  const _rfp = renderFinProg;
+  renderFinProg = function () { finTfFokus(() => { FIN.tfKor = false; finSaFilterom(_rfp); finTfUbaci("#fprogBox", finTfKljuc() ? FIN.tfKor : null); }); };
+  const _pdf = finPdf;
+  finPdf = function (repArg) {
+    if (repArg) return _pdf(repArg);
+    let rep; try { rep = finSaFilterom(() => (FIN.repFn || FIN_IZV[FIN.izv])(finPal(true))); } catch (e) { console.error(e); toast("PDF nije napravljen."); return; }
+    if (finTfKljuc()) rep = Object.assign({}, rep, { opis: (rep.opis ? rep.opis + " · " : "") + "Filter: " + finTfOpis() });
+    return _pdf(rep);
+  };
+  const _xls = finExcel;
+  finExcel = function (repArg) {
+    let rep = repArg || FIN.rep; if (!rep) return;
+    if (finTfKljuc() && !repArg) rep = Object.assign({}, rep, { blokovi: [{ tabela: { naslov: "Filter", kol: [{ t: "Filter", tip: "txt" }], red: [{ c: [finTfOpis()] }] } }].concat(rep.blokovi) });
+    return _xls(rep);
+  };
+  const _det = finDetCrtaj;
+  finDetCrtaj = function () { finSaFilterom(_det); };
+  const _dIz = finDetIzvestaj;
+  finDetIzvestaj = function () { const r = finSaFilterom(_dIz); if (r && finTfKljuc()) r.opis += " · Filter: " + finTfOpis(); return r; };
+}
+document.addEventListener("input", e => {
+  const t = e.target; if (t.id !== "finTfA" && t.id !== "finTfP") return;
+  FIN.tf[t.id === "finTfA" ? "a" : "p"] = t.value;
+  clearTimeout(FIN._tfT); FIN._tfT = setTimeout(() => { const v = document.querySelector(".view.on"); if (v && v.id === "v-fprog") renderFinProg(); else renderFinIzv(); }, 450);
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest || !e.target.closest("#finTfX")) return;
+  FIN.tf = { a: "", p: "" }; const v = document.querySelector(".view.on"); if (v && v.id === "v-fprog") renderFinProg(); else renderFinIzv();
+});
 
 start();
 })();
